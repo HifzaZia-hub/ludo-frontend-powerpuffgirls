@@ -44,7 +44,15 @@ function isServerError(value: unknown): value is ServerError {
   return isRecord(value) && typeof value.code === "string" && typeof value.message === "string";
 }
 
-function readAck(response: unknown, sentRequestId: string | undefined): Ack {
+// These can be answered before a match exists, when there is no state version to report
+// (contract §8).
+const MAY_HAVE_NO_VERSION: ReadonlySet<string> = new Set([
+  "room:addAi",
+  "room:leave",
+  "state:sync",
+]);
+
+function readAck(event: string, response: unknown, sentRequestId: string | undefined): Ack {
   // FR-SYS-04 EXC-04-1: an incomplete reply is treated as a failure, never guessed at.
   if (!isRecord(response)) return { ok: false, error: NO_ANSWER };
 
@@ -55,8 +63,10 @@ function readAck(response: unknown, sentRequestId: string | undefined): Ack {
     return { ok: false, error: NO_ANSWER };
   }
 
-  if (response.ok === true && typeof response.version === "number") {
-    return { ok: true, version: response.version };
+  if (response.ok === true) {
+    if (typeof response.version === "number") return { ok: true, version: response.version };
+    // 0 can't be mistaken for a real version, because those start at 1 for each match.
+    if (MAY_HAVE_NO_VERSION.has(event)) return { ok: true, version: 0 };
   }
   if (response.ok === false && isServerError(response.error)) {
     return { ok: false, error: response.error };
@@ -207,7 +217,7 @@ export class LgsAdapter implements GameAdapter {
       socket
         .timeout(this.ackTimeoutMs)
         .emit(event, payload, (timedOut: Error | null, response: unknown) => {
-          resolve(timedOut ? { ok: false, error: NO_ANSWER } : readAck(response, requestId));
+          resolve(timedOut ? { ok: false, error: NO_ANSWER } : readAck(event, response, requestId));
         });
     });
   }

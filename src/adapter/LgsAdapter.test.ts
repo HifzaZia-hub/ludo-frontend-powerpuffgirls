@@ -125,6 +125,19 @@ describe("commands", () => {
     expect(!ack.ok && ack.error.code).toBe("INTERNAL_ERROR");
   });
 
+  // Contract §8: before a match exists there is no state version to send.
+  it.each([
+    ["no version", { ok: true }],
+    ["a null version", { ok: true, version: null }],
+  ])("accepts a lobby ack with %s", async (_name, reply) => {
+    const socket = await connected();
+    socket.on("room:addAi", (_payload: unknown, ack: (reply: unknown) => void) => {
+      ack(reply);
+    });
+
+    await expect(adapter.addAi(2, "EASY")).resolves.toEqual({ ok: true, version: 0 });
+  });
+
   it("fails straight away when there is no connection", async () => {
     const ack = await adapter.roll();
     expect(!ack.ok && ack.error.code).toBe("INTERNAL_ERROR");
