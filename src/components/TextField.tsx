@@ -1,4 +1,4 @@
-import { useId, type InputHTMLAttributes } from "react";
+import { forwardRef, useId, type InputHTMLAttributes } from "react";
 import { FOCUS_RING } from "@/components/focusRing";
 
 export interface TextFieldProps extends Omit<
@@ -13,14 +13,10 @@ export interface TextFieldProps extends Omit<
 
 // FR-SYS-01 ALT-01-1: the value belongs to the parent and an error never touches it, so a
 // rejected form keeps what the player typed.
-export function TextField({
-  label,
-  value,
-  onChange,
-  error,
-  className = "",
-  ...rest
-}: TextFieldProps) {
+export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function TextField(
+  { label, value, onChange, error, className = "", ...rest },
+  ref,
+) {
   const inputId = useId();
   const errorId = useId();
 
@@ -31,6 +27,7 @@ export function TextField({
       </label>
       <input
         {...rest}
+        ref={ref}
         id={inputId}
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -46,4 +43,4 @@ export function TextField({
       </p>
     </div>
   );
-}
+});

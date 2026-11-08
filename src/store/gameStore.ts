@@ -4,10 +4,13 @@
 import { createStore, type StoreApi } from "zustand/vanilla";
 import type { Ack, ConnectionStatus, GameAdapter } from "@/adapter/GameAdapter";
 import { pieceCell, progressCounts, type GridPoint } from "@/config/geometry";
-import { RESYNC_CODES } from "@/contract/errors";
+import { FIELD_ERRORS, RESYNC_CODES, type FormField } from "@/contract/errors";
 import type { ServerEvent } from "@/contract/events";
 import type {
+  CreateRoomRequest,
+  Difficulty,
   GameStateSnapshot,
+  JoinRoomResponse,
   LegalMove,
   Piece,
   Player,
@@ -15,16 +18,36 @@ import type {
   ServerError,
 } from "@/contract/types";
 import { friendlyError, SESSION_REPLACED_MESSAGE } from "@/feedback/copy";
+import { clearSavedSession, saveSession } from "@/store/savedSession";
 
 const EVENT_LOG_LIMIT = 50;
 
-type CommandRequest = { kind: "roll" } | { kind: "move"; pieceId: string };
+type CommandRequest =
+  | { kind: "roll" }
+  | { kind: "move"; pieceId: string }
+  | { kind: "addAi"; seat: number }
+  | { kind: "start" }
+  | { kind: "leave" };
 
 export type PendingCommand = CommandRequest & { id: number };
 
 export interface Toast {
   id: number;
+  kind: "info" | "error";
   message: string;
+}
+
+/** A form's request failed. With no field, the problem isn't about anything the player typed. */
+export interface FormFailure {
+  ok: false;
+  field: FormField | null;
+  message: string;
+}
+
+export type FormResult = { ok: true } | FormFailure;
+
+function formFailure(error: ServerError): FormFailure {
+  return { ok: false, field: FIELD_ERRORS[error.code] ?? null, message: friendlyError(error) };
 }
 
 interface GameData {
@@ -49,8 +72,15 @@ export interface GameState extends GameData {
   reset(): void;
   /** Starts feeding adapter messages into this store. Returns the function that stops it. */
   listen(): () => void;
-  /** Temporary, for the P3 debug line. P5 replaces it with the real create and join flow. */
-  startDebugGame(): Promise<void>;
+  createRoom(request: CreateRoomRequest): Promise<FormResult>;
+  joinRoom(code: string, displayName: string): Promise<FormResult>;
+  /** Only says whether the code found a game. See the note in the function. */
+  previewRoom(code: string): Promise<FormResult>;
+  addAi(seat: number, difficulty: Difficulty): Promise<void>;
+  startGame(options: { fillEmptySeatsWithAi: boolean }): Promise<void>;
+  /** True once the server has accepted it and this tab has let go of the room. */
+  leaveRoom(): Promise<boolean>;
+  dismissToast(id: number): void;
 }
 
 export type GameStore = StoreApi<GameState>;
@@ -71,18 +101,46 @@ export function createGameStore(adapter: GameAdapter): GameStore {
 
   return createStore<GameState>((set, get) => {
     function pushToast(message: string): void {
-      set((state) => ({ toasts: [...state.toasts, { id: nextId++, message }] }));
+      // Error toasts stay until dismissed, so retrying the same failure must not stack them up.
+      set((state) =>
+        state.toasts.some((toast) => toast.message === message)
+          ? state
+          : { toasts: [...state.toasts, { id: nextId++, kind: "error", message }] },
+      );
+    }
+
+    function enterRoom({
+      playerId,
+      sessionToken,
+      room,
+    }: Pick<JoinRoomResponse, "playerId" | "sessionToken" | "room">): void {
+      saveSession({ sessionToken, playerId, roomCode: room.roomCode });
+      // A fresh start also clears any error left over from the attempts before this one.
+      set({ ...INITIAL_DATA, myPlayerId: playerId, room });
+      adapter.connect(sessionToken);
+    }
+
+    function endSession(): void {
+      adapter.disconnect();
+      clearSavedSession();
+      set(INITIAL_DATA);
     }
 
     function showError(error: ServerError): void {
+      // Contract §6: the server no longer knows this session, so there is no room to stay in.
+      if (error.code === "UNAUTHORIZED") endSession();
       pushToast(friendlyError(error));
       // Contract §6: these codes mean our copy of the game is out of date.
       if (RESYNC_CODES.includes(error.code)) void get().resync();
     }
 
-    async function sendCommand(request: CommandRequest, send: () => Promise<Ack>): Promise<void> {
+    // True only if the server accepted it, so a caller can act on a success.
+    async function sendCommand(
+      request: CommandRequest,
+      send: () => Promise<Ack>,
+    ): Promise<boolean> {
       // FR-SYS-02 EXC-02-1: extra presses while one is in flight do nothing.
-      if (get().pendingCommand !== null) return;
+      if (get().pendingCommand !== null) return false;
 
       const pending: PendingCommand = { ...request, id: nextId++ };
       set({ pendingCommand: pending });
@@ -90,11 +148,13 @@ export function createGameStore(adapter: GameAdapter): GameStore {
 
       // The store was reset while this was in flight, so the answer is about a press that no
       // longer matters. It must not clear a newer command or show an old error.
-      if (get().pendingCommand?.id !== pending.id) return;
+      if (get().pendingCommand?.id !== pending.id) return false;
 
       set({ pendingCommand: null });
+      if (ack.ok) return true;
       // FR-SYS-04 POST-04-1: nothing here touches the snapshot. Changes only come as game:state.
-      if (!ack.ok) showError(ack.error);
+      showError(ack.error);
+      return false;
     }
 
     return {
@@ -126,9 +186,13 @@ export function createGameStore(adapter: GameAdapter): GameStore {
         if (status === "live" && wasReconnecting) void get().resync();
       },
 
-      roll: () => sendCommand({ kind: "roll" }, () => adapter.roll()),
+      roll: async () => {
+        await sendCommand({ kind: "roll" }, () => adapter.roll());
+      },
 
-      move: (pieceId) => sendCommand({ kind: "move", pieceId }, () => adapter.move(pieceId)),
+      move: async (pieceId) => {
+        await sendCommand({ kind: "move", pieceId }, () => adapter.move(pieceId));
+      },
 
       // The reply arrives as game:state and goes through the usual version check. A failed
       // sync changes nothing, and it can't trigger another sync, so this can never loop.
@@ -152,22 +216,57 @@ export function createGameStore(adapter: GameAdapter): GameStore {
           },
         }),
 
-      startDebugGame: async () => {
-        const created = await adapter.createRoom({
-          displayName: "Tester",
-          mode: "HUMAN_VS_AI",
-          seats: 4,
-        });
+      createRoom: async (request) => {
+        const created = await adapter.createRoom(request);
         if (!created.ok) {
-          showError(created.error);
-          return;
+          const failure = formFailure(created.error);
+          if (failure.field === null) pushToast(failure.message);
+          return failure;
         }
 
-        set({ myPlayerId: created.data.playerId, room: created.data.room });
-        adapter.connect(created.data.sessionToken);
-        const started = await adapter.start({ fillEmptySeatsWithAi: false });
-        if (!started.ok) showError(started.error);
+        enterRoom(created.data);
+        // Contract §1: the computer seats are filled already, so nothing is left to wait for.
+        // If this fails the room still exists, and the lobby's Start button is the retry.
+        if (request.mode === "HUMAN_VS_AI") {
+          await get().startGame({ fillEmptySeatsWithAi: false });
+        }
+        return { ok: true };
       },
+
+      // Join runs inside a modal, which blocks a toast behind it, so the form shows every
+      // failure itself. Unlike createRoom, this one pushes no toast.
+      joinRoom: async (code, displayName) => {
+        const joined = await adapter.joinRoom(code, { displayName });
+        if (!joined.ok) return formFailure(joined.error);
+        enterRoom(joined.data);
+        return { ok: true };
+      },
+
+      // Contract §8: the preview's field names are still an open question and we never guess
+      // one, so this doesn't read inside it. "2 of 4 players" waits for the backend's answer.
+      previewRoom: async (code) => {
+        const preview = await adapter.previewRoom(code);
+        return preview.ok ? { ok: true } : formFailure(preview.error);
+      },
+
+      // POST-07-2: the seat list only ever changes when room:updated arrives.
+      addAi: async (seat, difficulty) => {
+        await sendCommand({ kind: "addAi", seat }, () => adapter.addAi(seat, difficulty));
+      },
+
+      startGame: async (options) => {
+        await sendCommand({ kind: "start" }, () => adapter.start(options));
+      },
+
+      leaveRoom: async () => {
+        const left = await sendCommand({ kind: "leave" }, () => adapter.leave());
+        // FR-SYS-08 POST-08-3: a failed leave keeps everything, and the player can try again.
+        if (left) endSession();
+        return left;
+      },
+
+      dismissToast: (id) =>
+        set((state) => ({ toasts: state.toasts.filter((toast) => toast.id !== id) })),
     };
   });
 }
@@ -238,6 +337,15 @@ export function selectMe(state: GameState): Player | null {
   if (inGame) return inGame;
   // Before a match starts there is no snapshot, only the lobby's seats.
   return room?.seats.find((seat) => seat.player?.id === myPlayerId)?.player ?? null;
+}
+
+export function selectIsHost(state: GameState): boolean {
+  return state.myPlayerId !== null && state.room?.hostId === state.myPlayerId;
+}
+
+export function selectHostName(state: GameState): string | null {
+  const { room } = state;
+  return room?.seats.find((seat) => seat.player?.id === room.hostId)?.player?.name ?? null;
 }
 
 export type ProgressCounts = ReturnType<typeof progressCounts>;

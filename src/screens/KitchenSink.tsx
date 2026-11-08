@@ -2,14 +2,17 @@ import { useState, type ReactNode } from "react";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { CopyButton } from "@/components/CopyButton";
 import { CountdownRing } from "@/components/CountdownRing";
 import { Dice } from "@/components/Dice";
+import { FormRow } from "@/components/FormRow";
 import { MessageLog } from "@/components/MessageLog";
 import { Modal } from "@/components/Modal";
 import { Piece, type PieceState } from "@/components/Piece";
 import { PlayerCard } from "@/components/PlayerCard";
 import { PlayerMark } from "@/components/PlayerMark";
 import { RulesSummary } from "@/components/RulesSummary";
+import { SeatRow, type SeatRowProps } from "@/components/SeatRow";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { TextField } from "@/components/TextField";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -17,7 +20,7 @@ import { Toast } from "@/components/Toast";
 import { ToastRegion, type ToastItem } from "@/components/ToastRegion";
 import { Toggle } from "@/components/Toggle";
 import { defaultRules } from "@/config/defaultRules";
-import type { Colour } from "@/contract/types";
+import type { Colour, Player } from "@/contract/types";
 import { CONFIRM_TEXT, MESSAGES } from "@/feedback/copy";
 import { useSettingsStore, type AnimationMode } from "@/store/settingsStore";
 
@@ -62,6 +65,19 @@ const LOG_MESSAGES = [
   MESSAGES.turnForfeited("Hamza"),
   MESSAGES.gameOver("Maryam"),
 ].map((text, id) => ({ id, text }));
+
+function demoPlayer(name: string, colour: Colour, isAi = false): Player {
+  return { id: name, name, colour, isAi, connected: true, isHost: false, piecesHome: 0 };
+}
+
+const SEAT_DEFAULTS: Omit<SeatRowProps, "colour" | "player"> = {
+  isHost: false,
+  isMe: false,
+  canAddComputer: false,
+  adding: false,
+  addDisabled: false,
+  onAddComputer: () => undefined,
+};
 
 // Stable functions, as CountdownRing asks for.
 const twentyFiveSeconds = () => 25;
@@ -271,6 +287,48 @@ export function KitchenSink() {
           <TextField label="No error" value="Hamza" onChange={() => undefined} />
           <TextField label="Disabled" value="Maryam" onChange={() => undefined} disabled />
         </div>,
+      )}
+
+      {showcase(
+        "FormRow and CopyButton",
+        <div className="flex flex-wrap items-start gap-6">
+          <FormRow label="Players">
+            <SegmentedControl
+              label="Players, with a row label"
+              options={SEAT_OPTIONS}
+              value={seats}
+              onChange={setSeats}
+            />
+          </FormRow>
+          <CopyButton
+            text="K7QX2M"
+            label="Copy"
+            copiedLabel="Copied!"
+            failedMessage="Couldn't copy."
+            hint="A hint sits here until there is news."
+          />
+        </div>,
+      )}
+
+      {showcase(
+        "SeatRow",
+        <ul className="flex max-w-md flex-col gap-2">
+          <SeatRow {...SEAT_DEFAULTS} colour="RED" player={demoPlayer("Rida", "RED")} isHost isMe />
+          <SeatRow
+            {...SEAT_DEFAULTS}
+            colour="GREEN"
+            player={demoPlayer("Computer 1", "GREEN", true)}
+          />
+          <SeatRow
+            {...SEAT_DEFAULTS}
+            colour="YELLOW"
+            player={demoPlayer("A very long player name", "YELLOW")}
+          />
+          <SeatRow {...SEAT_DEFAULTS} colour="BLUE" player={null} />
+          <SeatRow {...SEAT_DEFAULTS} colour="GREEN" player={null} canAddComputer />
+          <SeatRow {...SEAT_DEFAULTS} colour="YELLOW" player={null} canAddComputer adding />
+          <SeatRow {...SEAT_DEFAULTS} colour="BLUE" player={null} canAddComputer addDisabled />
+        </ul>,
       )}
 
       {showcase(

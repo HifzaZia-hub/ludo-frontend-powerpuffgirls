@@ -11,6 +11,9 @@ export interface PlayerIdentity {
   token: string; // CSS colour, so light and dark themes both work
 }
 
+// Contract §1: whoever creates a room always takes seat 1, which is Red.
+export const HOST_COLOUR: Colour = "RED";
+
 export const PLAYER_IDENTITY: Record<Colour, PlayerIdentity> = {
   RED: { letter: "R", shape: "circle", token: "var(--p-red)" },
   GREEN: { letter: "G", shape: "triangle", token: "var(--p-green)" },

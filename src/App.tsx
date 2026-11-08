@@ -1,117 +1,65 @@
-import { useState } from "react";
+import { useEffect, useRef } from "react";
 import { useStore } from "zustand";
 import { useAdapterSubscription } from "@/adapter/useAdapterSubscription";
+import { Button } from "@/components/Button";
+import { ToastRegion } from "@/components/ToastRegion";
+import { SETTINGS_TEXT } from "@/feedback/copy";
+import { useAppNavigation } from "@/interaction/useAppNavigation";
+import { GameScreen } from "@/screens/GameScreen";
+import { LobbyScreen } from "@/screens/LobbyScreen";
+import { MainScreen } from "@/screens/MainScreen";
+import { RulesModal } from "@/screens/RulesModal";
+import { SettingsModal } from "@/screens/SettingsModal";
+import { SetupScreen } from "@/screens/SetupScreen";
 import type { GameStore } from "@/store/gameStore";
-import { useSettingsStore, type Theme } from "@/store/settingsStore";
-
-const THEMES: readonly { value: Theme; label: string }[] = [
-  { value: "dark", label: "Dark" },
-  { value: "light", label: "Light" },
-];
-
-// NFR-SYS-07: colour, shape and letter together. Temporary copy for this starter
-// page only; P1 moves the real mapping to src/config/players.ts.
-const PLAYER_DOTS = [
-  { name: "Red", letter: "R", shape: "●", colorClass: "bg-p-red" },
-  { name: "Green", letter: "G", shape: "▲", colorClass: "bg-p-green" },
-  { name: "Yellow", letter: "Y", shape: "■", colorClass: "bg-p-yellow" },
-  { name: "Blue", letter: "B", shape: "◆", colorClass: "bg-p-blue" },
-] as const;
-
-const FOCUS_RING =
-  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 " +
-  "focus-visible:outline-focus-ring";
+import { useUiStore } from "@/store/uiStore";
 
 interface AppProps {
   store: GameStore;
 }
 
-// P0 starter page, plus the P3 debug line that proves the app reaches the server. Replaced in P5.
 export function App({ store }: AppProps) {
   useAdapterSubscription(store);
+  useAppNavigation(store);
 
-  const theme = useSettingsStore((state) => state.theme);
-  const setTheme = useSettingsStore((state) => state.setTheme);
-  const connection = useStore(store, (state) => state.connection);
-  const version = useStore(store, (state) => state.snapshot?.version ?? null);
-  const latestToast = useStore(store, (state) => state.toasts[state.toasts.length - 1] ?? null);
-  const startDebugGame = useStore(store, (state) => state.startDebugGame);
-  const [starting, setStarting] = useState(false); // NFR-SYS-01: show the press at once
+  const screen = useUiStore((state) => state.screen);
+  const openModal = useUiStore((state) => state.openModal);
+  const toasts = useStore(store, (state) => state.toasts);
+  const dismissToast = useStore(store, (state) => state.dismissToast);
 
-  async function startTestGame() {
-    setStarting(true);
-    await startDebugGame();
-    setStarting(false);
-  }
+  const screenRef = useRef<HTMLDivElement>(null);
+  const lastScreen = useRef(screen);
+
+  // NFR-SYS-08: the button just pressed no longer exists, so put keyboard and screen-reader users
+  // at the top of the new screen. Compared rather than run once so StrictMode can't trigger it.
+  useEffect(() => {
+    if (lastScreen.current === screen) return;
+    lastScreen.current = screen;
+    screenRef.current?.querySelector("h1")?.focus();
+  }, [screen]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-8 p-4">
-      <h1 className="text-[32px] font-bold tracking-widest">LUDO</h1>
-
-      <button
-        type="button"
-        className={`rounded-full bg-accent px-8 py-3 text-[15px] font-semibold text-on-accent active:bg-accent-press ${FOCUS_RING}`}
-      >
-        Play
-      </button>
-
-      <ul className="flex gap-6" aria-label="Player colours">
-        {PLAYER_DOTS.map((dot) => (
-          <li key={dot.name} className="flex flex-col items-center gap-2">
-            <span
-              className={`flex h-14 w-14 items-center justify-center rounded-full ${dot.colorClass}`}
-            >
-              {/* The inner chip keeps the shape readable on all four colours in both themes. */}
-              <span
-                aria-hidden="true"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-panel text-lg text-high"
-              >
-                {dot.shape}
-              </span>
-            </span>
-            <span className="text-xs font-semibold uppercase text-high">
-              {dot.letter} · {dot.name}
-            </span>
-          </li>
-        ))}
-      </ul>
-
-      <div
-        role="group"
-        aria-label="Theme"
-        className="flex gap-1 rounded-full border border-soft bg-panel p-1"
-      >
-        {THEMES.map(({ value, label }) => (
-          <button
-            key={value}
-            type="button"
-            aria-pressed={theme === value}
-            onClick={() => setTheme(value)}
-            className={`rounded-full px-4 py-1 text-xs font-semibold active:bg-raised ${FOCUS_RING} ${
-              theme === value ? "bg-raised text-high" : "text-mid"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+    <>
+      <div ref={screenRef}>
+        {screen === "main" && <MainScreen store={store} />}
+        {screen === "setup" && <SetupScreen store={store} />}
+        {screen === "lobby" && <LobbyScreen store={store} />}
+        {/* P10 builds the win screen. Nothing navigates to it yet. */}
+        {(screen === "game" || screen === "win") && <GameScreen store={store} />}
       </div>
 
-      {import.meta.env.DEV && (
-        <section aria-label="Test connection" className="flex flex-col items-center gap-2">
-          <button
-            type="button"
-            disabled={starting || connection !== null}
-            onClick={() => void startTestGame()}
-            className={`rounded-full border border-soft bg-panel px-4 py-1 text-xs font-semibold text-high active:bg-raised disabled:text-mid ${FOCUS_RING}`}
-          >
-            {starting ? "Starting…" : "Start test game"}
-          </button>
-          <p role="status" className="text-xs text-mid">
-            Connection: {connection ?? "not started"} · Game version: {version ?? "none yet"}
-          </p>
-          {latestToast && <p className="text-xs text-high">{latestToast.message}</p>}
-        </section>
-      )}
-    </main>
+      {/* After the screen in the page, so it is the last stop when tabbing. FR-SYS-10. */}
+      <div className="fixed right-4 top-4">
+        <Button variant="ghost" size="sm" onClick={() => openModal("settings")}>
+          {/* U+FE0E asks for the plain glyph, so it takes the theme's text colour, not an emoji's. */}
+          <span aria-hidden="true">{"⚙︎"}</span>
+          {SETTINGS_TEXT.title}
+        </Button>
+      </div>
+
+      <SettingsModal />
+      <RulesModal store={store} />
+      <ToastRegion toasts={toasts} onDismiss={dismissToast} />
+    </>
   );
 }
