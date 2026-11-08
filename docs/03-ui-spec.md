@@ -105,7 +105,7 @@ You must still be able to tell every player apart.
 ## 4. Screens
 
 Routing is one `screen` value in `uiStore`: `"main" | "setup" | "lobby" |
-"game" | "win"`. Settings, Rules and Confirm are modals. No router library.
+"game" | "win"`. Settings, Rules, Join and Confirm are modals. No router library.
 
 ### S1 — Main screen (FR-SYS-01 trigger, D2 FR-01, FR-07)
 - "LUDO" wordmark, tagline "Roll · Move · Capture · Win".

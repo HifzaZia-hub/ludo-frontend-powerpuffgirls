@@ -28,7 +28,20 @@ Steps: start a test game, wait for "Connection: live", switch to the Light theme
 
 ## Limits of this check
 
-- `sessionToken` isn't stored anywhere yet. The temporary test button keeps it in memory. P5 and
-  P11 will save it to `sessionStorage`, which `CLAUDE.md` §4 allows.
+- This was recorded at P3, when `sessionToken` wasn't stored anywhere. See the update below.
 - Saving settings on the device is still TO CONFIRM (ALT-10-1). Setting `PERSIST_SETTINGS` to
   `false` in `src/config/app.ts` turns it off.
+
+## Update after P5
+
+Checked on 2026-11-08, on branch `feat/p5-main-setup-lobby`, in Microsoft Edge against the mock.
+
+| Check | Result |
+|---|---|
+| `src/` files that use `localStorage` or `sessionStorage`, leaving out tests and test setup | Only `src/store/settingsStore.ts` and `src/store/savedSession.ts` |
+| `localStorage` after creating a room | Nothing about the game |
+| `sessionStorage` after creating a room | `ludo-session`, holding `sessionToken`, `playerId` and `roomCode` (`CLAUDE.md` §4) |
+| The token anywhere in the page's HTML | Not found |
+| `sessionStorage` after leaving the room | `ludo-session` is gone |
+
+P11 reads this back so a player survives a page refresh. Until then nothing reads it.

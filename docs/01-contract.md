@@ -347,6 +347,8 @@ so a tick means "answered in writing", not "seen working".
 - [ ] `GET /rooms/{roomCode}` preview — what are the exact field names for
       status, mode, host name and free seats? `RoomPreview` stays out of
       `src/contract/types.ts` until we know. The mock returns a `RoomSnapshot`.
+      Until this is answered the join form says "Game found!", not
+      "2 of 4 players · waiting".
 - [ ] `game:event.data` — what are the fields for each of the 16 event types?
       D3 describes six, in words only: `GAME_STARTED` (turn order, seed hash),
       `ROLLED` (player, value, legal moves), `TURN_CHANGED` (player, deadline),
