@@ -50,5 +50,14 @@ function applyTheme(theme: Theme): void {
   document.documentElement.dataset.theme = theme;
 }
 
+// POST-10-2: CSS reads this attribute to shorten or skip motion. It can't change an outcome.
+function applyAnimation(animation: AnimationMode): void {
+  document.documentElement.dataset.animation = animation;
+}
+
 applyTheme(useSettingsStore.getState().theme);
-useSettingsStore.subscribe((state) => applyTheme(state.theme));
+applyAnimation(useSettingsStore.getState().animation);
+useSettingsStore.subscribe((state) => {
+  applyTheme(state.theme);
+  applyAnimation(state.animation);
+});

@@ -11,12 +11,14 @@
   --focus-ring:  #5AA9FF;
   --text-high:   #F2F6FF;
   --text-mid:    #9DB0CE;
-  --text-low:    #6B7E9C;
+  --text-low:    #8496B5;
   --accent:      #2DD98A;
   --accent-press:#1FB874;
   --on-accent:   #04220F;
   --danger:      #F05252;
+  --on-danger:   #2A0505;
   --warning:     #F5A524;
+  --piece-edge:  #0E1726;
   --board-cell:  #F4F6FA;
   --board-line:  #C9D2E0;
   --p-red:    #E8413F;
@@ -33,16 +35,53 @@ html[data-theme="light"] {
   --focus-ring:  #1D5FD1;
   --text-high:   #0E1726;
   --text-mid:    #46556E;
-  --text-low:    #6A7891;
+  --text-low:    #5B6A83;
   --accent:      #13A866;
-  --accent-press:#0E8A53;
-  --on-accent:   #FFFFFF;
+  --accent-press:#119E60;
+  --on-accent:   #04220F;
   --danger:      #C9302C;
+  --on-danger:   #FFFFFF;
   --warning:     #B76E00;
+  --piece-edge:  #0E1726;
   --board-cell:  #FFFFFF;
   --board-line:  #B7C2D3;
   --p-red:    #D7322F;
   --p-green:  #1E9E48;
-  --p-yellow: #D9A400;
+  --p-yellow: #B88A00;
   --p-blue:   #2367D8;
+}
+
+/* POST-10-2: the Animations setting and the device's reduced-motion preference only change how
+   long CSS motion takes, so they can never change an outcome. */
+html[data-animation="fast"] .animate-tumble {
+  animation-duration: 250ms;
+}
+
+html[data-animation="off"] *,
+html[data-animation="off"] *::before,
+html[data-animation="off"] *::after {
+  transition-duration: 0s !important;
+  animation-duration: 0s !important;
+  animation-iteration-count: 1 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* Without these, scrolling over a modal or its backdrop scrolls the page behind it. */
+dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: color-mix(in srgb, var(--bg-deep) 75%, transparent);
 }
