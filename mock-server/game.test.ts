@@ -16,12 +16,13 @@ import {
   passTurn,
   placePiece,
   requireLegalMove,
+  SEAT_COLOURS,
   toSnapshot,
   type Match,
 } from "./game";
 
-function makePlayers(count: number): Player[] {
-  return COLOUR_ORDER.slice(0, count).map((colour, index) => ({
+function makePlayers(count: 2 | 3 | 4): Player[] {
+  return SEAT_COLOURS[count].map((colour, index) => ({
     id: `p${index + 1}`,
     name: `Player ${index + 1}`,
     colour,
@@ -32,7 +33,11 @@ function makePlayers(count: number): Player[] {
   }));
 }
 
-function makeMatch(count = 4, rules: Partial<RuleConfig> = {}, seed = "test-seed"): Match {
+function makeMatch(
+  count: 2 | 3 | 4 = 4,
+  rules: Partial<RuleConfig> = {},
+  seed = "test-seed",
+): Match {
   return createMatch({
     roomCode: "ABC234",
     rules: { ...structuredClone(DEFAULT_RULES), ...rules },
@@ -274,6 +279,28 @@ describe("turn order", () => {
     expect(seen).toEqual(["p1", "p2", "p3", "p4", "p1"]);
   });
 
+  it("alternates between opposite corners in a 2-player game (R1)", () => {
+    const match = makeMatch(2);
+    expect(match.players.map(({ colour }) => colour)).toEqual(["RED", "YELLOW"]);
+    expect(match.pieces.map(({ id }) => id)).toEqual([
+      "R1",
+      "R2",
+      "R3",
+      "R4",
+      "Y1",
+      "Y2",
+      "Y3",
+      "Y4",
+    ]);
+
+    const seen = [match.turn.activePlayerId];
+    passTurn(match);
+    seen.push(match.turn.activePlayerId);
+    passTurn(match);
+    seen.push(match.turn.activePlayerId);
+    expect(seen).toEqual(["p1", "p2", "p1"]);
+  });
+
   it("uses no deadline when the timer is off", () => {
     const match = makeMatch(4, { turnTimerSeconds: 0 });
     expect(match.turn.deadline).toBeNull();
@@ -394,7 +421,7 @@ describe("whole games", () => {
     }
   }
 
-  const cases = [2, 3, 4].flatMap((players) =>
+  const cases = ([2, 3, 4] as const).flatMap((players) =>
     (["NORMAL", "EASY"] as const).flatMap((difficulty) =>
       ["seed-a", "seed-b", "seed-c"].map((seed) => ({ players, difficulty, seed })),
     ),

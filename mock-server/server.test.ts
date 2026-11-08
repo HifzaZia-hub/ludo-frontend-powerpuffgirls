@@ -199,6 +199,15 @@ describe("REST", () => {
     expect(created.room.seats[1]?.player?.isAi).toBe(true);
   });
 
+  it.each([
+    [2, ["RED", "YELLOW"]],
+    [3, ["RED", "GREEN", "YELLOW"]],
+    [4, ["RED", "GREEN", "YELLOW", "BLUE"]],
+  ])("gives %i seats the right colours (R1)", async (seats, colours) => {
+    const created = await createRoom({ seats });
+    expect(created.room.seats.map(({ colour }) => colour)).toEqual(colours);
+  });
+
   it("never puts a session token in a room snapshot", async () => {
     const created = await createRoom();
     expect(JSON.stringify(created.room)).not.toContain(created.sessionToken);
@@ -211,7 +220,7 @@ describe("REST", () => {
       .slice(3)} `;
     const joined = await joinRoom(encodeURIComponent(messy), "Guest");
     expect(Object.keys(joined).sort()).toEqual(["playerId", "room", "sessionToken", "v"].sort());
-    expect(joined.room.seats[1]?.player).toMatchObject({ name: "Guest", colour: "GREEN" });
+    expect(joined.room.seats[1]?.player).toMatchObject({ name: "Guest", colour: "YELLOW" });
   });
 
   it("previews a room and reports health", async () => {
@@ -404,7 +413,7 @@ describe("sockets", () => {
     await host.send("game:roll");
     const version = host.latest().version;
     expect((await host.send("game:move", { pieceId: "Z9" })).error?.code).toBe("PIECE_NOT_FOUND");
-    const illegal = await host.send("game:move", { pieceId: "G1" });
+    const illegal = await host.send("game:move", { pieceId: "Y1" });
     expect(illegal.error).toMatchObject({
       code: "ILLEGAL_MOVE",
       message: "That piece belongs to another player.",

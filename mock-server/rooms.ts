@@ -19,7 +19,6 @@ import {
   activePlayer,
   applyMove,
   applyRoll,
-  COLOUR_ORDER,
   CommandError,
   CONTRACT_VERSION,
   createMatch,
@@ -28,6 +27,7 @@ import {
   passTurn,
   requireLegalMove,
   requireTurn,
+  SEAT_COLOURS,
   toSnapshot,
   type Match,
 } from "./game";
@@ -465,8 +465,8 @@ export class RoomRegistry {
       mode: request.mode,
       rules: { ...structuredClone(DEFAULT_RULES), ...request.rules },
       hostId: "",
-      // Colours follow seats (docs/00-requirements.md §5), so 2 players are Red and Green.
-      seats: COLOUR_ORDER.slice(0, request.seats).map((colour, index) => ({
+      // Colours follow seats (docs/00-requirements.md §5).
+      seats: SEAT_COLOURS[request.seats].map((colour, index) => ({
         seat: index + 1,
         colour,
         player: null,

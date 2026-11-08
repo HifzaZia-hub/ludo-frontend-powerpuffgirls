@@ -24,6 +24,12 @@ export const CONTRACT_VERSION = "1.0.0";
 export const YARD_STEP = 0;
 export const HOME_STEP = 57;
 export const COLOUR_ORDER: readonly Colour[] = ["RED", "GREEN", "YELLOW", "BLUE"];
+// Our D3 rule R1: a 2-player game uses opposite corners, so seat 2 is Yellow rather than Green.
+export const SEAT_COLOURS: Record<2 | 3 | 4, readonly Colour[]> = {
+  2: ["RED", "YELLOW"],
+  3: ["RED", "GREEN", "YELLOW"],
+  4: COLOUR_ORDER,
+};
 
 const LAST_TRACK_STEP = 51;
 const TRACK_SQUARES = 52;
