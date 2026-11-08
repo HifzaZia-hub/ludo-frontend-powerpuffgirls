@@ -31,12 +31,14 @@ attribute on `<html>` and zero component changes.
   --focus-ring:  #5AA9FF;
   --text-high:   #F2F6FF;
   --text-mid:    #9DB0CE;
-  --text-low:    #6B7E9C;
+  --text-low:    #8496B5;
   --accent:      #2DD98A;
   --accent-press:#1FB874;
   --on-accent:   #04220F;
   --danger:      #F05252;
+  --on-danger:   #2A0505;
   --warning:     #F5A524;
+  --piece-edge:  #0E1726;
   --board-cell:  #F4F6FA;
   --board-line:  #C9D2E0;
   --p-red:    #E8413F;
@@ -53,17 +55,19 @@ html[data-theme="light"] {
   --focus-ring:  #1D5FD1;
   --text-high:   #0E1726;
   --text-mid:    #46556E;
-  --text-low:    #6A7891;
+  --text-low:    #5B6A83;
   --accent:      #13A866;
-  --accent-press:#0E8A53;
-  --on-accent:   #FFFFFF;
+  --accent-press:#119E60;
+  --on-accent:   #04220F;
   --danger:      #C9302C;
+  --on-danger:   #FFFFFF;
   --warning:     #B76E00;
+  --piece-edge:  #0E1726;
   --board-cell:  #FFFFFF;
   --board-line:  #B7C2D3;
   --p-red:    #D7322F;
   --p-green:  #1E9E48;
-  --p-yellow: #D9A400;
+  --p-yellow: #B88A00;
   --p-blue:   #2367D8;
 }
 ```

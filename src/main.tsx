@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { LgsAdapter } from "@/adapter/LgsAdapter";
 import { App } from "@/App";
@@ -18,8 +18,22 @@ if (!serverUrl) {
 // NFR-SYS-12: the one place that knows which adapter is in use.
 const store = createGameStore(new LgsAdapter(serverUrl));
 
+// The DEV check on the import keeps the kitchen sink out of the production bundle.
+const KitchenSink = import.meta.env.DEV
+  ? lazy(() =>
+      import("@/screens/KitchenSink").then(({ KitchenSink }) => ({ default: KitchenSink })),
+    )
+  : null;
+const showKitchenSink = new URLSearchParams(window.location.search).get("kitchen") === "1";
+
 createRoot(rootElement).render(
   <StrictMode>
-    <App store={store} />
+    {KitchenSink && showKitchenSink ? (
+      <Suspense>
+        <KitchenSink />
+      </Suspense>
+    ) : (
+      <App store={store} />
+    )}
   </StrictMode>,
 );

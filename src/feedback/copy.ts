@@ -1,7 +1,7 @@
-// Every error the player reads comes from here (NFR-SYS-08). Source: docs/03-ui-spec.md §7.
+// Every word the player reads comes from here (NFR-SYS-08). Source: docs/03-ui-spec.md §4–§7.
 
 import type { ErrorCode } from "@/contract/errors";
-import type { ServerError } from "@/contract/types";
+import type { Colour, ServerError } from "@/contract/types";
 
 const GENERIC_ERROR = "That didn't work. Try again."; // FR-SYS-04 ALT-04-1
 
@@ -28,3 +28,99 @@ export const SESSION_REPLACED_MESSAGE = "This game is open in another tab.";
 export function friendlyError(error: ServerError): string {
   return ERROR_COPY[error.code] ?? (error.message || GENERIC_ERROR);
 }
+
+export const LABELS = {
+  cancel: "Cancel",
+  close: "Close",
+  dismiss: "Dismiss",
+  on: "On",
+  off: "Off",
+  base: "Base",
+  track: "Track",
+  home: "Home",
+  theme: "Theme",
+  dark: "Dark",
+  light: "Light",
+  roll: "Roll",
+  rolling: "Rolling…",
+  messages: "Messages",
+  noMessages: "Moves will show up here.",
+  notice: "Notice",
+  problem: "Problem",
+} as const;
+
+export const COLOUR_NAMES: Record<Colour, string> = {
+  RED: "Red",
+  GREEN: "Green",
+  YELLOW: "Yellow",
+  BLUE: "Blue",
+};
+
+export const PLAYER_TAGS = {
+  you: "you",
+  computer: "Computer",
+  offline: "Offline — computer playing",
+} as const;
+
+export const CONFIRM_TEXT = {
+  body: "Your progress in this game will be lost.",
+  leave: { title: "Leave this game?", action: "Leave" },
+  restart: { title: "Restart the game?", action: "Restart" },
+} as const;
+
+export function diceLabel(face: number | null, rolling: boolean): string {
+  if (rolling) return "Rolling the dice";
+  return face === null ? "Roll the dice" : `The dice shows ${face}. Roll the dice`;
+}
+
+export function secondsLeftLabel(seconds: number): string {
+  return seconds === 1 ? "1 second left" : `${seconds} seconds left`;
+}
+
+// docs/03-ui-spec.md §6. Names, not colours, so the text works for colour-blind players.
+export const MESSAGES = {
+  gameStarted: (name: string) => `Game started. ${name} goes first.`,
+  rolled: (name: string, roll: number) => `${name} rolled ${roll}.`,
+  moved: (name: string, squares: number) => `${name} moved a piece ${squares} squares.`,
+  broughtOut: (name: string) => `${name} brought a piece out.`,
+  captured: (name: string, other: string) => `${name} captured ${other}'s piece!`,
+  pieceFinished: (name: string) => `${name} got a piece home!`,
+  bonusTurn: (name: string) => `${name} rolls again!`,
+  turnPassed: (name: string) => `${name} can't move. Turn skipped.`,
+  turnForfeited: (name: string) => `Three 6s in a row — ${name}'s turn is over.`,
+  playerDisconnected: (name: string) => `${name} left. The computer will play for them.`,
+  playerReconnected: (name: string) => `${name} is back.`,
+  gameOver: (name: string) => `${name} wins!`,
+} as const;
+
+// D2 FR-07, NFR-SYS-11: RulesSummary picks from these using the match's RuleConfig.
+export const RULES_TEXT = {
+  standardTitle: "Standard rules",
+  title: "How to play",
+  goal: "Be the first to get all 4 of your pieces home.",
+  leaveBase: "Roll a 6 to bring a piece out of base.",
+  capture: "Land on another player's piece to send it back to base.",
+  captureWithSafe: (count: number) =>
+    `Land on another player's piece to send it back to base, except on the ${count} safe squares.`,
+  exactRoll: "You need the exact number to reach home.",
+  bonusOnSix: "Rolling a 6 gives you another turn.",
+  bonusOnCapture: "Capturing a piece gives you another turn.",
+  bonusOnFinish: "Getting a piece home gives you another turn.",
+  threeSixes: "Three 6s in a row and your turn is over.",
+  timer: (seconds: number) => `You have ${seconds} seconds for each turn.`,
+  keyboardTitle: "Keyboard",
+  keyColumn: "Key",
+  actionColumn: "What it does",
+} as const;
+
+// docs/03-ui-spec.md §5.
+export const KEYBOARD_HELP = [
+  { key: "Tab / Shift+Tab", action: "Move between controls" },
+  { key: "Enter / Space", action: "Press the control you are on" },
+  { key: "R", action: "Roll, when you can" },
+  { key: "1–4", action: "Pick your piece 1 to 4, if it can move" },
+  { key: "Enter", action: "Confirm your move" },
+  { key: "Esc", action: "Close a window, or cancel your choice" },
+  { key: "?", action: "Open the rules" },
+  { key: "S", action: "Skip the animation" },
+] as const;
