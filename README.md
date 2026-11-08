@@ -31,7 +31,8 @@ Then open the address Vite prints, usually <http://localhost:5173>.
 | `npm run lint` | Runs ESLint |
 | `npm run format` | Formats the code with Prettier |
 | `npm test` | Runs the tests once |
-| `npm run mock` | Placeholder until the mock server is added in task P2 |
+| `npm run mock` | Starts the mock game server on port 3001 |
+| `npm run mock:debug` | Same, plus the `/debug` test routes (forced rolls, scenarios, rule changes) |
 
 ## Where to look
 

@@ -19,4 +19,27 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
     },
   },
+  {
+    // The rules of Ludo live in mock-server/. The client must never reach them (CLAUDE.md §1).
+    files: ["src/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/mock-server", "**/mock-server/**", "mock-server", "mock-server/**"],
+              message: "mock-server/ is a separate process. Talk to it through GameAdapter.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["mock-server/**/*.ts"],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
 );

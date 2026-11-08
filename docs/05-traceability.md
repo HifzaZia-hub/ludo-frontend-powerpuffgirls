@@ -40,7 +40,7 @@ Status: `—` not started · `WIP` · `Done` · `Blocked (reason)`
 | NFR-SYS-09 Chrome / Firefox / Edge | P12 | Smoke test in each | — |
 | NFR-SYS-10 Window sizes | P6, P12 | Screenshots at 1024, 1366, 1920 wide | — |
 | NFR-SYS-11 Rules in config | P1, P6 | `src/config/geometry.test.ts` covers board geometry for all 4 colours. Still needed: change `safeSquares` in the mock → board stars move, rules text updates | WIP |
-| NFR-SYS-12 Defined interfaces | P3 | Store tests use `FakeAdapter`; only `src/adapter/` imports socket.io | — |
+| NFR-SYS-12 Defined interfaces | P2, P3 | `mock-server/` runs as a separate process that only speaks the contract, and ESLint blocks `src/` from importing it. Still needed: store tests use `FakeAdapter`; only `src/adapter/` imports socket.io | WIP |
 | NFR-SYS-13 Maintainable | all | PR #1 merged for P0 and PR #2 for P1; folder layout followed. Still needed: a PR for each remaining task | WIP |
 | NFR-SYS-14 No storage for play | P3 | Only `settingsStore` uses `localStorage` | — |
 

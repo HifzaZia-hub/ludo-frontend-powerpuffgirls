@@ -330,9 +330,23 @@ Keep this list alive. Tick items off as they are answered in writing.
 - [ ] Is the contract package published to npm, or do we vendor the types?
 - [ ] `GET /rooms/{roomCode}` preview — what are the exact field names for
       status, mode, host name and free seats? `RoomPreview` stays out of
-      `src/contract/types.ts` until we know.
+      `src/contract/types.ts` until we know. The mock returns a `RoomSnapshot`.
 - [ ] `GET /health` — are `status` and `version` strings, and `uptimeS`,
       `rooms` and `clients` numbers? `HealthResponse` assumes so.
+- [ ] `game:event.data` — what are the fields for each of the 16 event types?
+      The mock sends `data: {}` until we know, so the UI must read the snapshot.
+- [ ] REST error body — is it a bare `ServerError`, or nested under `error`?
+      The mock sends a bare `ServerError` plus `v`.
+- [ ] Acks — §3 says acks echo `requestId` and every message carries `v`, but
+      the `Ack` type shows neither. The mock includes both.
+- [ ] Acks in the lobby — what `version` comes back before a match exists? The
+      mock sends `0`.
+- [ ] `game:restart` — does `version` go back to 1 for the new match? The mock
+      does, with a new `matchId`, so the store must treat a new `matchId` as a
+      fresh match or it will ignore every snapshot after a restart.
+- [ ] Rules G-1, G-2, G-3 and G-5 — we have no text for these. The mock follows
+      `prompts/P2-mock-server.md`: 2 players are Red and Green, and a move
+      captures every opposing piece on a non-safe square.
 
 From our own D3 (see `docs/00-requirements.md` §5):
 
