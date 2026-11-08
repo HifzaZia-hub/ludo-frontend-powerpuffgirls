@@ -11,9 +11,11 @@ import type {
 } from "@/adapter/GameAdapter";
 import type { ServerEvent } from "@/contract/events";
 import type {
+  CreateRoomRequest,
   CreateRoomResponse,
   Difficulty,
   GameStateSnapshot,
+  JoinRoomRequest,
   JoinRoomResponse,
   RoomSnapshot,
   ServerError,
@@ -36,6 +38,10 @@ const NOT_SCRIPTED: Result<never> = {
 export class FakeAdapter implements GameAdapter {
   /** Every command the store has sent, oldest first. */
   readonly commands: SentCommand[] = [];
+  /** Every create, join and preview the store has asked for, oldest first. */
+  readonly createRequests: CreateRoomRequest[] = [];
+  readonly joinRequests: { code: string; request: JoinRoomRequest }[] = [];
+  readonly previewCodes: string[] = [];
   connectedToken: string | null = null;
 
   createRoomResult: Result<CreateRoomResponse> = NOT_SCRIPTED;
@@ -85,15 +91,18 @@ export class FakeAdapter implements GameAdapter {
     this.handlers.forEach((handlers) => handlers.onSessionReplaced());
   }
 
-  createRoom(): Promise<Result<CreateRoomResponse>> {
+  createRoom(request: CreateRoomRequest): Promise<Result<CreateRoomResponse>> {
+    this.createRequests.push(request);
     return Promise.resolve(this.createRoomResult);
   }
 
-  joinRoom(): Promise<Result<JoinRoomResponse>> {
+  joinRoom(code: string, request: JoinRoomRequest): Promise<Result<JoinRoomResponse>> {
+    this.joinRequests.push({ code, request });
     return Promise.resolve(this.joinRoomResult);
   }
 
-  previewRoom(): Promise<Result<RoomPreview>> {
+  previewRoom(code: string): Promise<Result<RoomPreview>> {
+    this.previewCodes.push(code);
     return Promise.resolve(this.previewRoomResult);
   }
 

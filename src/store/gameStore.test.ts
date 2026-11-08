@@ -1,14 +1,23 @@
 import { FakeAdapter } from "@/adapter/FakeAdapter";
 import { defaultRules } from "@/config/defaultRules";
 import { pieceCell } from "@/config/geometry";
-import type { GameStateSnapshot, RoomSnapshot, ServerError, TurnState } from "@/contract/types";
+import type {
+  CreateRoomRequest,
+  CreateRoomResponse,
+  GameStateSnapshot,
+  JoinRoomResponse,
+  ServerError,
+  TurnState,
+} from "@/contract/types";
 import {
   cellKey,
   createGameStore,
   selectActivePlayer,
   selectCanMove,
   selectCanRoll,
+  selectHostName,
   selectIsComputerTurn,
+  selectIsHost,
   selectIsMyTurn,
   selectLegalMoveFor,
   selectLegalPieceIds,
@@ -18,6 +27,7 @@ import {
   selectSecondsLeft,
   type GameStore,
 } from "@/store/gameStore";
+import { makePlayer, makeRoom } from "@/testRoom";
 
 function makeSnapshot(
   version: number,
@@ -314,33 +324,326 @@ describe("unsolicited server errors", () => {
   });
 });
 
-describe("starting the debug game", () => {
-  const room = { roomCode: "K7QX2M" } as RoomSnapshot;
+describe("rooms", () => {
+  const room = makeRoom();
+  const created: { ok: true; data: CreateRoomResponse } = {
+    ok: true,
+    data: { v: "1.0.0", roomCode: "K7QX2M", playerId: "p1", sessionToken: "secret", room },
+  };
+  const joined: { ok: true; data: JoinRoomResponse } = {
+    ok: true,
+    data: { v: "1.0.0", playerId: "p2", sessionToken: "secret-2", room },
+  };
+  const friendsGame: CreateRoomRequest = {
+    displayName: "Rida",
+    mode: "HUMAN_VS_HUMAN",
+    seats: 4,
+  };
+  const computerGame: CreateRoomRequest = {
+    displayName: "Rida",
+    mode: "HUMAN_VS_AI",
+    seats: 2,
+    aiDifficulty: "EASY",
+  };
+  const busy = "The game server is busy. Try again in a minute.";
 
-  it("connects with the returned token and starts the match", async () => {
-    const { adapter, store } = makeStore();
-    adapter.createRoomResult = {
-      ok: true,
-      data: { v: "1.0.0", roomCode: "K7QX2M", playerId: "p1", sessionToken: "secret", room },
-    };
+  function savedToken(): string | null {
+    const saved = sessionStorage.getItem("ludo-session");
+    return saved === null ? null : (JSON.parse(saved) as { sessionToken: string }).sessionToken;
+  }
 
-    await store.getState().startDebugGame();
-
-    expect(adapter.connectedToken).toBe("secret");
-    expect(store.getState().myPlayerId).toBe("p1");
-    expect(adapter.commands).toEqual([{ name: "start", fillEmptySeatsWithAi: false }]);
+  beforeEach(() => {
+    sessionStorage.clear();
   });
 
-  it("does not connect when the room can't be created", async () => {
-    const { adapter, store } = makeStore();
-    adapter.createRoomResult = rejection("SERVER_BUSY");
+  describe("creating", () => {
+    it("connects with the returned token and remembers the player and the room", async () => {
+      const { adapter, store } = makeStore();
+      adapter.createRoomResult = created;
 
-    await store.getState().startDebugGame();
+      const result = await store.getState().createRoom(friendsGame);
 
-    expect(adapter.connectedToken).toBeNull();
-    expect(store.getState().toasts[0]?.message).toBe(
-      "The game server is busy. Try again in a minute.",
+      expect(result).toEqual({ ok: true });
+      expect(adapter.createRequests).toEqual([friendsGame]);
+      expect(adapter.connectedToken).toBe("secret");
+      expect(store.getState().myPlayerId).toBe("p1");
+      expect(store.getState().room).toBe(room);
+    });
+
+    // CLAUDE.md §4
+    it("keeps the token in sessionStorage and out of the store", async () => {
+      const { adapter, store } = makeStore();
+      adapter.createRoomResult = created;
+
+      await store.getState().createRoom(friendsGame);
+
+      expect(savedToken()).toBe("secret");
+      expect(JSON.stringify(store.getState())).not.toContain("secret");
+    });
+
+    it("waits for the host to start a game with friends", async () => {
+      const { adapter, store } = makeStore();
+      adapter.createRoomResult = created;
+
+      await store.getState().createRoom(friendsGame);
+
+      expect(adapter.commands).toEqual([]);
+    });
+
+    it("starts a game against the computer straight away", async () => {
+      const { adapter, store } = makeStore();
+      adapter.createRoomResult = created;
+
+      await store.getState().createRoom(computerGame);
+
+      expect(adapter.commands).toEqual([{ name: "start", fillEmptySeatsWithAi: false }]);
+    });
+
+    // The room exists by now, so a retry must not create a second one.
+    it("still enters the room when that automatic start fails", async () => {
+      const { adapter, store } = makeStore();
+      adapter.createRoomResult = created;
+      adapter.queueAck(rejection("INTERNAL_ERROR"));
+
+      const result = await store.getState().createRoom(computerGame);
+
+      expect(result).toEqual({ ok: true });
+      expect(store.getState().room).toBe(room);
+      expect(store.getState().toasts).toHaveLength(1);
+    });
+
+    // FR-SYS-01 EXC-01-1
+    it("puts a name problem under the name field and stays out of the room", async () => {
+      const { adapter, store } = makeStore();
+      adapter.createRoomResult = rejection("INVALID_NAME");
+
+      const result = await store.getState().createRoom(friendsGame);
+
+      expect(result).toEqual({
+        ok: false,
+        field: "name",
+        message: "Use 1–20 letters or numbers for your name.",
+      });
+      expect(adapter.connectedToken).toBeNull();
+      expect(store.getState().room).toBeNull();
+      expect(store.getState().toasts).toEqual([]);
+      expect(savedToken()).toBeNull();
+    });
+
+    it("sends a problem that isn't about a field to a toast", async () => {
+      const { adapter, store } = makeStore();
+      adapter.createRoomResult = rejection("SERVER_BUSY");
+
+      const result = await store.getState().createRoom(friendsGame);
+
+      expect(result).toEqual({ ok: false, field: null, message: busy });
+      expect(store.getState().toasts[0]?.message).toBe(busy);
+      expect(store.getState().toasts[0]?.kind).toBe("error");
+    });
+
+    it("clears errors from earlier attempts once a room is created", async () => {
+      const { adapter, store } = makeStore();
+      adapter.createRoomResult = rejection("SERVER_BUSY");
+      await store.getState().createRoom(friendsGame);
+
+      adapter.createRoomResult = created;
+      await store.getState().createRoom(friendsGame);
+
+      expect(store.getState().toasts).toEqual([]);
+    });
+  });
+
+  describe("joining", () => {
+    it("connects with its own token and sends the name", async () => {
+      const { adapter, store } = makeStore();
+      adapter.joinRoomResult = joined;
+
+      const result = await store.getState().joinRoom("K7QX2M", "Hamza");
+
+      expect(result).toEqual({ ok: true });
+      expect(adapter.joinRequests).toEqual([{ code: "K7QX2M", request: { displayName: "Hamza" } }]);
+      expect(adapter.connectedToken).toBe("secret-2");
+      expect(store.getState().myPlayerId).toBe("p2");
+      expect(savedToken()).toBe("secret-2");
+    });
+
+    it.each([
+      ["NAME_TAKEN", "name"],
+      ["INVALID_NAME", "name"],
+      ["INVALID_CODE", "roomCode"],
+      ["ROOM_NOT_FOUND", "roomCode"],
+      ["ROOM_FULL", "roomCode"],
+      ["GAME_ALREADY_STARTED", "roomCode"],
+    ] as const)("points %s at the %s field", async (code, field) => {
+      const { adapter, store } = makeStore();
+      adapter.joinRoomResult = rejection(code);
+
+      const result = await store.getState().joinRoom("K7QX2M", "Hamza");
+
+      expect(result).toMatchObject({ ok: false, field });
+      expect(adapter.connectedToken).toBeNull();
+    });
+
+    // A toast would sit behind the join modal, where it can't be dismissed.
+    it.each(["SERVER_BUSY", "RATE_LIMITED"] as const)(
+      "hands %s back to the form without a toast",
+      async (code) => {
+        const { adapter, store } = makeStore();
+        adapter.joinRoomResult = rejection(code);
+
+        const result = await store.getState().joinRoom("K7QX2M", "Hamza");
+
+        expect(result).toMatchObject({ ok: false, field: null });
+        expect(store.getState().toasts).toEqual([]);
+      },
     );
+  });
+
+  describe("previewing", () => {
+    it("says only that the code found a game", async () => {
+      const { adapter, store } = makeStore();
+      adapter.previewRoomResult = { ok: true, data: { whatever: "the backend sends" } };
+
+      expect(await store.getState().previewRoom("K7QX2M")).toEqual({ ok: true });
+      expect(adapter.previewCodes).toEqual(["K7QX2M"]);
+    });
+
+    it("points an unknown code at the code field", async () => {
+      const { adapter, store } = makeStore();
+      adapter.previewRoomResult = rejection("ROOM_NOT_FOUND");
+
+      expect(await store.getState().previewRoom("K7QX2M")).toEqual({
+        ok: false,
+        field: "roomCode",
+        message: "We couldn't find that game. Check the code.",
+      });
+    });
+  });
+
+  describe("lobby commands", () => {
+    function storeInLobby(myPlayerId = "p1"): { adapter: FakeAdapter; store: GameStore } {
+      const made = makeStore();
+      made.store.setState({ room, myPlayerId });
+      return made;
+    }
+
+    it("sends the seat and difficulty, and shows it as pending until the answer", async () => {
+      const { adapter, store } = storeInLobby();
+      const release = adapter.holdNextAck();
+
+      const adding = store.getState().addAi(2, "NORMAL");
+      expect(store.getState().pendingCommand).toMatchObject({ kind: "addAi", seat: 2 });
+      expect(adapter.commands).toEqual([{ name: "addAi", seat: 2, difficulty: "NORMAL" }]);
+
+      release({ ok: true, version: 0 });
+      await adding;
+      expect(store.getState().pendingCommand).toBeNull();
+    });
+
+    // The seat list only ever changes when the server says so.
+    it("leaves the seats alone until room:updated arrives", async () => {
+      const { adapter, store } = storeInLobby();
+
+      await store.getState().addAi(2, "NORMAL");
+      expect(store.getState().room).toBe(room);
+
+      const computer = makePlayer("p2", "Computer 1", { isAi: true, colour: "GREEN" });
+      const updated = makeRoom({
+        seats: room.seats.map((seat) => (seat.seat === 2 ? { ...seat, player: computer } : seat)),
+      });
+      adapter.pushRoom(updated);
+      expect(store.getState().room).toBe(updated);
+    });
+
+    it("sends the fill choice when starting", async () => {
+      const { adapter, store } = storeInLobby();
+
+      await store.getState().startGame({ fillEmptySeatsWithAi: true });
+
+      expect(adapter.commands).toEqual([{ name: "start", fillEmptySeatsWithAi: true }]);
+    });
+
+    it("keeps the lobby open and explains when there aren't enough players", async () => {
+      const { adapter, store } = storeInLobby();
+      adapter.queueAck(rejection("NOT_ENOUGH_PLAYERS"));
+
+      await store.getState().startGame({ fillEmptySeatsWithAi: false });
+
+      expect(store.getState().room).toBe(room);
+      expect(store.getState().toasts[0]?.message).toBe(
+        "You need at least 2 players. Add a computer player?",
+      );
+    });
+
+    it("lets go of the room once a leave is accepted", async () => {
+      const { adapter, store } = storeInLobby();
+      adapter.connect("secret");
+      sessionStorage.setItem("ludo-session", '{"sessionToken":"secret"}');
+
+      expect(await store.getState().leaveRoom()).toBe(true);
+
+      expect(adapter.commands).toEqual([{ name: "leave" }]);
+      expect(adapter.connectedToken).toBeNull();
+      expect(savedToken()).toBeNull();
+      expect(store.getState().room).toBeNull();
+      expect(store.getState().myPlayerId).toBeNull();
+      expect(store.getState().connection).toBeNull();
+    });
+
+    // FR-SYS-08 POST-08-3
+    it("keeps everything when a leave fails", async () => {
+      const { adapter, store } = storeInLobby();
+      adapter.connect("secret");
+      sessionStorage.setItem("ludo-session", '{"sessionToken":"secret"}');
+      adapter.queueAck(rejection("INTERNAL_ERROR"));
+
+      expect(await store.getState().leaveRoom()).toBe(false);
+
+      expect(adapter.connectedToken).toBe("secret");
+      expect(savedToken()).toBe("secret");
+      expect(store.getState().room).toBe(room);
+      expect(store.getState().toasts).toHaveLength(1);
+    });
+  });
+
+  // Contract §6: UNAUTHORIZED clears the session and goes back to the main screen.
+  it("drops the room and the saved session when the server ends the session", () => {
+    const { adapter, store } = makeStore();
+    store.setState({ room, myPlayerId: "p1" });
+    adapter.connect("secret");
+    sessionStorage.setItem("ludo-session", '{"sessionToken":"secret"}');
+
+    adapter.pushError({ code: "UNAUTHORIZED", message: "Your game session ended." });
+
+    expect(store.getState().room).toBeNull();
+    expect(adapter.connectedToken).toBeNull();
+    expect(savedToken()).toBeNull();
+    expect(store.getState().toasts[0]?.message).toBe(
+      "Your game session ended. Please start again.",
+    );
+  });
+});
+
+describe("toasts", () => {
+  it("doesn't stack the same message when a request keeps failing", () => {
+    const { adapter, store } = makeStore();
+
+    adapter.pushError({ code: "SERVER_BUSY", message: "Busy." });
+    adapter.pushError({ code: "SERVER_BUSY", message: "Busy." });
+
+    expect(store.getState().toasts).toHaveLength(1);
+  });
+
+  it("removes only the one that was dismissed", () => {
+    const { adapter, store } = makeStore();
+    adapter.pushError({ code: "SERVER_BUSY", message: "Busy." });
+    adapter.pushError({ code: "RATE_LIMITED", message: "Slow." });
+    const [first, second] = store.getState().toasts;
+    if (!first || !second) throw new Error("two different errors make two toasts");
+
+    store.getState().dismissToast(first.id);
+
+    expect(store.getState().toasts).toEqual([second]);
   });
 });
 
@@ -416,6 +719,22 @@ describe("selectors", () => {
     expect(selectSecondsLeft(Date.parse("2026-11-08T10:00:00.000Z"))(state)).toBe(30);
     expect(selectSecondsLeft(Date.parse("2026-11-08T10:01:00.000Z"))(state)).toBe(0);
     expect(selectSecondsLeft(0)(storeWith(makeSnapshot(5)).getState())).toBeNull();
+  });
+
+  it("reads the host from the room", () => {
+    const { store } = makeStore();
+    store.setState({ room: makeRoom(), myPlayerId: "p1" });
+    expect(selectIsHost(store.getState())).toBe(true);
+    expect(selectHostName(store.getState())).toBe("Rida");
+
+    store.setState({ myPlayerId: "p2" });
+    expect(selectIsHost(store.getState())).toBe(false);
+  });
+
+  it("is nobody's host before there is a room", () => {
+    const { store } = makeStore();
+    expect(selectIsHost(store.getState())).toBe(false);
+    expect(selectHostName(store.getState())).toBeNull();
   });
 
   // Zustand 5 re-renders forever if these return a new object each time.

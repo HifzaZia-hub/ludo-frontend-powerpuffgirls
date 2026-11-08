@@ -5,14 +5,18 @@ import type { Colour, ServerError } from "@/contract/types";
 
 const GENERIC_ERROR = "That didn't work. Try again."; // FR-SYS-04 ALT-04-1
 
+// The forms' own checks use these too, so a mistake reads the same wherever it is caught.
+export const INVALID_NAME_MESSAGE = "Use 1–20 letters or numbers for your name.";
+export const INVALID_CODE_MESSAGE = "That code doesn't look right. It has 6 letters and numbers.";
+
 // ILLEGAL_MOVE is left out on purpose: the server's own reason says exactly what was wrong.
 const ERROR_COPY: Partial<Record<ErrorCode, string>> = {
   NOT_YOUR_TURN: "Wait for your turn.",
   ROLL_REQUIRED: "Roll the dice first.",
   ALREADY_ROLLED: "You already rolled. Pick a piece to move.",
-  INVALID_NAME: "Use 1–20 letters or numbers for your name.",
+  INVALID_NAME: INVALID_NAME_MESSAGE,
   NAME_TAKEN: "Someone in this game already has that name. Try another.",
-  INVALID_CODE: "That code doesn't look right. It has 6 letters and numbers.",
+  INVALID_CODE: INVALID_CODE_MESSAGE,
   ROOM_NOT_FOUND: "We couldn't find that game. Check the code.",
   ROOM_FULL: "That game is full.",
   GAME_ALREADY_STARTED: "That game has already started.",
@@ -47,6 +51,73 @@ export const LABELS = {
   noMessages: "Moves will show up here.",
   notice: "Notice",
   problem: "Problem",
+} as const;
+
+export const MAIN_TEXT = {
+  wordmark: "LUDO",
+  tagline: "Roll · Move · Capture · Win",
+  newGame: "New Game",
+  joinGame: "Join Game",
+  howToPlay: "How to play",
+} as const;
+
+export const SETTINGS_TEXT = {
+  title: "Settings",
+  sound: "Sound effects",
+  animations: "Animations",
+  fast: "Fast",
+} as const;
+
+export const RULES_MODAL_TITLE = "Rules";
+
+export const SETUP_TEXT = {
+  title: "New game",
+  players: "Players",
+  gameType: "Game type",
+  friends: "Play with friends",
+  computer: "Play with computer",
+  name: "Your name",
+  difficulty: "Computer difficulty",
+  easy: "Easy",
+  normal: "Normal",
+  youWillBe: "You will be",
+  start: "Start",
+  back: "Back",
+} as const;
+
+export const JOIN_TEXT = {
+  title: "Join a game",
+  code: "Game code",
+  name: "Your name",
+  checking: "Looking for that game…",
+  found: "Game found! Now type your name.",
+  join: "Join",
+  badCharacter: "Codes don't use the letters I, L or O, or the numbers 0 or 1.",
+} as const;
+
+export const LOBBY_TEXT = {
+  title: "Waiting room",
+  code: "Game code",
+  copy: "Copy",
+  copied: "Copied!",
+  copyFailed: "Couldn't copy. Tell your friends the code instead.",
+  invite: "Share the code to invite friends.",
+  players: "Players",
+  host: "Host",
+  addComputer: "Add computer player",
+  addComputerAs: (colour: string) => `Add computer player as ${colour}`,
+  waitingForPlayer: "Waiting for a player…",
+  fillSeats: "Fill empty seats with computer players",
+  start: "Start game",
+  waitingForHost: (name: string) => `Waiting for ${name} to start.`,
+  leave: "Leave",
+} as const;
+
+// Words for the stand-in game screen. P6 replaces them.
+export const GAME_TEXT = {
+  title: "Game started!",
+  loading: "Getting the board ready…",
+  boardComing: "The board is coming soon.",
 } as const;
 
 export const COLOUR_NAMES: Record<Colour, string> = {
