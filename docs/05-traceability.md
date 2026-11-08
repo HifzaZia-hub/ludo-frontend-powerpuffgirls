@@ -41,7 +41,7 @@ Status: `—` not started · `WIP` · `Done` · `Blocked (reason)`
 | NFR-SYS-10 Window sizes | P6, P12 | Screenshots at 1024, 1366, 1920 wide | — |
 | NFR-SYS-11 Rules in config | P1, P6 | Change `safeSquares` in the mock → board stars move, rules text updates | — |
 | NFR-SYS-12 Defined interfaces | P3 | Store tests use `FakeAdapter`; only `src/adapter/` imports socket.io | — |
-| NFR-SYS-13 Maintainable | all | PR per task; folder layout followed | — |
+| NFR-SYS-13 Maintainable | all | PR per task; folder layout followed | WIP |
 | NFR-SYS-14 No storage for play | P3 | Only `settingsStore` uses `localStorage` | — |
 
 ## Evidence folder
