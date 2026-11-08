@@ -33,9 +33,11 @@ export default {
       },
       keyframes: {
         tumble: { to: { transform: "rotate(360deg)" } },
+        thinking: { "0%, 80%, 100%": { opacity: "0.3" }, "40%": { opacity: "1" } },
       },
       animation: {
         tumble: "tumble 600ms linear infinite",
+        thinking: "thinking 1s ease-in-out infinite",
       },
     },
   },

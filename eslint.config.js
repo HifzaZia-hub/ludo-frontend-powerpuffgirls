@@ -51,6 +51,21 @@ export default tseslint.config(
     },
   },
   {
+    // NFR-SYS-05: every dice value comes from the server, so nothing here may make one up.
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/**/*.test.{ts,tsx}"],
+    rules: {
+      "no-restricted-properties": [
+        "error",
+        {
+          object: "Math",
+          property: "random",
+          message: "The server owns all randomness (NFR-SYS-05).",
+        },
+      ],
+    },
+  },
+  {
     files: ["mock-server/**/*.ts"],
     languageOptions: {
       globals: globals.node,

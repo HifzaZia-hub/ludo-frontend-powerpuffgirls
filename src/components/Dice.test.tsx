@@ -20,6 +20,38 @@ describe("Dice", () => {
     expect(screen.getByRole("button").getAttribute("aria-label")).toContain("shows 5");
   });
 
+  it("lands on a 6 when the server rolled a 6", () => {
+    const noop = () => undefined;
+    const { container, rerender } = render(
+      <Dice value={6} rolling disabled={false} onRoll={noop} />,
+    );
+    expect(pipCount(container)).toBe(0);
+
+    rerender(<Dice value={6} rolling={false} disabled={false} onRoll={noop} />);
+
+    expect(pipCount(container)).toBe(6);
+  });
+
+  // NFR-SYS-08: a natively disabled button would lose keyboard focus after every roll.
+  it("keeps keyboard focus while it can't be pressed", () => {
+    const noop = () => undefined;
+    const { rerender } = render(<Dice value={null} rolling={false} disabled={false} onRoll={noop} />);
+    const die = screen.getByRole<HTMLButtonElement>("button");
+    die.focus();
+
+    rerender(<Dice value={null} rolling disabled={false} onRoll={noop} />);
+
+    expect(die.disabled).toBe(false);
+    expect(die.getAttribute("aria-disabled")).toBe("true");
+    expect(document.activeElement).toBe(die);
+  });
+
+  it("says it can be pressed when it can", () => {
+    render(<Dice value={null} rolling={false} disabled={false} onRoll={() => undefined} />);
+
+    expect(screen.getByRole("button").hasAttribute("aria-disabled")).toBe(false);
+  });
+
   it.each([1, 2, 3, 4, 5, 6])("draws %i pips for a %i", (value) => {
     const { container } = render(
       <Dice value={value} rolling={false} disabled={false} onRoll={() => undefined} />,

@@ -1,5 +1,5 @@
 import { useReducedMotion } from "framer-motion";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { useStore } from "zustand";
 import { Board } from "@/components/Board";
 import { BoardGrid } from "@/components/BoardGrid";
@@ -10,14 +10,21 @@ import { PieceLayer } from "@/components/PieceLayer";
 import { StatusPanel, type StatusPanelPlayer } from "@/components/StatusPanel";
 import { TopBar, type TurnDisplay } from "@/components/TopBar";
 import type { Player } from "@/contract/types";
-import { GAME_TEXT, type PLAYER_TAGS } from "@/feedback/copy";
-import { pieceTweenSeconds } from "@/feedback/motion";
+import { GAME_TEXT, TURN_TEXT, type PLAYER_TAGS } from "@/feedback/copy";
+import { diceTumbleMs, pieceTweenSeconds } from "@/feedback/motion";
+import { useDiceRoll } from "@/interaction/useDiceRoll";
+import { useGameKeys } from "@/interaction/useGameKeys";
 import {
+  secondsUntil,
   selectActivePlayer,
+  selectCanRoll,
+  selectIsMyTurn,
   selectPiecesByCell,
   selectPlayerProgress,
+  selectTurnKind,
   type GameStore,
   type PlayerProgress,
+  type TurnKind,
 } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useUiStore } from "@/store/uiStore";
@@ -29,6 +36,10 @@ function playerTag(player: Player, myPlayerId: string | null): keyof typeof PLAY
   if (player.isAi) return "computer";
   if (!player.connected) return "offline";
   return player.id === myPlayerId ? "you" : undefined;
+}
+
+function turnText(kind: TurnKind, name: string): string {
+  return kind === "human" ? TURN_TEXT.human(name) : TURN_TEXT[kind];
 }
 
 // FR-SYS-06, docs/02-board-model.md §6: piecesHome is the server's own count. If ours ever differs,
@@ -48,13 +59,16 @@ export interface GameScreenProps {
   store: GameStore;
 }
 
-// FR-SYS-09: every part of the game fits on this one screen. Read-only until P7 and P8.
+// FR-SYS-09: every part of the game fits on this one screen. P8 adds moving a piece.
 export function GameScreen({ store }: GameScreenProps) {
   const snapshot = useStore(store, (state) => state.snapshot);
   const myPlayerId = useStore(store, (state) => state.myPlayerId);
   const activePlayer = useStore(store, selectActivePlayer);
   const progress = useStore(store, selectPlayerProgress);
   const piecesByCell = useStore(store, selectPiecesByCell);
+  const canRoll = useStore(store, selectCanRoll);
+  const isMyTurn = useStore(store, selectIsMyTurn);
+  const turnKind = useStore(store, selectTurnKind);
 
   const openModal = useUiStore((state) => state.openModal);
   const sound = useSettingsStore((state) => state.sound);
@@ -62,17 +76,22 @@ export function GameScreen({ store }: GameScreenProps) {
   const animation = useSettingsStore((state) => state.animation);
   const reducedMotion = useReducedMotion() === true;
 
+  const { rolling, roll } = useDiceRoll(store, diceTumbleMs(animation, reducedMotion));
+  useGameKeys(roll);
+
+  const deadline = snapshot?.turn.deadline;
+  const getSecondsLeft = useCallback(() => secondsUntil(deadline, Date.now()), [deadline]);
+
   useEffect(() => {
     if (import.meta.env.DEV) reportHomeMismatches(progress);
   }, [progress]);
 
-  // Only a match in progress has a turn to show. P10 handles the end of a match.
   const turn: TurnDisplay | null =
-    snapshot?.status === "IN_PROGRESS" && activePlayer
+    turnKind && activePlayer
       ? {
           colour: activePlayer.colour,
-          name: activePlayer.name,
-          isMe: activePlayer.id === myPlayerId,
+          text: turnText(turnKind, activePlayer.name),
+          thinking: turnKind === "computer",
         }
       : null;
 
@@ -94,6 +113,11 @@ export function GameScreen({ store }: GameScreenProps) {
         onRules={() => openModal("rules")}
         onSettings={() => openModal("settings")}
       />
+
+      {/* Always on the page, because a screen reader only announces changes to a live region. */}
+      <p aria-live="polite" className="sr-only">
+        {isMyTurn ? GAME_TEXT.yourTurn : ""}
+      </p>
 
       {snapshot === null ? (
         // Contract §4: GAME_STARTED arrives before the first game:state.
@@ -121,6 +145,13 @@ export function GameScreen({ store }: GameScreenProps) {
           </Board>
           <DicePanel
             value={snapshot.turn.lastRoll}
+            rolling={rolling}
+            canRoll={canRoll}
+            onRoll={roll}
+            sixesInRow={snapshot.rules.threeSixesForfeit ? snapshot.turn.sixesInRow : null}
+            getSecondsLeft={snapshot.rules.turnTimerSeconds === 0 ? null : getSecondsLeft}
+            totalSeconds={snapshot.rules.turnTimerSeconds}
+            showTimeUp={isMyTurn}
             className="col-start-1 row-start-2 lg:col-start-3 lg:row-start-1"
           />
           <Card className="col-span-2 row-start-3 lg:col-span-1 lg:col-start-3 lg:row-start-2 lg:min-h-0 lg:overflow-y-auto">

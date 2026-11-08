@@ -368,6 +368,11 @@ so a tick means "answered in writing", not "seen working".
       `ServerError` in the `data` of socket.io's `connect_error`.
 - [ ] Is `GameStateSnapshot.players` always in turn order? No field names the
       order. The status panel shows the array as sent and never sorts it (P6).
+- [ ] After a command, which reaches the client first, the ack or the
+      `game:state`? §4 only orders the event and the state. The mock sends the
+      state first. The die waits for the state whose version the ack names (P7).
+- [ ] Does `turn.lastRoll` clear between turns? The mock keeps it until the next
+      roll, so the die shows the previous roll until then (P7).
 
 From our own D3 (see `docs/00-requirements.md` §5):
 
