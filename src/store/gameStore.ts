@@ -66,7 +66,8 @@ export interface GameState extends GameData {
   applyEvent(event: ServerEvent): void;
   applyRoom(room: RoomSnapshot): void;
   applyConnection(status: ConnectionStatus): void;
-  roll(): Promise<void>;
+  /** Resolves to the version the server gave this roll, or null if it didn't happen. */
+  roll(): Promise<number | null>;
   move(pieceId: string): Promise<void>;
   resync(): Promise<void>;
   reset(): void;
@@ -134,13 +135,13 @@ export function createGameStore(adapter: GameAdapter): GameStore {
       if (RESYNC_CODES.includes(error.code)) void get().resync();
     }
 
-    // True only if the server accepted it, so a caller can act on a success.
+    // The server's answer, or null if this press didn't count.
     async function sendCommand(
       request: CommandRequest,
       send: () => Promise<Ack>,
-    ): Promise<boolean> {
+    ): Promise<Ack | null> {
       // FR-SYS-02 EXC-02-1: extra presses while one is in flight do nothing.
-      if (get().pendingCommand !== null) return false;
+      if (get().pendingCommand !== null) return null;
 
       const pending: PendingCommand = { ...request, id: nextId++ };
       set({ pendingCommand: pending });
@@ -148,13 +149,12 @@ export function createGameStore(adapter: GameAdapter): GameStore {
 
       // The store was reset while this was in flight, so the answer is about a press that no
       // longer matters. It must not clear a newer command or show an old error.
-      if (get().pendingCommand?.id !== pending.id) return false;
+      if (get().pendingCommand?.id !== pending.id) return null;
 
       set({ pendingCommand: null });
-      if (ack.ok) return true;
       // FR-SYS-04 POST-04-1: nothing here touches the snapshot. Changes only come as game:state.
-      showError(ack.error);
-      return false;
+      if (!ack.ok) showError(ack.error);
+      return ack;
     }
 
     return {
@@ -187,7 +187,8 @@ export function createGameStore(adapter: GameAdapter): GameStore {
       },
 
       roll: async () => {
-        await sendCommand({ kind: "roll" }, () => adapter.roll());
+        const ack = await sendCommand({ kind: "roll" }, () => adapter.roll());
+        return ack?.ok ? ack.version : null;
       },
 
       move: async (pieceId) => {
@@ -259,7 +260,8 @@ export function createGameStore(adapter: GameAdapter): GameStore {
       },
 
       leaveRoom: async () => {
-        const left = await sendCommand({ kind: "leave" }, () => adapter.leave());
+        const ack = await sendCommand({ kind: "leave" }, () => adapter.leave());
+        const left = ack?.ok === true;
         // FR-SYS-08 POST-08-3: a failed leave keeps everything, and the player can try again.
         if (left) endSession();
         return left;
@@ -297,8 +299,22 @@ export function selectCanRoll(state: GameState): boolean {
   return (
     selectIsMyTurn(state) &&
     state.snapshot?.turn.phase === "AWAITING_ROLL" &&
-    state.pendingCommand === null
+    state.pendingCommand === null &&
+    state.connection === "live"
   );
+}
+
+export type TurnKind = "myRoll" | "myMove" | "human" | "computer";
+
+/** Which turn message to show. Null when no match is running. */
+export function selectTurnKind(state: GameState): TurnKind | null {
+  const { snapshot, myPlayerId } = state;
+  const active = selectActivePlayer(state);
+  if (snapshot?.status !== "IN_PROGRESS" || !active) return null;
+  if (active.id === myPlayerId) {
+    return snapshot.turn.phase === "AWAITING_ROLL" ? "myRoll" : "myMove";
+  }
+  return active.isAi ? "computer" : "human";
 }
 
 export function selectCanMove(state: GameState): boolean {
@@ -393,14 +409,20 @@ export function selectPiecesByCell(state: GameState): ReadonlyMap<string, readon
   return state.snapshot ? piecesByCell(state.snapshot) : NO_PIECES;
 }
 
+/**
+ * Null when there is no time limit. Works from the clock, so it can never drift. Rounds down so
+ * the last second reads 0: the server acts the moment the deadline passes, so an exact zero would
+ * last only milliseconds and the player would never see it.
+ */
+export function secondsUntil(deadline: string | null | undefined, now: number): number | null {
+  if (!deadline) return null;
+  const millisLeft = Date.parse(deadline) - now;
+  return Number.isNaN(millisLeft) ? null : Math.max(0, Math.floor(millisLeft / 1000));
+}
+
 /** Null when the turn has no time limit. Takes the time so a countdown can tick on its own. */
 export function selectSecondsLeft(now: number) {
-  return (state: GameState): number | null => {
-    const deadline = state.snapshot?.turn.deadline;
-    if (!deadline) return null;
-    const millisLeft = Date.parse(deadline) - now;
-    return Number.isNaN(millisLeft) ? null : Math.max(0, Math.ceil(millisLeft / 1000));
-  };
+  return (state: GameState): number | null => secondsUntil(state.snapshot?.turn.deadline, now);
 }
 
 export function selectIsComputerTurn(state: GameState): boolean {

@@ -11,6 +11,7 @@ import type {
 } from "@/contract/types";
 import {
   createGameStore,
+  secondsUntil,
   selectActivePlayer,
   selectCanMove,
   selectCanRoll,
@@ -25,6 +26,7 @@ import {
   selectPlayerProgress,
   selectProgress,
   selectSecondsLeft,
+  selectTurnKind,
   type GameStore,
 } from "@/store/gameStore";
 import { makePlayer, makeRoom } from "@/testRoom";
@@ -647,6 +649,33 @@ describe("toasts", () => {
   });
 });
 
+describe("the result of a roll", () => {
+  it("is the version the server gave it", async () => {
+    const { adapter, store } = makeStore();
+    adapter.queueAck({ ok: true, version: 9 });
+
+    await expect(store.getState().roll()).resolves.toBe(9);
+  });
+
+  it("is null when the server refuses", async () => {
+    const { adapter, store } = makeStore();
+    adapter.queueAck(rejection("NOT_YOUR_TURN"));
+
+    await expect(store.getState().roll()).resolves.toBeNull();
+  });
+
+  it("is null for a press that didn't count", async () => {
+    const { adapter, store } = makeStore();
+    const release = adapter.holdNextAck();
+    const first = store.getState().roll();
+
+    await expect(store.getState().roll()).resolves.toBeNull();
+
+    release({ ok: true, version: 9 });
+    await first;
+  });
+});
+
 describe("selectors", () => {
   function storeWith(snapshot: GameStateSnapshot, myPlayerId = "p1"): GameStore {
     const { store } = makeStore();
@@ -671,16 +700,77 @@ describe("selectors", () => {
     expect(selectCanMove(state)).toBe(false);
   });
 
-  it("allows a roll only on my turn, in the roll phase, with nothing pending", () => {
-    const store = storeWith(makeSnapshot(5, { turn: awaitingRoll }));
-    expect(selectCanRoll(store.getState())).toBe(true);
-    expect(selectCanMove(store.getState())).toBe(false);
+  // FR-SYS-02: all five conditions have to hold.
+  describe("selectCanRoll", () => {
+    function liveStore(overrides: Partial<GameStateSnapshot> = {}, myPlayerId = "p1"): GameStore {
+      const store = storeWith(makeSnapshot(5, { turn: awaitingRoll, ...overrides }), myPlayerId);
+      store.setState({ connection: "live" });
+      return store;
+    }
 
-    store.setState({ pendingCommand: { id: 1, kind: "roll" } });
-    expect(selectCanRoll(store.getState())).toBe(false);
+    it("allows a roll when all five hold", () => {
+      const state = liveStore().getState();
+      expect(selectCanRoll(state)).toBe(true);
+      expect(selectCanMove(state)).toBe(false);
+    });
 
-    const notMine = storeWith(makeSnapshot(5, { turn: awaitingRoll }), "p2").getState();
-    expect(selectCanRoll(notMine)).toBe(false);
+    it("refuses once the match isn't running", () => {
+      expect(selectCanRoll(liveStore({ status: "FINISHED" }).getState())).toBe(false);
+    });
+
+    it("refuses on someone else's turn", () => {
+      expect(selectCanRoll(liveStore({}, "p2").getState())).toBe(false);
+    });
+
+    it("refuses in the move phase", () => {
+      expect(selectCanRoll(liveStore({ turn: rollTurn }).getState())).toBe(false);
+    });
+
+    it("refuses while a command is pending", () => {
+      const store = liveStore();
+      store.setState({ pendingCommand: { id: 1, kind: "roll" } });
+      expect(selectCanRoll(store.getState())).toBe(false);
+    });
+
+    it.each(["connecting", "reconnecting", "lost", null] as const)(
+      "refuses while the connection is %s",
+      (connection) => {
+        const store = liveStore();
+        store.setState({ connection });
+        expect(selectCanRoll(store.getState())).toBe(false);
+      },
+    );
+  });
+
+  describe("selectTurnKind", () => {
+    const humanOpponent = makeSnapshot(5).players.map((player) => ({ ...player, isAi: false }));
+    const theirTurn: TurnState = { ...awaitingRoll, activePlayerId: "p2" };
+
+    it("says when I should roll", () => {
+      const state = storeWith(makeSnapshot(5, { turn: awaitingRoll })).getState();
+      expect(selectTurnKind(state)).toBe("myRoll");
+    });
+
+    it("says when I should pick a piece", () => {
+      expect(selectTurnKind(storeWith(makeSnapshot(5)).getState())).toBe("myMove");
+    });
+
+    // FR-SYS-07
+    it("recognises a computer's turn", () => {
+      const state = storeWith(makeSnapshot(5, { turn: theirTurn })).getState();
+      expect(selectTurnKind(state)).toBe("computer");
+    });
+
+    it("recognises another person's turn", () => {
+      const snapshot = makeSnapshot(5, { turn: theirTurn, players: humanOpponent });
+      expect(selectTurnKind(storeWith(snapshot).getState())).toBe("human");
+    });
+
+    it("has nothing to say when no match is running", () => {
+      expect(selectTurnKind(makeStore().store.getState())).toBeNull();
+      const finished = makeSnapshot(5, { status: "FINISHED" });
+      expect(selectTurnKind(storeWith(finished).getState())).toBeNull();
+    });
   });
 
   it("reads legal moves only from the server's list", () => {
@@ -726,6 +816,15 @@ describe("selectors", () => {
     if (!onTrack) throw new Error("the fixture has at least two pieces");
 
     expect(selectPiecesByCell(state).get(cellKey(pieceCell(onTrack)))).toEqual([onTrack]);
+  });
+
+  it("works out seconds left from the clock, so the last second reads 0", () => {
+    const now = Date.parse("2026-11-08T10:00:00.000Z");
+    expect(secondsUntil("2026-11-08T10:00:01.200Z", now)).toBe(1);
+    expect(secondsUntil("2026-11-08T10:00:00.900Z", now)).toBe(0);
+    expect(secondsUntil("2026-11-08T09:59:00.000Z", now)).toBe(0);
+    expect(secondsUntil(null, now)).toBeNull();
+    expect(secondsUntil("not a date", now)).toBeNull();
   });
 
   it("counts down to the deadline and stops at zero", () => {

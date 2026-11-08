@@ -1,4 +1,16 @@
-import { pieceTweenSeconds } from "@/feedback/motion";
+import { diceTumbleMs, pieceTweenSeconds } from "@/feedback/motion";
+
+describe("diceTumbleMs", () => {
+  it("follows the animation budget", () => {
+    expect(diceTumbleMs("on", false)).toBe(600);
+    expect(diceTumbleMs("fast", false)).toBe(250);
+    expect(diceTumbleMs("off", false)).toBe(0);
+  });
+
+  it("is instant with reduced motion", () => {
+    expect(diceTumbleMs("on", true)).toBe(0);
+  });
+});
 
 describe("pieceTweenSeconds", () => {
   it("gets shorter with each animation setting", () => {

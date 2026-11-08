@@ -60,8 +60,8 @@ column:
 
 ## Other checks
 
-- **Keyboard (NFR-SYS-08):** Tab goes Rules, Settings, Sound. Menu and the die are skipped because
-  they are disabled until P10 and P7. `?` opens the rules and Esc closes them.
+- **Keyboard (NFR-SYS-08):** Tab goes Rules, Settings, Sound, and since P7 the die. Menu is skipped
+  because it is disabled until P10. `?` opens the rules and Esc closes them.
 - **Grayscale (NFR-SYS-07):** `NFR-SYS-07-board-grayscale.png`. Shapes still tell the four players
   apart on pieces, yards and home columns.
 - **Light theme (FR-SYS-10):** `FR-SYS-10-game-light.png`.

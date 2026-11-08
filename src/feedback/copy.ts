@@ -119,8 +119,9 @@ export const GAME_TEXT = {
   menu: "Menu",
   rules: "Rules",
   sound: "Sound",
-  turn: "Turn:",
-  you: "(you)",
+  yourTurn: "Your turn",
+  timeUp: "Time's up — the computer will play for you.",
+  sixes: "sixes",
   board: "Game board",
   players: "Players",
   safeSquare: "Safe square",
@@ -135,6 +136,14 @@ export const COLOUR_NAMES: Record<Colour, string> = {
   YELLOW: "Yellow",
   BLUE: "Blue",
 };
+
+// FR-SYS-02 POST-02-1: says whose turn it is in words.
+export const TURN_TEXT = {
+  myRoll: "Your turn — roll the dice",
+  myMove: "Your turn — pick a piece",
+  computer: "Computer is thinking…",
+  human: (name: string) => `${name}'s turn`,
+} as const;
 
 const PIECE_PLACES: Record<PiecePlace, string> = {
   base: "in base",
@@ -168,6 +177,10 @@ export const CONFIRM_TEXT = {
 export function diceLabel(face: number | null, rolling: boolean): string {
   if (rolling) return "Rolling the dice";
   return face === null ? "Roll the dice" : `The dice shows ${face}. Roll the dice`;
+}
+
+export function sixesLabel(sixesInRow: number): string {
+  return `${sixesInRow} of 3 sixes in a row`;
 }
 
 export function secondsLeftLabel(seconds: number): string {

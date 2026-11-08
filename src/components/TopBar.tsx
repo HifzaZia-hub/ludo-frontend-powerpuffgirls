@@ -5,10 +5,12 @@ import { Toggle } from "@/components/Toggle";
 import type { Colour } from "@/contract/types";
 import { GAME_TEXT, MAIN_TEXT, SETTINGS_TEXT } from "@/feedback/copy";
 
+const THINKING_DOT_DELAYS = ["0ms", "150ms", "300ms"];
+
 export interface TurnDisplay {
   colour: Colour;
-  name: string;
-  isMe: boolean;
+  text: string;
+  thinking: boolean;
 }
 
 export interface TopBarProps {
@@ -39,13 +41,23 @@ export function TopBar({ turn, sound, onSoundChange, onRules, onSettings }: TopB
         </Button>
       </div>
 
-      {/* FR-SYS-02: says whose turn it is in words, with a mark that isn't only a colour. */}
+      {/* FR-SYS-02 POST-02-1: says whose turn it is in words, with a mark that isn't only a colour. */}
       {turn && (
         <p className="flex min-w-0 items-center gap-2 text-[15px] font-semibold text-high">
-          <span className="text-mid">{GAME_TEXT.turn}</span>
           <PlayerMark colour={turn.colour} size="sm" />
-          <span className="truncate">{turn.name}</span>
-          {turn.isMe && <span className="text-mid">{GAME_TEXT.you}</span>}
+          <span className="truncate">{turn.text}</span>
+          {/* FR-SYS-07: the server runs the computer player, and this only shows it is busy. */}
+          {turn.thinking && (
+            <span aria-hidden="true" data-thinking="" className="flex items-center gap-1">
+              {THINKING_DOT_DELAYS.map((delay) => (
+                <span
+                  key={delay}
+                  style={{ animationDelay: delay }}
+                  className="h-1.5 w-1.5 animate-thinking rounded-full bg-mid"
+                />
+              ))}
+            </span>
+          )}
         </p>
       )}
 
