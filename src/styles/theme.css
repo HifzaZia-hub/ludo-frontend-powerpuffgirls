@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Tokens copied exactly from docs/03-ui-spec.md section 2. Change them there first. */
+:root, html[data-theme="dark"] {
+  --bg-deep:     #060B18;
+  --bg-panel:    #0C1627;
+  --bg-raised:   #142238;
+  --border-soft: #1E3050;
+  --focus-ring:  #5AA9FF;
+  --text-high:   #F2F6FF;
+  --text-mid:    #9DB0CE;
+  --text-low:    #6B7E9C;
+  --accent:      #2DD98A;
+  --accent-press:#1FB874;
+  --on-accent:   #04220F;
+  --danger:      #F05252;
+  --warning:     #F5A524;
+  --board-cell:  #F4F6FA;
+  --board-line:  #C9D2E0;
+  --p-red:    #E8413F;
+  --p-green:  #2BBF5B;
+  --p-yellow: #F4C026;
+  --p-blue:   #2F7DF6;
+}
+
+html[data-theme="light"] {
+  --bg-deep:     #EEF2F8;
+  --bg-panel:    #FFFFFF;
+  --bg-raised:   #F3F6FB;
+  --border-soft: #D5DDEA;
+  --focus-ring:  #1D5FD1;
+  --text-high:   #0E1726;
+  --text-mid:    #46556E;
+  --text-low:    #6A7891;
+  --accent:      #13A866;
+  --accent-press:#0E8A53;
+  --on-accent:   #FFFFFF;
+  --danger:      #C9302C;
+  --warning:     #B76E00;
+  --board-cell:  #FFFFFF;
+  --board-line:  #B7C2D3;
+  --p-red:    #D7322F;
+  --p-green:  #1E9E48;
+  --p-yellow: #D9A400;
+  --p-blue:   #2367D8;
+}

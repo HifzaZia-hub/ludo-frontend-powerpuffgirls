@@ -1,37 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ludo — Game Setup</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <div class="setup-screen">
-    <h1>Ludo Game Setup</h1>
-
-    <section>
-      <h2>Number of Players</h2>
-      <div class="player-count-buttons">
-        <button class="count-btn" data-count="2">2 Players</button>
-        <button class="count-btn" data-count="3">3 Players</button>
-        <button class="count-btn" data-count="4">4 Players</button>
-      </div>
-    </section>
-
-    <section>
-      <h2>Player Names</h2>
-      <div id="player-names">
-        <input type="text" id="player1" placeholder="Player 1 name" />
-        <input type="text" id="player2" placeholder="Player 2 name" />
-        <input type="text" id="player3" placeholder="Player 3 name" style="display:none;" />
-        <input type="text" id="player4" placeholder="Player 4 name" style="display:none;" />
-      </div>
-    </section>
-
-    <button id="start-btn">Start Game</button>
-  </div>
-
-  <script src="app.js"></script>
-</body>
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ludo</title>
+  </head>
+  <body class="bg-deep text-high">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
