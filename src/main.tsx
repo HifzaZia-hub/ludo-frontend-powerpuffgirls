@@ -24,7 +24,14 @@ const KitchenSink = import.meta.env.DEV
       import("@/screens/KitchenSink").then(({ KitchenSink }) => ({ default: KitchenSink })),
     )
   : null;
-const showKitchenSink = new URLSearchParams(window.location.search).get("kitchen") === "1";
+const query = new URLSearchParams(window.location.search);
+const showKitchenSink = query.get("kitchen") === "1";
+
+// The DEV check keeps the fixtures out of the production bundle too.
+const fixtureName = query.get("fixture");
+if (import.meta.env.DEV && fixtureName !== null) {
+  void import("@/mock/fixtures").then(({ showFixture }) => showFixture(fixtureName, store));
+}
 
 createRoot(rootElement).render(
   <StrictMode>

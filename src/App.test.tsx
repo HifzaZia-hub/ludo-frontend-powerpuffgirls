@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { FakeAdapter } from "@/adapter/FakeAdapter";
 import { App } from "@/App";
 import type { GameStateSnapshot } from "@/contract/types";
+import { FIXTURES } from "@/mock/fixtures";
 import { createGameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useUiStore } from "@/store/uiStore";
@@ -77,6 +78,80 @@ describe("App", () => {
     expect(screen.queryByText("Standard rules")).toBeNull();
     expect(screen.queryByText("Capturing a piece gives you another turn.")).toBeNull();
     expect(screen.getByText("Rolling a 6 gives you another turn.")).toBeTruthy();
+  });
+
+  describe("game screen", () => {
+    const start = FIXTURES.start;
+    if (!start) throw new Error("the start fixture exists");
+
+    function renderGame(snapshot: GameStateSnapshot) {
+      const app = renderApp();
+      act(() => {
+        app.store.getState().applySnapshot(snapshot);
+        useUiStore.getState().goTo("game");
+      });
+      return app;
+    }
+
+    // D2 FR-07, NFR-SYS-11: the rules during a game are that match's, not the standard ones.
+    it("opens this match's rules from the ? button", async () => {
+      const { user } = renderGame({
+        ...start,
+        rules: { ...start.rules, bonusOnCapture: false, safeSquares: [1, 2, 3] },
+      });
+
+      await user.click(screen.getByRole("button", { name: "Rules" }));
+
+      expect(screen.queryByText("Standard rules")).toBeNull();
+      expect(screen.queryByText("Capturing a piece gives you another turn.")).toBeNull();
+      expect(screen.getByText(/except on the 3 safe squares/)).toBeTruthy();
+    });
+
+    it("has only the one Settings button", () => {
+      renderGame(start);
+
+      expect(screen.getAllByRole("button", { name: "Settings" })).toHaveLength(1);
+    });
+
+    describe("when a snapshot can't be drawn", () => {
+      const broken: GameStateSnapshot = {
+        ...start,
+        pieces: start.pieces.map((piece) => (piece.id === "R1" ? { ...piece, step: 99 } : piece)),
+      };
+
+      beforeEach(() => {
+        vi.spyOn(console, "error").mockImplementation(() => undefined);
+      });
+      afterEach(() => vi.restoreAllMocks());
+
+      // NFR-SYS-03
+      it("says the game is safe instead of going blank", () => {
+        renderGame(broken);
+
+        expect(screen.getByRole("alert").textContent).toBe(
+          "Something went wrong — your game is safe",
+        );
+      });
+
+      it("asks the server for the game when Try again is pressed", async () => {
+        const { adapter, user } = renderGame(broken);
+
+        await user.click(screen.getByRole("button", { name: "Try again" }));
+
+        expect(adapter.commands).toEqual([{ name: "sync", knownVersion: broken.version }]);
+      });
+
+      it("goes back to the board when a good snapshot arrives", () => {
+        const { store } = renderGame(broken);
+
+        act(() => {
+          store.getState().applySnapshot({ ...start, version: broken.version + 1 });
+        });
+
+        expect(screen.queryByRole("alert")).toBeNull();
+        expect(screen.getByRole("region", { name: "Game board" })).toBeTruthy();
+      });
+    });
   });
 
   describe("settings", () => {

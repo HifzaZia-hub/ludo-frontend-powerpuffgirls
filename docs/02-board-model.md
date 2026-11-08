@@ -102,9 +102,9 @@ relative to the yard origin `(ox, oy)`:
 
 ```
 slot 0: (ox + 1.5, oy + 1.5)
-slot 1: (ox + 3.5, oy + 1.5)
-slot 2: (ox + 1.5, oy + 3.5)
-slot 3: (ox + 3.5, oy + 3.5)
+slot 1: (ox + 4.5, oy + 1.5)
+slot 2: (ox + 1.5, oy + 4.5)
+slot 3: (ox + 4.5, oy + 4.5)
 ```
 
 Piece `R1` uses slot 0, `R2` slot 1, `R3` slot 2, `R4` slot 3 — parse the digit
@@ -120,7 +120,7 @@ import type { Colour, Piece } from "@/contract/types";
 const START_SQUARE: Record<Colour, number> = { RED: 0, GREEN: 13, YELLOW: 26, BLUE: 39 };
 const YARD_ORIGIN:  Record<Colour, readonly [number, number]> =
   { RED: [0,0], GREEN: [9,0], YELLOW: [9,9], BLUE: [0,9] };
-const YARD_SLOTS = [[1.5,1.5], [3.5,1.5], [1.5,3.5], [3.5,3.5]] as const;
+const YARD_SLOTS = [[1.5,1.5], [4.5,1.5], [1.5,4.5], [4.5,4.5]] as const;
 
 /** Centre of the cell a piece sits on, in grid units (0..15). Pure. */
 export function pieceCell(piece: Piece): { col: number; row: number } {

@@ -3,7 +3,7 @@
 
 import { createStore, type StoreApi } from "zustand/vanilla";
 import type { Ack, ConnectionStatus, GameAdapter } from "@/adapter/GameAdapter";
-import { pieceCell, progressCounts, type GridPoint } from "@/config/geometry";
+import { cellKey, pieceCell, progressCounts } from "@/config/geometry";
 import { FIELD_ERRORS, RESYNC_CODES, type FormField } from "@/contract/errors";
 import type { ServerEvent } from "@/contract/events";
 import type {
@@ -350,20 +350,32 @@ export function selectHostName(state: GameState): string | null {
 
 export type ProgressCounts = ReturnType<typeof progressCounts>;
 
+export interface PlayerProgress {
+  player: Player;
+  counts: ProgressCounts;
+}
+
+const NO_PROGRESS: readonly PlayerProgress[] = [];
+const playerProgress = perSnapshot((snapshot) =>
+  snapshot.players.map((player) => ({
+    player,
+    counts: progressCounts(snapshot.pieces, player.colour),
+  })),
+);
+
+/** Every player with their counts. Never sorted: the contract names no turn-order field. */
+export function selectPlayerProgress(state: GameState): readonly PlayerProgress[] {
+  return state.snapshot ? playerProgress(state.snapshot) : NO_PROGRESS;
+}
+
 const progressByPlayer = perSnapshot(
   (snapshot) =>
-    new Map(
-      snapshot.players.map((player) => [player.id, progressCounts(snapshot.pieces, player.colour)]),
-    ),
+    new Map(playerProgress(snapshot).map(({ player, counts }) => [player.id, counts])),
 );
 
 export function selectProgress(playerId: string) {
   return (state: GameState): ProgressCounts | null =>
     state.snapshot ? (progressByPlayer(state.snapshot).get(playerId) ?? null) : null;
-}
-
-export function cellKey(point: GridPoint): string {
-  return `${point.col}:${point.row}`;
 }
 
 const NO_PIECES: ReadonlyMap<string, readonly Piece[]> = new Map();

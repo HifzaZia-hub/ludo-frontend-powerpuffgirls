@@ -1,8 +1,12 @@
 import { HOME_COLUMN_CELLS, TRACK_CELLS, type BoardCell } from "@/config/board";
 import {
+  boardPercent,
+  homeEntry,
   isSafeSquare,
   pathSteps,
   pieceCell,
+  piecePlace,
+  piecePlacement,
   progressCounts,
   squareForStep,
   stackOffsets,
@@ -77,9 +81,9 @@ describe("pieceCell", () => {
 
     expect(slots).toEqual([
       { col: originCol + 1.5, row: originRow + 1.5 },
-      { col: originCol + 3.5, row: originRow + 1.5 },
-      { col: originCol + 1.5, row: originRow + 3.5 },
-      { col: originCol + 3.5, row: originRow + 3.5 },
+      { col: originCol + 4.5, row: originRow + 1.5 },
+      { col: originCol + 1.5, row: originRow + 4.5 },
+      { col: originCol + 4.5, row: originRow + 4.5 },
     ]);
   });
 
@@ -149,6 +153,51 @@ describe("stackOffsets", () => {
 
   it("never shrinks a huge stack to nothing", () => {
     expect(stackOffsets(16).every(({ scale }) => scale > 0)).toBe(true);
+  });
+});
+
+describe("piecePlacement", () => {
+  const alone = { dx: 0, dy: 0, scale: 1 };
+
+  it("centres a piece on its point", () => {
+    const { left, top, size } = piecePlacement({ col: 7.5, row: 1.5 }, alone);
+
+    expect(left + size / 2).toBeCloseTo(boardPercent(7.5));
+    expect(top + size / 2).toBeCloseTo(boardPercent(1.5));
+  });
+
+  it("shifts and shrinks a piece in a stack", () => {
+    const point = { col: 7.5, row: 7.5 };
+    const moved = piecePlacement(point, { dx: 0.18, dy: -0.18, scale: 0.5 });
+    const original = piecePlacement(point, alone);
+
+    expect(moved.size).toBeCloseTo(original.size / 2);
+    expect(moved.left + moved.size / 2).toBeCloseTo(boardPercent(7.5 + 0.18));
+    expect(moved.top + moved.size / 2).toBeCloseTo(boardPercent(7.5 - 0.18));
+  });
+});
+
+describe("piecePlace", () => {
+  it.each([
+    [0, "base"],
+    [1, "track"],
+    [51, "track"],
+    [52, "homeColumn"],
+    [56, "homeColumn"],
+    [57, "home"],
+  ] as const)("calls step %i %s", (step, place) => {
+    expect(piecePlace(step)).toBe(place);
+  });
+});
+
+describe("homeEntry", () => {
+  it.each<[Colour, BoardCell, number]>([
+    ["RED", [0, 7], 0],
+    ["GREEN", [7, 0], 90],
+    ["YELLOW", [14, 7], 180],
+    ["BLUE", [7, 14], -90],
+  ])("points %s from %j into its home column", (colour, cell, degrees) => {
+    expect(homeEntry(colour)).toEqual({ cell, degrees });
   });
 });
 

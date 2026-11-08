@@ -1,5 +1,6 @@
 // Every word the player reads comes from here (NFR-SYS-08). Source: docs/03-ui-spec.md §4–§7.
 
+import type { PiecePlace } from "@/config/geometry";
 import type { ErrorCode } from "@/contract/errors";
 import type { Colour, ServerError } from "@/contract/types";
 
@@ -113,11 +114,19 @@ export const LOBBY_TEXT = {
   leave: "Leave",
 } as const;
 
-// Words for the stand-in game screen. P6 replaces them.
 export const GAME_TEXT = {
-  title: "Game started!",
   loading: "Getting the board ready…",
-  boardComing: "The board is coming soon.",
+  menu: "Menu",
+  rules: "Rules",
+  sound: "Sound",
+  turn: "Turn:",
+  you: "(you)",
+  board: "Game board",
+  players: "Players",
+  safeSquare: "Safe square",
+  // NFR-SYS-03. The button re-asks the server for the game, in words a 12-year-old can use.
+  crashed: "Something went wrong — your game is safe",
+  retry: "Try again",
 } as const;
 
 export const COLOUR_NAMES: Record<Colour, string> = {
@@ -126,6 +135,23 @@ export const COLOUR_NAMES: Record<Colour, string> = {
   YELLOW: "Yellow",
   BLUE: "Blue",
 };
+
+const PIECE_PLACES: Record<PiecePlace, string> = {
+  base: "in base",
+  track: "on the track",
+  homeColumn: "in the home column",
+  home: "home",
+};
+
+export function pieceLabel(
+  colour: Colour,
+  number: string,
+  place: PiecePlace,
+  onSafeSquare: boolean,
+): string {
+  const where = onSafeSquare ? `${PIECE_PLACES[place]}, on a safe square` : PIECE_PLACES[place];
+  return `${COLOUR_NAMES[colour]} piece ${number}, ${where}`;
+}
 
 export const PLAYER_TAGS = {
   you: "you",
