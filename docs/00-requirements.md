@@ -30,7 +30,7 @@ The server enforces these. We only display and explain them.
 | ID | Rule |
 |---|---|
 | R1 | 2, 3 or 4 players, 4 pieces each, colours red/green/yellow/blue. A 2-player game uses opposite corners. |
-| R2 | Fixed clockwise order. Player 1 starts. One six-sided die per turn. |
+| R2 | Fixed clockwise order. Player 1 starts (the backend picks at random — see §5). One six-sided die per turn. |
 | R3 | A piece leaves the base only on a 6, onto its colour's start square. |
 | R4 | Clockwise round the 52-square track, then 5 home-column squares to the centre. 56 steps from start to finish. |
 | R5 | A 6 gives another turn. Three 6s in a row lose the turn. |
@@ -102,6 +102,7 @@ the default.
 | **Pick a colour** (FR-06, FR-SYS-01) | Each seat picks a colour. | Seat 1 is always red; colours follow seats. No colour field in create/join. | Ask backend. Until then, choosing a seat = choosing a colour; show it clearly. |
 | **Who runs the AI** (FR-SYS-07) | Front end passes state to game AI, then submits the choice. | Server runs AI itself. | Allowed by D3 §3.3 ("or the agreed orchestration layer"). We show "Computer is thinking…" and render the result. |
 | **Extra turns** (R5) | Only on a 6. | Also on a capture and on finishing a piece (configurable). | Server wins. Rules summary is **generated from `snapshot.rules`**, so it always matches what the server does. |
+| **First player** (R2, FR-08) | Player 1 starts. | The server picks at random (G-2). | Server wins. Show whoever `turn.activePlayerId` names and never assume seat 1. The mock still always starts with seat 1, so it won't show a computer going first. |
 | **Final ranking** (R11, FR-28) | Not produced. | `ranking` sent at game end. | Show ranking only if the server sends it (POST-06-3). |
 | **Settings persistence** (ALT-10-1) | TO CONFIRM. | n/a | `localStorage`, behind one flag so it can be switched off. |
 | **Mobile** (NFR-SYS-10) | TO CONFIRM; desktop required. | n/a | Desktop-first. Must not break at narrow widths, but phone polish is not MVP. |

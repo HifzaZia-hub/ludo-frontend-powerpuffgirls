@@ -45,9 +45,10 @@ Deciding it *should* be in `legalMoves` is cheating.
 ```ts
 function applySnapshot(next: GameStateSnapshot) {
   const current = get().snapshot;
-  if (current && next.version <= current.version) return;          // stale
-  if (current && next.version > current.version + 1) {
-    adapter.sync(current.version);                                  // gap
+  // A restart begins again at version 1 with a new matchId.
+  if (current && current.matchId === next.matchId) {
+    if (next.version <= current.version) return;                    // stale
+    if (next.version > current.version + 1) adapter.sync(current.version); // gap
   }
   set({ snapshot: next });
 }
