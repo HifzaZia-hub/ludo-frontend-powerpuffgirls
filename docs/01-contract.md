@@ -345,7 +345,7 @@ Keep this list alive. Tick items off as they are answered in writing.
       does, with a new `matchId`, so the store must treat a new `matchId` as a
       fresh match or it will ignore every snapshot after a restart.
 - [ ] Rules G-1, G-2, G-3 and G-5 — we have no text for these. The mock follows
-      `prompts/P2-mock-server.md`: 2 players are Red and Green, and a move
+      list in `prompts/P2-mock-server.md`, and a move
       captures every opposing piece on a non-safe square.
 
 From our own D3 (see `docs/00-requirements.md` §5):
@@ -355,6 +355,9 @@ From our own D3 (see `docs/00-requirements.md` §5):
 - [ ] **Same-device play (FR-03).** May one browser create a room and then
       join it again under other names, holding several session tokens at once?
       Any limit (rate limit, same IP) that would block this?
+- [ ] **2-player colours (R1).** Our D3 says a 2-player game uses opposite
+      corners. Does the LGS give seats 1 and 2 Red and Yellow, or Red and Green?
+      The mock uses Red and Yellow.
 - [ ] **First player (FR-08).** Is it always seat 1, or highest first roll?
 - [ ] **AI thinking signal (FR-SYS-07).** Is there an event when an AI turn
       starts, or do we infer it from `TURN_CHANGED` + `player.isAi`?
