@@ -29,7 +29,7 @@ If a task seems to need rule logic on the client, stop and ask.
 ## 2. Tech stack (locked)
 
 Vite · React 18 · TypeScript (strict) · Tailwind CSS · Zustand ·
-socket.io-client v4 · Framer Motion · canvas-confetti · howler.
+socket.io-client v4 · Framer Motion · canvas-confetti · howler · uuid.
 Optional, task P14 only: @react-three/fiber + @react-three/drei.
 Package manager: npm.
 

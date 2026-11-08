@@ -1,6 +1,8 @@
 import { useState } from "react";
-
-type Theme = "dark" | "light";
+import { useStore } from "zustand";
+import { useAdapterSubscription } from "@/adapter/useAdapterSubscription";
+import type { GameStore } from "@/store/gameStore";
+import { useSettingsStore, type Theme } from "@/store/settingsStore";
 
 const THEMES: readonly { value: Theme; label: string }[] = [
   { value: "dark", label: "Dark" },
@@ -20,17 +22,26 @@ const FOCUS_RING =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 " +
   "focus-visible:outline-focus-ring";
 
-// P0 starter page: proves the tokens work in both themes. Replaced in P5.
-export function App() {
-  const [theme, setTheme] = useState<Theme>(() =>
-    document.documentElement.dataset.theme === "light" ? "light" : "dark",
-  );
+interface AppProps {
+  store: GameStore;
+}
 
-  // FR-SYS-10 POST-10-3: a theme switch is only this attribute, so it can never
-  // touch game state.
-  function chooseTheme(next: Theme) {
-    document.documentElement.dataset.theme = next;
-    setTheme(next);
+// P0 starter page, plus the P3 debug line that proves the app reaches the server. Replaced in P5.
+export function App({ store }: AppProps) {
+  useAdapterSubscription(store);
+
+  const theme = useSettingsStore((state) => state.theme);
+  const setTheme = useSettingsStore((state) => state.setTheme);
+  const connection = useStore(store, (state) => state.connection);
+  const version = useStore(store, (state) => state.snapshot?.version ?? null);
+  const latestToast = useStore(store, (state) => state.toasts[state.toasts.length - 1] ?? null);
+  const startDebugGame = useStore(store, (state) => state.startDebugGame);
+  const [starting, setStarting] = useState(false); // NFR-SYS-01: show the press at once
+
+  async function startTestGame() {
+    setStarting(true);
+    await startDebugGame();
+    setStarting(false);
   }
 
   return (
@@ -75,7 +86,7 @@ export function App() {
             key={value}
             type="button"
             aria-pressed={theme === value}
-            onClick={() => chooseTheme(value)}
+            onClick={() => setTheme(value)}
             className={`rounded-full px-4 py-1 text-xs font-semibold active:bg-raised ${FOCUS_RING} ${
               theme === value ? "bg-raised text-high" : "text-mid"
             }`}
@@ -84,6 +95,23 @@ export function App() {
           </button>
         ))}
       </div>
+
+      {import.meta.env.DEV && (
+        <section aria-label="Test connection" className="flex flex-col items-center gap-2">
+          <button
+            type="button"
+            disabled={starting || connection !== null}
+            onClick={() => void startTestGame()}
+            className={`rounded-full border border-soft bg-panel px-4 py-1 text-xs font-semibold text-high active:bg-raised disabled:text-mid ${FOCUS_RING}`}
+          >
+            {starting ? "Starting…" : "Start test game"}
+          </button>
+          <p role="status" className="text-xs text-mid">
+            Connection: {connection ?? "not started"} · Game version: {version ?? "none yet"}
+          </p>
+          {latestToast && <p className="text-xs text-high">{latestToast.message}</p>}
+        </section>
+      )}
     </main>
   );
 }

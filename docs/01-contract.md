@@ -317,51 +317,85 @@ While we are away, an AI stand-in plays our turns after ~3 seconds per decision.
 
 Keep this list alive. Tick items off as they are answered in writing.
 
-- [ ] Exact JSON envelope of `game:state` — is the snapshot nested under
-      `snapshot`, or are its fields at the top level next to `version`?
-- [ ] Is `Player.isAi` the real field name, or `isAI` / `type: "AI"`?
-- [ ] Does `RoomSnapshot` carry `seats` as an array, or `players` plus a
-      separate `seatCount`?
-- [ ] `LegalMove.captures` — piece IDs, or full piece objects?
+Last checked on 2026-11-08 against the backend's D3 v1 and its unmerged
+`feature/phase-0-foundation` branch. The backend has no room or socket code yet,
+so a tick means "answered in writing", not "seen working".
+
+### Still open
+
+- [ ] **Snapshot keys.** D3 REQ-G1 2.1 lists the fields in words only. Are the
+      JSON keys `matchId`, `seedHash`, `winnerId`, `activePlayerId`, `lastRoll`,
+      `sixesInRow`, `legalMoves`, `boardSquare`, `isHost` and `piecesHome`?
+- [ ] Is `Player.isAi` the real field name, or `isAI` / `type: "AI"`? D3 only
+      says "human or AI".
+- [ ] Are colours sent as `"RED"` or `"Red"`? D3 only uses them in prose.
+- [ ] Does `RoomSnapshot` carry `seats` as an array of
+      `{ seat, colour, player }`, or `players` plus a separate `seatCount`? Is
+      the host `hostId`?
+- [ ] Is the room snapshot under the key `room` in the create and join
+      responses? D3 only says "room snapshot".
+- [ ] `LegalMove` — D3 gives no shape. Is it
+      `{ pieceId, fromStep, toStep, captures }`, and are `captures` piece IDs or
+      full piece objects?
 - [ ] Is `deadline` an ISO string or epoch milliseconds?
-- [ ] Does `ROLLED` carry the legal moves too, or must we read them from the
-      snapshot's `turn.legalMoves`?
-- [ ] CORS origin for our dev server (`http://localhost:5173`) — is it allowed?
-- [ ] Is the contract package published to npm, or do we vendor the types?
+- [ ] Is the contract package published to npm, or do we vendor the types? It is
+      not on npm yet, and the backend's plan lists this as undecided for its
+      Phase 1.
+- [ ] When can we connect, and at what address? The backend's plan says its
+      Milestone 2. Its default port is 3000; our `.env.example` points at the
+      mock on 3001.
 - [ ] `GET /rooms/{roomCode}` preview — what are the exact field names for
       status, mode, host name and free seats? `RoomPreview` stays out of
       `src/contract/types.ts` until we know. The mock returns a `RoomSnapshot`.
-- [ ] `GET /health` — are `status` and `version` strings, and `uptimeS`,
-      `rooms` and `clients` numbers? `HealthResponse` assumes so.
 - [ ] `game:event.data` — what are the fields for each of the 16 event types?
-      The mock sends `data: {}` until we know, so the UI must read the snapshot.
-- [ ] REST error body — is it a bare `ServerError`, or nested under `error`?
-      The mock sends a bare `ServerError` plus `v`.
-- [ ] Acks — §3 says acks echo `requestId` and every message carries `v`, but
-      the `Ack` type shows neither. The mock includes both.
-- [ ] Acks in the lobby — what `version` comes back before a match exists? The
-      mock sends `0`.
-- [ ] `game:restart` — does `version` go back to 1 for the new match? The mock
-      does, with a new `matchId`, so the store must treat a new `matchId` as a
-      fresh match or it will ignore every snapshot after a restart.
-- [ ] Rules G-1, G-2, G-3 and G-5 — we have no text for these. The mock follows
-      list in `prompts/P2-mock-server.md`, and a move
-      captures every opposing piece on a non-safe square.
+      D3 describes six, in words only: `GAME_STARTED` (turn order, seed hash),
+      `ROLLED` (player, value, legal moves), `TURN_CHANGED` (player, deadline),
+      `TURN_PASSED` (reason `NO_LEGAL_MOVE`), `TURN_FORFEITED` (reason
+      `THREE_SIXES`) and `GAME_OVER` (winner, ranking, seed). The mock sends
+      `data: {}`, so the UI must read the snapshot.
+- [ ] REST error body — is it a bare `ServerError`, or nested under `error`? D3
+      lists the error's fields but not where they sit. The mock sends a bare
+      `ServerError` plus `v`.
+- [ ] Acks — D3 confirms `{ ok, version }` / `{ ok, error }` and that `requestId`
+      is echoed. Is `requestId` at the top level of the ack, and does an ack
+      carry `v`? The mock includes both.
+- [ ] Acks in the lobby — what `version` comes back before a match exists? D3
+      says versions start at 1 for each match. The mock sends `0`. `LgsAdapter`
+      accepts a missing version on `room:addAi`, `room:leave` and `state:sync`.
+- [ ] Refused socket connection — how is `UNAUTHORIZED` reported? The mock puts a
+      `ServerError` in the `data` of socket.io's `connect_error`.
 
 From our own D3 (see `docs/00-requirements.md` §5):
 
-- [ ] **Colour choice (FR-06, FR-SYS-01).** Can a player pick their colour or
-      seat on create/join? If not, can it be added? Today seat 1 is always red.
+- [ ] **Colour choice (FR-06, FR-SYS-01).** D3 REQ-HOST 1.1 and 2.1 assign
+      colours by seat, so there is no choice today. Can one be added?
 - [ ] **Same-device play (FR-03).** May one browser create a room and then
       join it again under other names, holding several session tokens at once?
-      Any limit (rate limit, same IP) that would block this?
-- [ ] **2-player colours (R1).** Our D3 says a 2-player game uses opposite
-      corners. Does the LGS give seats 1 and 2 Red and Yellow, or Red and Green?
-      The mock uses Red and Yellow.
-- [ ] **First player (FR-08).** Is it always seat 1, or highest first roll?
-- [ ] **AI thinking signal (FR-SYS-07).** Is there an event when an AI turn
-      starts, or do we infer it from `TURN_CHANGED` + `player.isAi`?
-- [ ] **AI difficulty (FR-31).** Confirmed: `EASY` and `NORMAL` only?
+      D3 limits failed code look-ups per IP but says nothing about this.
+
+### Answered
+
+- [x] `game:state` envelope — nested as `(version, snapshot)` (D3 REQ-G1 2.1,
+      step 4).
+- [x] `ROLLED` carries the legal moves (D3 REQ-PLAYER 2.1, step 7). They are in
+      the snapshot too, and we read them from there.
+- [x] CORS for `http://localhost:5173` — it is the default for the backend's
+      `CORS_ORIGINS` (Phase 0 `config.ts`, not merged yet).
+- [x] `GET /health` — `status` and `version` are strings; `uptimeS`, `rooms` and
+      `clients` are numbers. It also sends `v` (Phase 0 `app.ts`, not merged yet).
+- [x] `game:restart` — a new match ID and state version 1 (D3 POST-PLAYER 7.1-1),
+      so the store treats a new `matchId` as a fresh match. Frontends then get
+      `GAME_RESTARTED`, `GAME_STARTED` and `game:state`, with `GAME_ABANDONED`
+      first if the match was still running. The mock sends only `GAME_RESTARTED`.
+- [x] Rules G-1, G-2, G-3 and G-5 — the text is in D3 §2.3. G-2 differs from the
+      mock: see "First player" below.
+- [x] **2-player colours (R1).** Red and Yellow (D3 G-1). The mock matches.
+- [x] **First player (FR-08).** Chosen at random by the server (D3 G-2). Our R2
+      and the mock both say seat 1.
+- [x] **AI thinking signal (FR-SYS-07).** D3's event list has no such event, so
+      we infer it from the active player being an AI.
+- [x] **AI difficulty (FR-31).** `EASY` and `NORMAL` (D3 §2.5, marked as a team
+      default still to confirm with their Project Owner).
 
 ---
 

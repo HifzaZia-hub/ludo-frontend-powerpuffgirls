@@ -14,5 +14,6 @@ export default defineConfig({
     environment: "jsdom",
     // Testing Library only cleans up between tests when afterEach is global.
     globals: true,
+    setupFiles: ["src/testSetup.ts"],
   },
 });
