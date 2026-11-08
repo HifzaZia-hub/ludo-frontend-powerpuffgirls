@@ -62,8 +62,10 @@ Rules for the layers:
 ## 4. State rules
 
 - One source of truth: the latest `game:state` snapshot in `gameStore`.
-- Apply a snapshot only if `incoming.version > current.version`.
-- If an incoming version is more than 1 ahead, send `state:sync`.
+- Apply a snapshot only if `incoming.version > current.version`, or if its
+  `matchId` is new, because a restart begins again at version 1.
+- If an incoming version of the same match is more than 1 ahead, send
+  `state:sync`.
 - Everything derived (my turn, can roll, movable pieces, progress counts) is a
   **selector**, never a second stored copy.
 - A rejected or failed request changes nothing in the snapshot (FR-SYS-04).
