@@ -366,6 +366,8 @@ so a tick means "answered in writing", not "seen working".
       accepts a missing version on `room:addAi`, `room:leave` and `state:sync`.
 - [ ] Refused socket connection — how is `UNAUTHORIZED` reported? The mock puts a
       `ServerError` in the `data` of socket.io's `connect_error`.
+- [ ] Is `GameStateSnapshot.players` always in turn order? No field names the
+      order. The status panel shows the array as sent and never sorts it (P6).
 
 From our own D3 (see `docs/00-requirements.md` §5):
 

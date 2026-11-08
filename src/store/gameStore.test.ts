@@ -1,6 +1,6 @@
 import { FakeAdapter } from "@/adapter/FakeAdapter";
 import { defaultRules } from "@/config/defaultRules";
-import { pieceCell } from "@/config/geometry";
+import { cellKey, pieceCell } from "@/config/geometry";
 import type {
   CreateRoomRequest,
   CreateRoomResponse,
@@ -10,7 +10,6 @@ import type {
   TurnState,
 } from "@/contract/types";
 import {
-  cellKey,
   createGameStore,
   selectActivePlayer,
   selectCanMove,
@@ -23,6 +22,7 @@ import {
   selectLegalPieceIds,
   selectMe,
   selectPiecesByCell,
+  selectPlayerProgress,
   selectProgress,
   selectSecondsLeft,
   type GameStore,
@@ -703,6 +703,22 @@ describe("selectors", () => {
     expect(selectProgress("nobody")(state)).toBeNull();
   });
 
+  it("lists every player with their counts, in the order the server sent", () => {
+    const snapshot = makeSnapshot(5);
+    const [first, second] = snapshot.players;
+    if (!first || !second) throw new Error("the fixture has two players");
+    const reversed = makeSnapshot(5, { players: [second, first] });
+
+    expect(selectPlayerProgress(storeWith(reversed).getState())).toEqual([
+      { player: second, counts: { base: 0, track: 0, home: 1 } },
+      { player: first, counts: { base: 1, track: 1, home: 0 } },
+    ]);
+  });
+
+  it("lists no players before there is a snapshot", () => {
+    expect(selectPlayerProgress(makeStore().store.getState())).toEqual([]);
+  });
+
   it("groups pieces by the cell they sit on", () => {
     const snapshot = makeSnapshot(5);
     const state = storeWith(snapshot).getState();
@@ -743,5 +759,6 @@ describe("selectors", () => {
     expect(selectLegalPieceIds(state)).toBe(selectLegalPieceIds(state));
     expect(selectPiecesByCell(state)).toBe(selectPiecesByCell(state));
     expect(selectProgress("p1")(state)).toBe(selectProgress("p1")(state));
+    expect(selectPlayerProgress(state)).toBe(selectPlayerProgress(state));
   });
 });

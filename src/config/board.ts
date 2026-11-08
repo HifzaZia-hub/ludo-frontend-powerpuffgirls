@@ -47,15 +47,42 @@ export const YARD_ORIGIN: Record<Colour, BoardCell> = {
 // captured piece always goes back to the same spot.
 export const YARD_SLOTS = [
   [1.5, 1.5],
-  [3.5, 1.5],
-  [1.5, 3.5],
-  [3.5, 3.5],
+  [4.5, 1.5],
+  [1.5, 4.5],
+  [4.5, 4.5],
 ] as const;
 
 export const CENTRE_CELL: BoardCell = [7, 7];
+
+/** Clockwise from the top-left corner (docs/02-board-model.md §2). */
+export const BOARD_COLOURS: readonly Colour[] = ["RED", "GREEN", "YELLOW", "BLUE"];
+
+/** Cells along one side of the board. */
+export const BOARD_SIZE = 15;
+export const YARD_SIZE = 6;
+/** How wide the circle under a yard piece is, in cell units. */
+export const YARD_SLOT_SIZE = 1.5;
+/** How wide a piece alone on its cell is, in cell units. */
+export const PIECE_SIZE = 0.8;
+
+export const LAST_TRACK_STEP = 51;
+export const FIRST_HOME_COLUMN_STEP = 52;
+
+export const CENTRE_BLOCK_ORIGIN: BoardCell = [6, 6];
+export const CENTRE_BLOCK_SIZE = 3;
+
+// Each colour's triangle in the centre, on the side its home column arrives from. On a 3x3 grid.
+export const CENTRE_TRIANGLES: Record<Colour, string> = {
+  RED: "0,0 1.5,1.5 0,3",
+  GREEN: "0,0 3,0 1.5,1.5",
+  YELLOW: "3,0 3,3 1.5,1.5",
+  BLUE: "0,3 1.5,1.5 3,3",
+};
 
 // How pieces sharing a cell fan out (docs/02-board-model.md §5), in cell units.
 export const STACK_OFFSET = 0.18;
 export const STACK_SCALE_STEP = 0.08;
 // A safe square can in theory hold all 16 pieces, and the scale formula goes negative past 13.
 export const STACK_MIN_SCALE = 0.4;
+/** From this many pieces on one cell, a badge shows the count (docs/02-board-model.md §5). */
+export const STACK_BADGE_MIN = 3;

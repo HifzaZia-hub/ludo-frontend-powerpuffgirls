@@ -2,8 +2,12 @@
 // Nothing here decides anything about the game (CLAUDE.md §1).
 
 import {
+  BOARD_SIZE,
   CENTRE_CELL,
+  FIRST_HOME_COLUMN_STEP,
   HOME_COLUMN_CELLS,
+  LAST_TRACK_STEP,
+  PIECE_SIZE,
   STACK_MIN_SCALE,
   STACK_OFFSET,
   STACK_SCALE_STEP,
@@ -57,6 +61,57 @@ export function pieceCell(piece: Piece): GridPoint {
 
   const square = squareForStep(colour, step);
   return cellCentre(square === null ? undefined : TRACK_CELLS[square], piece);
+}
+
+/** A name for a position, so pieces on the same spot can be grouped. */
+export function cellKey(point: GridPoint): string {
+  return `${point.col}:${point.row}`;
+}
+
+/** A distance in cell units, as a percentage of the board's side. */
+export function boardPercent(cells: number): number {
+  return (cells / BOARD_SIZE) * 100;
+}
+
+/** Where one piece goes, as percentages of the board. */
+export interface PiecePlacement {
+  left: number;
+  top: number;
+  size: number;
+}
+
+// Left and top rather than a centring transform, because Framer Motion's layout animation
+// writes its own transform on the same element.
+export function piecePlacement(point: GridPoint, offset: StackOffset): PiecePlacement {
+  const width = PIECE_SIZE * offset.scale;
+  return {
+    left: boardPercent(point.col + offset.dx - width / 2),
+    top: boardPercent(point.row + offset.dy - width / 2),
+    size: boardPercent(width),
+  };
+}
+
+export type PiecePlace = "base" | "track" | "homeColumn" | "home";
+
+/** Names the part of the board a step is on, for labels. Decides nothing about the game. */
+export function piecePlace(step: number): PiecePlace {
+  if (step === 0) return "base";
+  if (step === 57) return "home";
+  return step >= FIRST_HOME_COLUMN_STEP ? "homeColumn" : "track";
+}
+
+function pointOnStep(colour: Colour, step: number): GridPoint {
+  return pieceCell({ id: "", colour, step, boardSquare: null });
+}
+
+/** The last track cell before a colour's home column, and which way the column lies. */
+export function homeEntry(colour: Colour): { cell: BoardCell; degrees: number } {
+  const from = pointOnStep(colour, LAST_TRACK_STEP);
+  const into = pointOnStep(colour, FIRST_HOME_COLUMN_STEP);
+  return {
+    cell: [from.col - 0.5, from.row - 0.5],
+    degrees: (Math.atan2(into.row - from.row, into.col - from.col) * 180) / Math.PI,
+  };
 }
 
 /** The steps a piece passes through for animation, including the destination. */
