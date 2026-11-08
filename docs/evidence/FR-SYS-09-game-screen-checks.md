@@ -50,7 +50,8 @@ column:
 
 - **Seats and modes (FR-SYS-01):** computer games with 2, 3 and 4 seats and friends games with 2,
   3 and 4 seats all reached the board, with four pieces per player and one card per player.
-- **Live match (FR-SYS-06):** with a 10-second turn timer, a piece moved from a server snapshot.
+- **Live match (FR-SYS-06, FR-SYS-07):** with a 10-second turn timer, a computer player's piece
+  moved from a server snapshot (`FR-SYS-07-computer-move-from-snapshot.png`).
   Each card's counts matched the pieces on the board. The piece elements stayed the same ones, so
   nothing was re-created.
 - **Position:** after the move and after resizing the window to 1024 wide, every piece was 0 px
