@@ -328,6 +328,11 @@ Keep this list alive. Tick items off as they are answered in writing.
       snapshot's `turn.legalMoves`?
 - [ ] CORS origin for our dev server (`http://localhost:5173`) — is it allowed?
 - [ ] Is the contract package published to npm, or do we vendor the types?
+- [ ] `GET /rooms/{roomCode}` preview — what are the exact field names for
+      status, mode, host name and free seats? `RoomPreview` stays out of
+      `src/contract/types.ts` until we know.
+- [ ] `GET /health` — are `status` and `version` strings, and `uptimeS`,
+      `rooms` and `clients` numbers? `HealthResponse` assumes so.
 
 From our own D3 (see `docs/00-requirements.md` §5):
 
