@@ -31,6 +31,7 @@ import {
   selectTurnKind,
   type GameStore,
 } from "@/store/gameStore";
+import type { ServerEvent } from "@/contract/events";
 import { makePlayer, makeRoom } from "@/testRoom";
 
 function makeSnapshot(
@@ -648,6 +649,147 @@ describe("toasts", () => {
     store.getState().dismissToast(first.id);
 
     expect(store.getState().toasts).toEqual([second]);
+  });
+});
+
+// D2 FR-29, FR-SYS-06 POST-06-3
+describe("the session score", () => {
+  function finished(matchId: string, version: number, winnerId?: string): GameStateSnapshot {
+    return makeSnapshot(version, { matchId, status: "FINISHED", winnerId });
+  }
+
+  it("counts the winner the server named", () => {
+    const { store } = makeStore();
+
+    store.getState().applySnapshot(finished("m1", 5, "p1"));
+
+    expect(store.getState().sessionWins).toEqual({ p1: 1 });
+  });
+
+  it("counts a match only once, even if its result arrives again", () => {
+    const { store } = makeStore();
+
+    store.getState().applySnapshot(finished("m1", 5, "p1"));
+    store.getState().applySnapshot(finished("m1", 6, "p1"));
+
+    expect(store.getState().sessionWins).toEqual({ p1: 1 });
+  });
+
+  it("adds up across rematches", () => {
+    const { store } = makeStore();
+
+    store.getState().applySnapshot(finished("m1", 5, "p1"));
+    store.getState().applySnapshot(finished("m2", 4, "p1"));
+    store.getState().applySnapshot(finished("m3", 3, "p2"));
+
+    expect(store.getState().sessionWins).toEqual({ p1: 2, p2: 1 });
+  });
+
+  it("counts nothing when the server named no winner", () => {
+    const { store } = makeStore();
+
+    store.getState().applySnapshot(finished("m1", 5));
+
+    expect(store.getState().sessionWins).toEqual({});
+  });
+
+  it("counts nothing while the match is running", () => {
+    const { store } = makeStore();
+
+    store.getState().applySnapshot(makeSnapshot(5, { winnerId: "p1" }));
+
+    expect(store.getState().sessionWins).toEqual({});
+  });
+
+  it("still applies the snapshot that ends the match", () => {
+    const { store } = makeStore();
+    const last = finished("m1", 5, "p1");
+
+    store.getState().applySnapshot(last);
+
+    expect(store.getState().snapshot).toBe(last);
+  });
+
+  it("is forgotten when you leave the room", async () => {
+    const { store } = makeStore();
+    store.getState().applySnapshot(finished("m1", 5, "p1"));
+
+    await store.getState().leaveRoom();
+
+    expect(store.getState().sessionWins).toEqual({});
+  });
+});
+
+// FR-SYS-08
+describe("restarting", () => {
+  it("asks the server and says it was accepted", async () => {
+    const { adapter, store } = makeStore();
+
+    await expect(store.getState().restart()).resolves.toBe(true);
+
+    expect(adapter.commands).toEqual([{ name: "restart" }]);
+  });
+
+  // POST-08-3
+  it("keeps the game and explains when the server refuses", async () => {
+    const { adapter, store } = makeStore();
+    store.getState().applySnapshot(makeSnapshot(5));
+    const before = store.getState().snapshot;
+    adapter.queueAck(rejection("SERVER_BUSY"));
+
+    await expect(store.getState().restart()).resolves.toBe(false);
+
+    expect(store.getState().snapshot).toBe(before);
+    expect(store.getState().toasts).toHaveLength(1);
+  });
+
+  it("sends nothing while another command is waiting", async () => {
+    const { adapter, store } = makeStore();
+    store.setState({ pendingCommand: { id: 1, kind: "roll" } });
+
+    await expect(store.getState().restart()).resolves.toBe(false);
+
+    expect(adapter.commands).toEqual([]);
+  });
+
+  it("clears the old match's events, but not the board, on GAME_RESTARTED", () => {
+    const { store } = makeStore();
+    store.getState().applySnapshot(makeSnapshot(5));
+    const before = store.getState().snapshot;
+    store.getState().applyEvent({ v: "1.0.0", version: 5, type: "ROLLED", data: {} });
+    const restarted: ServerEvent = { v: "1.0.0", version: 1, type: "GAME_RESTARTED", data: {} };
+
+    store.getState().applyEvent(restarted);
+
+    expect(store.getState().eventLog).toEqual([restarted]);
+    expect(store.getState().snapshot).toBe(before);
+  });
+
+  it("keeps the session score through a restart", () => {
+    const { store } = makeStore();
+    store
+      .getState()
+      .applySnapshot(makeSnapshot(5, { matchId: "m1", status: "FINISHED", winnerId: "p1" }));
+
+    store.getState().applyEvent({ v: "1.0.0", version: 1, type: "GAME_RESTARTED", data: {} });
+    store.getState().applySnapshot(makeSnapshot(1, { matchId: "m2" }));
+
+    expect(store.getState().sessionWins).toEqual({ p1: 1 });
+  });
+});
+
+describe("forgetting a room the server has closed", () => {
+  it("lets go without asking the server", () => {
+    const { adapter, store } = makeStore();
+    store.setState({ room: makeRoom(), myPlayerId: "p1" });
+    adapter.connect("token");
+
+    store.getState().forgetRoom();
+
+    expect(store.getState().room).toBeNull();
+    expect(store.getState().myPlayerId).toBeNull();
+    expect(adapter.connectedToken).toBeNull();
+    expect(adapter.commands).toEqual([]);
   });
 });
 

@@ -1,10 +1,11 @@
 import { useReducedMotion } from "framer-motion";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useStore } from "zustand";
 import { Board } from "@/components/Board";
 import { BoardGrid } from "@/components/BoardGrid";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { DicePanel } from "@/components/DicePanel";
 import { EventBanner } from "@/components/EventBanner";
 import { MessageLog } from "@/components/MessageLog";
@@ -12,8 +13,9 @@ import { MoveList } from "@/components/MoveList";
 import { PieceLayer } from "@/components/PieceLayer";
 import { StatusPanel, type StatusPanelPlayer } from "@/components/StatusPanel";
 import { TopBar, type TurnDisplay } from "@/components/TopBar";
+import { SHOW_SESSION_SCORE } from "@/config/app";
 import type { Player } from "@/contract/types";
-import { GAME_TEXT, MESSAGES, TURN_TEXT, type PLAYER_TAGS } from "@/feedback/copy";
+import { CONFIRM_TEXT, GAME_TEXT, MESSAGES, TURN_TEXT, type PLAYER_TAGS } from "@/feedback/copy";
 import { diceTumbleMs, eventTimings, pieceTweenSeconds } from "@/feedback/motion";
 import { useEventFeedback } from "@/feedback/useEventFeedback";
 import { useDiceRoll } from "@/interaction/useDiceRoll";
@@ -27,6 +29,7 @@ import {
   selectIsMyTurn,
   selectPiecesByCell,
   selectPlayerProgress,
+  selectIsHost,
   selectTurnKind,
   type GameStore,
   type PlayerProgress,
@@ -103,7 +106,28 @@ export function GameScreen({ store }: GameScreenProps) {
     soundOn: sound,
     errorId,
   });
-  const { skip: skipFeedback } = feedback;
+  const { skip: skipFeedback, gameOver, busy: feedbackBusy } = feedback;
+
+  const isHost = useStore(store, selectIsHost);
+  const sessionWins = useStore(store, (state) => state.sessionWins);
+  const restart = useStore(store, (state) => state.restart);
+  const leaveRoom = useStore(store, (state) => state.leaveRoom);
+  const goTo = useUiStore((state) => state.goTo);
+  const [confirming, setConfirming] = useState<"restart" | "leave" | null>(null);
+  const [confirmSending, setConfirmSending] = useState(false);
+
+  // FR-SYS-06 POST-06-2: only on the server's GAME_OVER, once the last move has played out.
+  useEffect(() => {
+    if (gameOver && !feedbackBusy) goTo("win");
+  }, [gameOver, feedbackBusy, goTo]);
+
+  async function handleConfirm() {
+    setConfirmSending(true);
+    await (confirming === "restart" ? restart() : leaveRoom());
+    // POST-08-3: on failure the game is untouched, and this closes so the error can be read.
+    setConfirmSending(false);
+    setConfirming(null);
+  }
 
   // D2 FR-38: only ever ends the pictures early. The game has already moved on.
   const skip = useCallback(() => {
@@ -149,6 +173,7 @@ export function GameScreen({ store }: GameScreenProps) {
     counts,
     active: player.id === snapshot?.turn.activePlayerId,
     homeBump: player.id === feedback.bumpPlayerId,
+    wins: SHOW_SESSION_SCORE ? sessionWins[player.id] : undefined,
   }));
 
   return (
@@ -159,6 +184,9 @@ export function GameScreen({ store }: GameScreenProps) {
         onSoundChange={setSound}
         onRules={() => openModal("rules")}
         onSettings={() => openModal("settings")}
+        canRestart={isHost}
+        onRestart={() => setConfirming("restart")}
+        onLeave={() => setConfirming("leave")}
       />
 
       {/* Always on the page, because a screen reader only announces changes to a live region. */}
@@ -254,6 +282,17 @@ export function GameScreen({ store }: GameScreenProps) {
           </div>
         </main>
       )}
+
+      {/* FR-SYS-08: both of these throw away a game in progress. */}
+      <ConfirmDialog
+        open={confirming !== null}
+        title={CONFIRM_TEXT[confirming ?? "leave"].title}
+        body={CONFIRM_TEXT.body}
+        confirmLabel={CONFIRM_TEXT[confirming ?? "leave"].action}
+        pending={confirmSending}
+        onConfirm={() => void handleConfirm()}
+        onCancel={() => setConfirming(null)}
+      />
     </div>
   );
 }

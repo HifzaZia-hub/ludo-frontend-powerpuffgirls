@@ -41,12 +41,15 @@ export function SetupScreen({ store }: SetupScreenProps) {
   const createRoom = useStore(store, (state) => state.createRoom);
   const goTo = useUiStore((state) => state.goTo);
   const goToLobby = useUiStore((state) => state.goToLobby);
+  const rememberSetup = useUiStore((state) => state.rememberSetup);
+  const last = useUiStore((state) => state.lastSetup); // D2 FR-33: start from the previous game
 
   // FR-SYS-01 ALT-01-1: this screen owns these and no failure resets them, so a retry is one press.
-  const [seats, setSeats] = useState<SeatChoice>("4");
-  const [mode, setMode] = useState<GameMode>("HUMAN_VS_AI"); // Rida (D2): a game in a few clicks
-  const [difficulty, setDifficulty] = useState<Difficulty>("NORMAL");
-  const [name, setName] = useState("");
+  const [seats, setSeats] = useState<SeatChoice>(last?.seats ?? "4");
+  // Rida (D2): a game in a few clicks
+  const [mode, setMode] = useState<GameMode>(last?.mode ?? "HUMAN_VS_AI");
+  const [difficulty, setDifficulty] = useState<Difficulty>(last?.difficulty ?? "NORMAL");
+  const [name, setName] = useState(last?.name ?? "");
   const [nameError, setNameError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const nameFieldRef = useRef<HTMLInputElement>(null);
@@ -63,6 +66,7 @@ export function SetupScreen({ store }: SetupScreenProps) {
 
     setNameError(null);
     setSubmitting(true);
+    rememberSetup({ seats, mode, difficulty, name: name.trim() });
     const result = await createRoom({
       displayName: name.trim(),
       mode,

@@ -10,3 +10,4 @@
 - P7: rolling the die, turn text, sixes counter and countdown, with the `R` key and a lint rule against `Math.random` (FR-SYS-02, NFR-SYS-05, FR-SYS-07).
 - P8: choosing and moving a piece by mouse or keyboard, a destination and capture preview, step-by-step walking and Skip (FR-SYS-03, FR-SYS-04, FR-SYS-05, D2 FR-18, D2 FR-38).
 - P9: event feedback in order, with the message log, capture and finish effects, banners and placeholder sounds (FR-SYS-05, FR-SYS-10, D2 FR-23, D2 FR-36, D2 FR-37).
+- P10: win screen with ranking, session score and dice check, restart and leave behind confirm dialogs, and the stopped screen (FR-SYS-06, FR-SYS-08, D2 FR-29, D2 FR-33, D2 FR-34).

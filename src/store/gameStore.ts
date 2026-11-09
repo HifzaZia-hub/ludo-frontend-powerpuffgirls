@@ -27,6 +27,7 @@ type CommandRequest =
   | { kind: "move"; pieceId: string }
   | { kind: "addAi"; seat: number }
   | { kind: "start" }
+  | { kind: "restart" }
   | { kind: "leave" };
 
 export type PendingCommand = CommandRequest & { id: number };
@@ -59,6 +60,9 @@ interface GameData {
   eventLog: ServerEvent[];
   pendingCommand: PendingCommand | null;
   toasts: Toast[];
+  /** D2 FR-29: wins per player id. A history across matches, so no snapshot can hold it. */
+  sessionWins: Readonly<Record<string, number>>;
+  scoredMatchId: string | null;
 }
 
 export interface GameState extends GameData {
@@ -82,6 +86,10 @@ export interface GameState extends GameData {
   startGame(options: { fillEmptySeatsWithAi: boolean }): Promise<void>;
   /** True once the server has accepted it and this tab has let go of the room. */
   leaveRoom(): Promise<boolean>;
+  /** True once the server has accepted it. The new match arrives as game:state. */
+  restart(): Promise<boolean>;
+  /** Lets go of a room the server has already closed, so there is nothing left to ask it. */
+  forgetRoom(): void;
   dismissToast(id: number): void;
 }
 
@@ -96,6 +104,8 @@ const INITIAL_DATA: GameData = {
   eventLog: [],
   pendingCommand: null,
   toasts: [],
+  sessionWins: {},
+  scoredMatchId: null,
 };
 
 export function createGameStore(adapter: GameAdapter): GameStore {
@@ -169,6 +179,20 @@ export function createGameStore(adapter: GameAdapter): GameStore {
           if (next.version <= current.version) return; // NFR-SYS-04: stale, keep what we have
           if (next.version > current.version + 1) void adapter.sync(current.version);
         }
+        const { sessionWins, scoredMatchId } = get();
+        // POST-06-3, EXC-06-1: only ever the winner the server named, and once per match even if
+        // the same result arrives again after a resync.
+        if (next.status === "FINISHED" && next.winnerId && next.matchId !== scoredMatchId) {
+          set({
+            snapshot: next,
+            scoredMatchId: next.matchId,
+            sessionWins: {
+              ...sessionWins,
+              [next.winnerId]: (sessionWins[next.winnerId] ?? 0) + 1,
+            },
+          });
+          return;
+        }
         set({ snapshot: next });
       },
 
@@ -176,7 +200,11 @@ export function createGameStore(adapter: GameAdapter): GameStore {
       applyEvent: (event) =>
         set((state) => ({
           lastEvent: event,
-          eventLog: [...state.eventLog, event].slice(-EVENT_LOG_LIMIT),
+          // A restart begins again at version 1, so old events could be mistaken for new ones.
+          eventLog:
+            event.type === "GAME_RESTARTED"
+              ? [event]
+              : [...state.eventLog, event].slice(-EVENT_LOG_LIMIT),
         })),
 
       applyRoom: (room) => set({ room }),
@@ -269,6 +297,14 @@ export function createGameStore(adapter: GameAdapter): GameStore {
         if (left) endSession();
         return left;
       },
+
+      // FR-SYS-08 POST-08-3: a failure is explained by sendCommand and the game stays as it was.
+      restart: async () => {
+        const ack = await sendCommand({ kind: "restart" }, () => adapter.restart());
+        return ack?.ok === true;
+      },
+
+      forgetRoom: endSession,
 
       dismissToast: (id) =>
         set((state) => ({ toasts: state.toasts.filter((toast) => toast.id !== id) })),

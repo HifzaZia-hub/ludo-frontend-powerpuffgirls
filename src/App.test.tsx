@@ -113,6 +113,21 @@ describe("App", () => {
       expect(screen.getAllByRole("button", { name: "Settings" })).toHaveLength(1);
     });
 
+    // FR-SYS-06, FR-SYS-08: these two have no top bar of their own.
+    it.each([
+      ["win", "The game is over"],
+      ["stopped", "This game was stopped"],
+    ] as const)("opens the %s screen with Settings still reachable", (name, heading) => {
+      const app = renderApp();
+      act(() => {
+        app.store.getState().applySnapshot({ ...start, status: "FINISHED" });
+        useUiStore.getState().goTo(name);
+      });
+
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(heading);
+      expect(screen.getAllByRole("button", { name: "Settings" })).toHaveLength(1);
+    });
+
     describe("when a snapshot can't be drawn", () => {
       const broken: GameStateSnapshot = {
         ...start,

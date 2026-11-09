@@ -117,6 +117,8 @@ export const LOBBY_TEXT = {
 export const GAME_TEXT = {
   loading: "Getting the board ready…",
   menu: "Menu",
+  restart: "Restart",
+  leave: "Leave game",
   rules: "Rules",
   sound: "Sound",
   yourTurn: "Your turn",
@@ -203,6 +205,36 @@ export const CONFIRM_TEXT = {
   body: "Your progress in this game will be lost.",
   leave: { title: "Leave this game?", action: "Leave" },
   restart: { title: "Restart the game?", action: "Restart" },
+} as const;
+
+export const WIN_TEXT = {
+  over: "The game is over",
+  places: "Final places",
+  place: (place: number, name: string) => `${place}. ${name}`,
+  sessionScore: "Wins this session",
+  playAgain: "Play again",
+  newGame: "New game",
+  mainMenu: "Main menu",
+  waitingForHost: (name: string) => `Waiting for ${name} to start a new game.`,
+  waitingForAnyHost: "Waiting for the host to start a new game.",
+} as const;
+
+export const STOPPED_TEXT = { title: "This game was stopped" } as const;
+
+export function winsLabel(wins: number): string {
+  return wins === 1 ? "1 win" : `${wins} wins`;
+}
+
+// Optional, for Hamza (D2): "dice must be fair".
+export const DICE_CHECK_TEXT = {
+  open: "Check the dice were fair",
+  why: "Before the game, the server showed a locked code made from a secret. Now it has shared the secret, so we can make the code again. If the two match, the dice couldn't have been changed during the game.",
+  checking: "Checking…",
+  matched: "They match. The dice weren't changed during this game.",
+  // Never "unfair": the contract doesn't say how the code is made, so a mismatch proves nothing.
+  unknown: "We couldn't check this game's dice.",
+  code: "Locked code",
+  secret: "Secret",
 } as const;
 
 export function diceLabel(face: number | null, rolling: boolean): string {

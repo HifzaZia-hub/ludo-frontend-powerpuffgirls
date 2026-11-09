@@ -28,7 +28,7 @@ const isChosen = (name: string) =>
 describe("SetupScreen", () => {
   beforeEach(() => {
     sessionStorage.clear();
-    useUiStore.setState({ screen: "setup", modal: null });
+    useUiStore.setState({ screen: "setup", modal: null, lastSetup: null });
   });
 
   it("sends a game with friends, with no difficulty, and goes to the lobby", async () => {
@@ -159,6 +159,37 @@ describe("SetupScreen", () => {
 
     finish(CREATED);
     await vi.waitFor(() => expect(useUiStore.getState().screen).toBe("lobby"));
+  });
+
+  // D2 FR-33
+  describe("after an earlier game", () => {
+    it("starts from the choices of the last game", () => {
+      useUiStore.setState({
+        lastSetup: { seats: "3", mode: "HUMAN_VS_HUMAN", difficulty: "EASY", name: "Rida" },
+      });
+
+      renderSetup();
+
+      expect(isChosen("3")).toBe(true);
+      expect(isChosen("Play with friends")).toBe(true);
+      expect(nameField().value).toBe("Rida");
+    });
+
+    it("remembers what was sent, in memory only", async () => {
+      const { user } = renderSetup();
+      const stored = localStorage.length;
+
+      await user.type(nameField(), " Maryam ");
+      await user.click(startButton());
+
+      expect(useUiStore.getState().lastSetup).toEqual({
+        seats: "4",
+        mode: "HUMAN_VS_AI",
+        difficulty: "NORMAL",
+        name: "Maryam",
+      });
+      expect(localStorage.length).toBe(stored);
+    });
   });
 
   it("goes back to the main screen", async () => {

@@ -404,6 +404,66 @@ describe("useEventFeedback", () => {
     expect(vi.mocked(playSound).mock.calls.at(-1)?.[0]).toBe("win");
   });
 
+  // FR-SYS-06 POST-06-2: the win screen waits for this.
+  describe("the end of the match", () => {
+    function winningMove() {
+      const start = ridasTurn();
+      const view = setup(start);
+      const won = next(start, { R4: 57 }, { status: "FINISHED", winnerId: "p1" });
+      view.rerender({
+        snapshot: won,
+        eventLog: eventsAt(won.version, "MOVED", "PIECE_FINISHED", "GAME_OVER"),
+      });
+      return view;
+    }
+
+    it("isn't reported while the winning move is still playing", () => {
+      const { result } = winningMove();
+
+      advance(3 * ON.stepMs);
+
+      expect(result.current.busy).toBe(true);
+      expect(result.current.gameOver).toBe(false);
+    });
+
+    it("is reported once the queue has finished", () => {
+      const { result } = winningMove();
+
+      advance(3 * ON.stepMs);
+      advance(ON.finishMs);
+
+      expect(result.current.busy).toBe(false);
+      expect(result.current.gameOver).toBe(true);
+    });
+
+    it("is reported at once after a skip", () => {
+      const { result } = winningMove();
+
+      act(() => result.current.skip());
+
+      expect(result.current.gameOver).toBe(true);
+    });
+
+    // EXC-05-1: a finished snapshot alone isn't the server saying so.
+    it("needs the server's GAME_OVER", () => {
+      const start = ridasTurn();
+      const { result, rerender } = setup(start, OFF);
+
+      rerender({ snapshot: next(start, {}, { status: "FINISHED", winnerId: "p1" }), eventLog: [] });
+
+      expect(result.current.gameOver).toBe(false);
+    });
+
+    it("is forgotten when a new match starts", () => {
+      const { result, rerender } = winningMove();
+      act(() => result.current.skip());
+
+      rerender({ snapshot: { ...ridasTurn(), matchId: "another", version: 1 }, eventLog: [] });
+
+      expect(result.current.gameOver).toBe(false);
+    });
+  });
+
   describe("the roll line", () => {
     it("only joins the same player's move", () => {
       const start = ridasTurn();
