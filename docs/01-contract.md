@@ -380,6 +380,9 @@ so a tick means "answered in writing", not "seen working".
 - [ ] Does every accepted change raise `version` by exactly 1? The mock does. A
       piece only walks between neighbouring versions, and jumps across a bigger
       gap, because the contract names no fields for `MOVED` (P8).
+- [ ] Does `CAPTURED` come once per captured piece? The mock does. Each one is
+      matched to a piece that went backwards between the two snapshots, because
+      the event doesn't say which piece it was (P9).
 
 From our own D3 (see `docs/00-requirements.md` §5):
 

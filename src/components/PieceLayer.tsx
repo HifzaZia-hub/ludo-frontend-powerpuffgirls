@@ -1,5 +1,5 @@
-import { motion } from "framer-motion";
-import { Piece as PieceToken, type PieceState } from "@/components/Piece";
+import { motion, type Transition } from "framer-motion";
+import { Piece as PieceToken, type PieceEffect, type PieceState } from "@/components/Piece";
 import { STACK_BADGE_MIN } from "@/config/board";
 import {
   boardPercent,
@@ -34,6 +34,15 @@ export interface PieceChoice {
   onPreview: (pieceId: string) => void;
 }
 
+/** FR-SYS-05: what the event queue is showing. Visual only, like a walk. */
+export interface PieceEffects {
+  held: ReadonlyMap<string, number>;
+  flashingId: string | null;
+  returningId: string | null;
+  finishingId: string | null;
+  returnSeconds: number;
+}
+
 export interface PieceLayerProps {
   pieces: readonly Piece[];
   piecesByCell: ReadonlyMap<string, readonly Piece[]>;
@@ -42,6 +51,7 @@ export interface PieceLayerProps {
   choice?: PieceChoice | null;
   walk?: { pieceId: string; step: number } | null;
   walkSeconds?: number;
+  effects?: PieceEffects | null;
 }
 
 function pieceState(piece: Piece, choice: PieceChoice | null): PieceState {
@@ -61,6 +71,7 @@ export function PieceLayer({
   choice = null,
   walk = null,
   walkSeconds = 0,
+  effects = null,
 }: PieceLayerProps) {
   const crowded = [...piecesByCell.values()].filter((stack) => stack.length >= STACK_BADGE_MIN);
 
@@ -92,7 +103,21 @@ export function PieceLayer({
 
       {pieces.map((piece) => {
         const walking = walk?.pieceId === piece.id;
-        const point = pieceCell(walking ? { ...piece, step: walk.step } : piece);
+        const heldStep = effects?.held.get(piece.id);
+        let shownStep = piece.step;
+        if (heldStep !== undefined) shownStep = heldStep;
+        if (walking) shownStep = walk.step;
+        const point = pieceCell({ ...piece, step: shownStep });
+        const flashing = effects?.flashingId === piece.id;
+        const returning = effects?.returningId === piece.id;
+
+        let effect: PieceEffect | null = null;
+        if (flashing) effect = "capture";
+        else if (effects?.finishingId === piece.id) effect = "finish";
+
+        let transition: Transition = { duration: tweenSeconds };
+        if (walking) transition = { duration: walkSeconds, ease: "linear" };
+        else if (returning) transition = { duration: effects?.returnSeconds ?? tweenSeconds };
         const stack = piecesByCell.get(cellKey(point)) ?? [piece];
         const offset =
           stackOffsets(stack.length)[stack.findIndex(({ id }) => id === piece.id)] ?? ALONE;
@@ -118,16 +143,15 @@ export function PieceLayer({
             data-piece={piece.id}
             layout
             layoutDependency={`${left}:${top}:${size}`}
-            transition={
-              walking ? { duration: walkSeconds, ease: "linear" } : { duration: tweenSeconds }
-            }
+            transition={transition}
             style={{ left: `${left}%`, top: `${top}%`, width: `${size}%`, height: `${size}%` }}
             // FR-SYS-03: in a stack, a piece that can't move must never cover one that can.
-            className={`absolute ${walking ? "z-10" : move ? "z-[5]" : ""}`}
+            className={`absolute ${walking || flashing || returning ? "z-10" : move ? "z-[5]" : ""}`}
           >
             <PieceToken
               colour={piece.colour}
               state={state}
+              effect={effect}
               label={label}
               disabled={choice?.locked}
               onSelect={() => choice?.onPick(piece.id)}

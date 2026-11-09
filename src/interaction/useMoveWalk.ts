@@ -1,31 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { pathSteps } from "@/config/geometry";
 import type { GameStateSnapshot } from "@/contract/types";
+import { piecesMoved, walkBetween, type Walk } from "@/feedback/snapshotChanges";
 
 /** Where to draw a piece that is part way along its walk. */
 export interface PieceWalk {
   pieceId: string;
   step: number;
-}
-
-interface Walk {
-  pieceId: string;
-  steps: readonly number[];
-}
-
-// Worked out from two accepted snapshots, because the contract names no fields for MOVED (§8).
-function walkBetween(before: GameStateSnapshot | null, after: GameStateSnapshot | null): Walk | null {
-  if (!before || !after || before.matchId !== after.matchId) return null;
-  // Further apart than one change, a piece may have moved more than once, so there's no one path.
-  if (after.version !== before.version + 1) return null;
-
-  const walks = after.pieces.flatMap((piece) => {
-    const was = before.pieces.find(({ id }) => id === piece.id);
-    return was && piece.step > was.step
-      ? [{ pieceId: piece.id, steps: pathSteps(was.step, piece.step) }]
-      : [];
-  });
-  return walks.length === 1 ? (walks[0] ?? null) : null;
 }
 
 export interface MoveWalk {
@@ -45,11 +25,14 @@ export function useMoveWalk(snapshot: GameStateSnapshot | null, stepMs: number):
   const [skipped, setSkipped] = useState(false);
 
   // During render, or the piece would be painted at its destination before the walk began.
-  // The snapshot always wins: a new one replaces any walk still running.
   if (snapshot !== seen) {
     setSeen(snapshot);
-    setWalk(stepMs > 0 ? walkBetween(seen, snapshot) : null);
     setSkipped(false);
+    // The snapshot always wins when it moves a piece. One that doesn't, like the next roll, leaves
+    // every piece where the walk is heading, and stopping for it would cut captures short.
+    if (!seen || !snapshot || piecesMoved(seen, snapshot)) {
+      setWalk(stepMs > 0 ? walkBetween(seen, snapshot) : null);
+    }
   }
 
   useEffect(() => {

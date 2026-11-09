@@ -98,15 +98,40 @@ describe("useMoveWalk", () => {
     expect(result.current.walk).toBeNull();
   });
 
-  // The snapshot always wins.
-  it("drops a walk the moment another snapshot arrives", () => {
+  // A computer's next roll comes 700 ms later, and stopping for it would cut captures short.
+  it("keeps walking through a snapshot that moves no piece", () => {
     const { result, rerender } = setup();
     const afterMove = moved(spread(), { R2: 13 });
     rerender({ snapshot: afterMove, ms: STEP_MS });
     advance(STEP_MS);
     expect(result.current.walk?.step).toBe(9);
 
-    rerender({ snapshot: { ...afterMove, version: afterMove.version + 1 }, ms: STEP_MS });
+    rerender({ snapshot: moved(afterMove, {}), ms: STEP_MS });
+    expect(result.current.walk?.step).toBe(9);
+
+    advance(STEP_MS);
+    expect(result.current.walk?.step).toBe(10);
+  });
+
+  // The snapshot always wins when it moves a piece.
+  it("drops a walk the moment another piece moves", () => {
+    const { result, rerender } = setup();
+    const afterMove = moved(spread(), { R2: 13 });
+    rerender({ snapshot: afterMove, ms: STEP_MS });
+    advance(STEP_MS);
+
+    // Two pieces at once has no single path to show, so nothing replaces the walk.
+    rerender({ snapshot: moved(afterMove, { G3: 15, Y1: 21 }), ms: STEP_MS });
+
+    expect(result.current.walk).toBeNull();
+  });
+
+  it("drops a walk when the match changes", () => {
+    const { result, rerender } = setup();
+    const afterMove = moved(spread(), { R2: 13 });
+    rerender({ snapshot: afterMove, ms: STEP_MS });
+
+    rerender({ snapshot: { ...afterMove, matchId: "another" }, ms: STEP_MS });
 
     expect(result.current.walk).toBeNull();
   });

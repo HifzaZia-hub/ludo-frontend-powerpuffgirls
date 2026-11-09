@@ -2,6 +2,7 @@ import { act, cleanup, render, screen, waitFor, within } from "@testing-library/
 import userEvent from "@testing-library/user-event";
 import { FakeAdapter } from "@/adapter/FakeAdapter";
 import { pieceCell, piecePlacement } from "@/config/geometry";
+import type { EventType } from "@/contract/events";
 import type { GameStateSnapshot, LegalMove } from "@/contract/types";
 import { FIXTURE_PLAYER_ID, FIXTURES } from "@/mock/fixtures";
 import { GameScreen } from "@/screens/GameScreen";
@@ -916,17 +917,28 @@ describe("GameScreen", () => {
         expect(leftOf(container, "R2")).toBeCloseTo(placementAt(10).left);
       });
 
-      // POST-05-1: the snapshot always wins.
-      it("ends where the snapshot says when another snapshot interrupts", () => {
+      // POST-05-1: the snapshot always wins when it moves a piece.
+      it("ends where the snapshot says when another piece moves", () => {
         const { adapter, container } = renderLive();
         const afterMove = moved(choosing(), "R2", 13);
         act(() => adapter.pushState(afterMove));
         advance(STEP_MS);
         expect(leftOf(container, "R2")).not.toBeCloseTo(placementAt(13).left);
 
-        act(() => adapter.pushState({ ...afterMove, version: afterMove.version + 1 }));
+        act(() => adapter.pushState(moved(afterMove, "G3", 15)));
 
         expect(leftOf(container, "R2")).toBeCloseTo(placementAt(13).left);
+      });
+
+      it("keeps walking when the next snapshot moves no piece", () => {
+        const { adapter, container } = renderLive();
+        const afterMove = moved(choosing(), "R2", 13);
+        act(() => adapter.pushState(afterMove));
+        advance(STEP_MS);
+
+        act(() => adapter.pushState({ ...afterMove, version: afterMove.version + 1 }));
+
+        expect(leftOf(container, "R2")).toBeCloseTo(placementAt(9).left);
       });
 
       // POST-05-2
@@ -946,6 +958,210 @@ describe("GameScreen", () => {
         expect(positions(off.container)).toEqual(finishedOn);
         expect(screen.queryByRole("button", { name: "Skip" })).toBeNull();
       });
+    });
+  });
+
+  // FR-SYS-05, D2 FR-23, D2 FR-36
+  describe("event feedback", () => {
+    const FLASH_MS = 150;
+    const RETURN_MS = 400;
+    const STEP_MS = 120;
+
+    function start(): GameStateSnapshot {
+      const spread = fixture("spread");
+      return { ...spread, turn: { ...spread.turn, activePlayerId: FIXTURE_PLAYER_ID, lastRoll: 3 } };
+    }
+
+    function changed(from: GameStateSnapshot, steps: Record<string, number>): GameStateSnapshot {
+      return {
+        ...from,
+        version: from.version + 1,
+        pieces: from.pieces.map((piece) => {
+          const step = steps[piece.id];
+          return step === undefined ? piece : { ...piece, step };
+        }),
+      };
+    }
+
+    function send(adapter: FakeAdapter, snapshot: GameStateSnapshot, ...types: EventType[]) {
+      act(() => {
+        for (const type of types) {
+          adapter.pushEvent({ v: "1.0.0", version: snapshot.version, type, data: {} });
+        }
+        adapter.pushState(snapshot);
+      });
+    }
+
+    function renderLive(snapshot: GameStateSnapshot = start()) {
+      const adapter = new FakeAdapter();
+      const store = createGameStore(adapter);
+      store.getState().listen();
+      store.getState().applySnapshot(snapshot);
+      store.setState({ myPlayerId: FIXTURE_PLAYER_ID, connection: "live" });
+      const { container } = render(<GameScreen store={store} />);
+      return { adapter, container, store };
+    }
+
+    function logLines(): string[] {
+      const log = screen.getByRole("region", { name: "Messages" });
+      return [...log.querySelectorAll("p, li")].map((line) => line.textContent ?? "");
+    }
+
+    function leftOf(container: HTMLElement, id: string): number {
+      const element = container.querySelector<HTMLElement>(`[data-piece="${id}"]`);
+      return parseFloat(element?.style.left ?? "");
+    }
+
+    function leftAt(id: string, step: number): number {
+      const piece = start().pieces.find((candidate) => candidate.id === id);
+      if (!piece) throw new Error(`${id} is in the fixture`);
+      return piecePlacement(pieceCell({ ...piece, step }), { dx: 0, dy: 0, scale: 1 }).left;
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      useSettingsStore.setState({ animation: "on", sound: false });
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    function advance(ms: number) {
+      act(() => {
+        vi.advanceTimersByTime(ms);
+      });
+    }
+
+    // Each hop is only timed once the last one has been drawn.
+    function walk(hops: number) {
+      for (let hop = 0; hop < hops; hop++) advance(STEP_MS);
+    }
+
+    it("plays a capture in order: the walk, the flash, the return, then the extra turn", () => {
+      const { adapter, container } = renderLive();
+      const moved = changed(start(), { R2: 10, G3: 0 });
+
+      send(adapter, moved, "MOVED", "CAPTURED", "BONUS_TURN");
+
+      // The captured piece waits on its square while the other walks up to it.
+      expect(leftOf(container, "G3")).toBeCloseTo(leftAt("G3", 14));
+      expect(container.querySelector("[data-effect]")).toBeNull();
+      expect(container.querySelector("[data-banner]")).toBeNull();
+
+      walk(3);
+      expect(container.querySelector('[data-piece="G3"] [data-effect="capture"]')).not.toBeNull();
+      expect(leftOf(container, "G3")).toBeCloseTo(leftAt("G3", 14));
+
+      advance(FLASH_MS);
+      expect(container.querySelector("[data-effect]")).toBeNull();
+      expect(container.querySelector("[data-banner]")).toBeNull();
+      // On its way back to its base slot, which is where the snapshot says it is.
+      expect(leftOf(container, "G3")).toBeCloseTo(leftAt("G3", 0));
+
+      advance(RETURN_MS);
+      expect(container.querySelector("[data-banner]")?.textContent).toBe("Roll again!");
+    });
+
+    // Contract §4 and §6: a roll and the move it led to read as one line.
+    it("reads like a story of the game", () => {
+      const { adapter } = renderLive();
+      const rolled = changed(start(), {});
+      send(adapter, rolled, "ROLLED");
+      expect(logLines()).toEqual(["Rida rolled 3."]);
+
+      const moved = changed(rolled, { R2: 10, G3: 0 });
+      send(adapter, moved, "MOVED", "CAPTURED", "BONUS_TURN");
+      walk(3);
+      advance(FLASH_MS);
+      advance(RETURN_MS);
+
+      expect(logLines()).toEqual(["Rida rolls again!", "Rida rolled 3 and captured Hamza's piece!"]);
+    });
+
+    // POST-05-2, POST-10-2: the done-when for this task.
+    it("ends on the same board and the same words with animation and sound off", () => {
+      function play() {
+        const view = renderLive();
+        const rolled = changed(start(), {});
+        send(view.adapter, rolled, "ROLLED");
+        send(view.adapter, changed(rolled, { R2: 10, G3: 0 }), "MOVED", "CAPTURED", "BONUS_TURN");
+        return view;
+      }
+      const positions = (container: HTMLElement) =>
+        [...container.querySelectorAll<HTMLElement>("[data-piece]")].map(
+          (element) => `${element.dataset.piece}:${element.style.left}:${element.style.top}`,
+        );
+
+      useSettingsStore.setState({ animation: "on", sound: true });
+      const on = play();
+      walk(3);
+      advance(FLASH_MS);
+      advance(RETURN_MS);
+      const boardOn = positions(on.container);
+      const wordsOn = logLines();
+      cleanup();
+
+      useSettingsStore.setState({ animation: "off", sound: false });
+      const off = play();
+
+      expect(positions(off.container)).toEqual(boardOn);
+      expect(logLines()).toEqual(wordsOn);
+    });
+
+    // EXC-05-1
+    it("shows nothing when the server sent no event, even if a piece went back", () => {
+      const { adapter, container } = renderLive();
+
+      send(adapter, changed(start(), { G3: 0 }));
+
+      expect(container.querySelector("[data-effect]")).toBeNull();
+      expect(logLines()).toEqual(["Moves will show up here."]);
+    });
+
+    it("offers Skip during the capture, and Skip finishes it with the words kept", () => {
+      const { adapter, container } = renderLive();
+      send(adapter, changed(start(), { R2: 10, G3: 0 }), "MOVED", "CAPTURED", "BONUS_TURN");
+      walk(3);
+      expect(container.querySelector('[data-effect="capture"]')).not.toBeNull();
+
+      act(() => screen.getByRole("button", { name: "Skip" }).click());
+
+      expect(container.querySelector("[data-effect]")).toBeNull();
+      expect(leftOf(container, "G3")).toBeCloseTo(leftAt("G3", 0));
+      expect(screen.queryByRole("button", { name: "Skip" })).toBeNull();
+      expect(logLines()).toEqual([
+        "Rida rolls again!",
+        "Rida captured Hamza's piece!",
+        "Rida moved a piece 3 squares.",
+      ]);
+    });
+
+    it("glows a finishing piece and bumps the Home count", () => {
+      const { adapter, container } = renderLive();
+      send(adapter, changed(start(), { R4: 57 }), "MOVED", "PIECE_FINISHED");
+
+      walk(3);
+
+      expect(container.querySelector('[data-piece="R4"] [data-effect="finish"]')).not.toBeNull();
+      expect(container.querySelector(".animate-bump")?.textContent).toBe("1");
+    });
+
+    it("flashes the sixes pips when a turn is forfeited", () => {
+      const { adapter, container } = renderLive();
+
+      send(adapter, changed(start(), {}), "ROLLED", "TURN_FORFEITED", "TURN_CHANGED");
+
+      expect(container.querySelector("[data-sixes-flash]")).not.toBeNull();
+    });
+
+    it("shows a banner when a turn is skipped", () => {
+      const { adapter, container } = renderLive();
+
+      send(adapter, changed(start(), {}), "TURN_PASSED", "TURN_CHANGED");
+
+      expect(container.querySelector("[data-banner]")?.textContent).toBe(
+        "No move possible — turn skipped",
+      );
     });
   });
 

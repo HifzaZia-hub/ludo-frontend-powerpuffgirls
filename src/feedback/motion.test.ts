@@ -1,4 +1,34 @@
-import { diceTumbleMs, pieceStepMs, pieceTweenSeconds } from "@/feedback/motion";
+import { diceTumbleMs, eventTimings, pieceStepMs, pieceTweenSeconds } from "@/feedback/motion";
+
+describe("eventTimings", () => {
+  it("follows the animation budget", () => {
+    expect(eventTimings("on", false)).toEqual({
+      stepMs: 120,
+      flashMs: 150,
+      returnMs: 400,
+      finishMs: 400,
+    });
+    expect(eventTimings("fast", false)).toEqual({
+      stepMs: 50,
+      flashMs: 60,
+      returnMs: 150,
+      finishMs: 150,
+    });
+  });
+
+  // POST-05-2
+  it.each([
+    ["off", false],
+    ["on", true],
+  ] as const)("is all zero with %s and reduced motion %s", (animation, reduced) => {
+    expect(eventTimings(animation, reduced)).toEqual({
+      stepMs: 0,
+      flashMs: 0,
+      returnMs: 0,
+      finishMs: 0,
+    });
+  });
+});
 
 describe("pieceStepMs", () => {
   it("follows the animation budget", () => {

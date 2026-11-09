@@ -222,8 +222,16 @@ export function secondsLeftLabel(seconds: number): string {
 export const MESSAGES = {
   gameStarted: (name: string) => `Game started. ${name} goes first.`,
   rolled: (name: string, roll: number) => `${name} rolled ${roll}.`,
-  moved: (name: string, squares: number) => `${name} moved a piece ${squares} squares.`,
+  moved: (name: string, squares: number) =>
+    `${name} moved a piece ${squares} ${squares === 1 ? "square" : "squares"}.`,
   broughtOut: (name: string) => `${name} brought a piece out.`,
+  // §6: a roll and its result share one line.
+  rolledAndCaptured: (name: string, roll: number, other: string) =>
+    `${name} rolled ${roll} and captured ${other}'s piece!`,
+  rolledAndFinished: (name: string, roll: number) => `${name} rolled ${roll} and got a piece home!`,
+  rolledAndBroughtOut: (name: string, roll: number) =>
+    `${name} rolled ${roll} and brought a piece out.`,
+  rolledAndMoved: (name: string, roll: number) => `${name} rolled ${roll} and moved a piece.`,
   captured: (name: string, other: string) => `${name} captured ${other}'s piece!`,
   pieceFinished: (name: string) => `${name} got a piece home!`,
   bonusTurn: (name: string) => `${name} rolls again!`,
@@ -232,6 +240,11 @@ export const MESSAGES = {
   playerDisconnected: (name: string) => `${name} left. The computer will play for them.`,
   playerReconnected: (name: string) => `${name} is back.`,
   gameOver: (name: string) => `${name} wins!`,
+} as const;
+
+export const BANNER_TEXT = {
+  rollAgain: "Roll again!",
+  noMove: "No move possible — turn skipped",
 } as const;
 
 // D2 FR-07, NFR-SYS-11: RulesSummary picks from these using the match's RuleConfig.

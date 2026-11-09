@@ -12,6 +12,7 @@ export interface DicePanelProps {
   canRoll: boolean;
   onRoll: () => void;
   sixesInRow: number | null; // null when the rules don't count sixes
+  sixesFlash?: boolean;
   getSecondsLeft: (() => number | null) | null; // null when the rules have no turn timer
   totalSeconds: number;
   showTimeUp: boolean;
@@ -25,6 +26,7 @@ export function DicePanel({
   canRoll,
   onRoll,
   sixesInRow,
+  sixesFlash = false,
   getSecondsLeft,
   totalSeconds,
   showTimeUp,
@@ -36,7 +38,12 @@ export function DicePanel({
       <Dice ref={dieRef} value={value} rolling={rolling} disabled={!canRoll} onRoll={onRoll} />
 
       {sixesInRow !== null && (
-        <div role="img" aria-label={sixesLabel(sixesInRow)} className="flex items-center gap-1.5">
+        <div
+          role="img"
+          aria-label={sixesLabel(sixesInRow)}
+          data-sixes-flash={sixesFlash || undefined}
+          className={`flex items-center gap-1.5 ${sixesFlash ? "animate-sixes-flash" : ""}`}
+        >
           {/* NFR-SYS-07: filled against hollow, so the count doesn't rely on colour. */}
           {SIXES_PIPS.map((pip) => (
             <span
