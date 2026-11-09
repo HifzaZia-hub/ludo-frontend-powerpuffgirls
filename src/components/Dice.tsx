@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { FOCUS_RING } from "@/components/focusRing";
 import { diceLabel, LABELS } from "@/feedback/copy";
 
@@ -21,7 +22,10 @@ export interface DiceProps {
   onRoll: () => void;
 }
 
-export function Dice({ value, rolling, disabled, onRoll }: DiceProps) {
+export const Dice = forwardRef<HTMLButtonElement, DiceProps>(function Dice(
+  { value, rolling, disabled, onRoll },
+  ref,
+) {
   // NFR-SYS-05: a blank die tumbles. Showing a number here would be a value the server never sent.
   const face = rolling ? null : value;
   const pips = face === null ? [] : (PIP_SPOTS[face] ?? []);
@@ -35,6 +39,7 @@ export function Dice({ value, rolling, disabled, onRoll }: DiceProps) {
 
   return (
     <button
+      ref={ref}
       type="button"
       aria-disabled={unavailable || undefined}
       onClick={handleClick}
@@ -61,4 +66,4 @@ export function Dice({ value, rolling, disabled, onRoll }: DiceProps) {
       </span>
     </button>
   );
-}
+});

@@ -3,7 +3,7 @@
 
 import { createStore, type StoreApi } from "zustand/vanilla";
 import type { Ack, ConnectionStatus, GameAdapter } from "@/adapter/GameAdapter";
-import { cellKey, pieceCell, progressCounts } from "@/config/geometry";
+import { cellKey, pieceCell, pieceNumber, piecePlace, progressCounts } from "@/config/geometry";
 import { FIELD_ERRORS, RESYNC_CODES, type FormField } from "@/contract/errors";
 import type { ServerEvent } from "@/contract/events";
 import type {
@@ -17,7 +17,7 @@ import type {
   RoomSnapshot,
   ServerError,
 } from "@/contract/types";
-import { friendlyError, SESSION_REPLACED_MESSAGE } from "@/feedback/copy";
+import { friendlyError, moveChoiceText, SESSION_REPLACED_MESSAGE } from "@/feedback/copy";
 import { clearSavedSession, saveSession } from "@/store/savedSession";
 
 const EVENT_LOG_LIMIT = 50;
@@ -68,7 +68,8 @@ export interface GameState extends GameData {
   applyConnection(status: ConnectionStatus): void;
   /** Resolves to the version the server gave this roll, or null if it didn't happen. */
   roll(): Promise<number | null>;
-  move(pieceId: string): Promise<void>;
+  /** Resolves to the version the server gave this move, or null if it didn't happen. */
+  move(pieceId: string): Promise<number | null>;
   resync(): Promise<void>;
   reset(): void;
   /** Starts feeding adapter messages into this store. Returns the function that stops it. */
@@ -191,8 +192,10 @@ export function createGameStore(adapter: GameAdapter): GameStore {
         return ack?.ok ? ack.version : null;
       },
 
+      // FR-SYS-03 EXC-03-2: nothing moves here. The piece moves when the new game:state arrives.
       move: async (pieceId) => {
-        await sendCommand({ kind: "move", pieceId }, () => adapter.move(pieceId));
+        const ack = await sendCommand({ kind: "move", pieceId }, () => adapter.move(pieceId));
+        return ack?.ok ? ack.version : null;
       },
 
       // The reply arrives as game:state and goes through the usual version check. A failed
@@ -304,26 +307,71 @@ export function selectCanRoll(state: GameState): boolean {
   );
 }
 
-export type TurnKind = "myRoll" | "myMove" | "human" | "computer";
+/** True when the server has listed moves for this player to choose between. */
+export function selectMoveOffered(state: GameState): boolean {
+  const { snapshot } = state;
+  if (!selectIsMyTurn(state) || snapshot?.turn.phase !== "AWAITING_MOVE") return false;
+  const { legalMoves } = snapshot.turn;
+  // With this rule on, the server plays a lone option itself, so there is nothing to choose.
+  if (snapshot.rules.autoMoveSingleOption && legalMoves.length === 1) return false;
+  return legalMoves.length > 0;
+}
+
+export type TurnKind = "myRoll" | "myMove" | "myAutoMove" | "noMove" | "human" | "computer";
 
 /** Which turn message to show. Null when no match is running. */
 export function selectTurnKind(state: GameState): TurnKind | null {
   const { snapshot, myPlayerId } = state;
   const active = selectActivePlayer(state);
   if (snapshot?.status !== "IN_PROGRESS" || !active) return null;
+  // Contract §4: the server pauses on a roll with no move, and this names who it happened to.
+  // TURN_PASSED can't say, because the contract names no fields for it (§8).
+  if (snapshot.turn.phase === "AWAITING_MOVE" && snapshot.turn.legalMoves.length === 0) {
+    return "noMove";
+  }
   if (active.id === myPlayerId) {
-    return snapshot.turn.phase === "AWAITING_ROLL" ? "myRoll" : "myMove";
+    if (snapshot.turn.phase === "AWAITING_ROLL") return "myRoll";
+    return selectMoveOffered(state) ? "myMove" : "myAutoMove";
   }
   return active.isAi ? "computer" : "human";
 }
 
 export function selectCanMove(state: GameState): boolean {
-  return (
-    selectIsMyTurn(state) &&
-    state.snapshot?.turn.phase === "AWAITING_MOVE" &&
-    state.snapshot.turn.legalMoves.length > 0 &&
-    state.pendingCommand === null
-  );
+  return selectMoveOffered(state) && state.pendingCommand === null && state.connection === "live";
+}
+
+/** One of the server's moves, with what the screen says about it. */
+export interface MoveOption extends LegalMove {
+  number: string;
+  phrase: string;
+}
+
+function moveOption(snapshot: GameStateSnapshot, move: LegalMove): MoveOption {
+  const capturedNames = move.captures.flatMap((pieceId) => {
+    const colour = snapshot.pieces.find(({ id }) => id === pieceId)?.colour;
+    const owner = snapshot.players.find((player) => player.colour === colour);
+    return owner ? [owner.name] : [];
+  });
+  return {
+    ...move,
+    number: pieceNumber(move.pieceId),
+    phrase: moveChoiceText(
+      piecePlace(move.fromStep),
+      piecePlace(move.toStep),
+      move.toStep - move.fromStep,
+      capturedNames,
+    ),
+  };
+}
+
+const NO_MOVE_OPTIONS: readonly MoveOption[] = [];
+const moveOptions = perSnapshot((snapshot) =>
+  snapshot.turn.legalMoves.map((move) => moveOption(snapshot, move)),
+);
+
+/** FR-SYS-03 POST-03-1: only ever the server's list, and empty when there's nothing to choose. */
+export function selectMoveOptions(state: GameState): readonly MoveOption[] {
+  return state.snapshot && selectMoveOffered(state) ? moveOptions(state.snapshot) : NO_MOVE_OPTIONS;
 }
 
 const NO_PIECE_IDS: readonly string[] = [];

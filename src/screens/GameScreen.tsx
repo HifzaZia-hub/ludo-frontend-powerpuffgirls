@@ -1,19 +1,23 @@
 import { useReducedMotion } from "framer-motion";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useStore } from "zustand";
 import { Board } from "@/components/Board";
 import { BoardGrid } from "@/components/BoardGrid";
+import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { DicePanel } from "@/components/DicePanel";
 import { MessageLog, type LogMessage } from "@/components/MessageLog";
+import { MoveList } from "@/components/MoveList";
 import { PieceLayer } from "@/components/PieceLayer";
 import { StatusPanel, type StatusPanelPlayer } from "@/components/StatusPanel";
 import { TopBar, type TurnDisplay } from "@/components/TopBar";
 import type { Player } from "@/contract/types";
-import { GAME_TEXT, TURN_TEXT, type PLAYER_TAGS } from "@/feedback/copy";
-import { diceTumbleMs, pieceTweenSeconds } from "@/feedback/motion";
+import { GAME_TEXT, MESSAGES, TURN_TEXT, type PLAYER_TAGS } from "@/feedback/copy";
+import { diceTumbleMs, pieceStepMs, pieceTweenSeconds } from "@/feedback/motion";
 import { useDiceRoll } from "@/interaction/useDiceRoll";
 import { useGameKeys } from "@/interaction/useGameKeys";
+import { useMoveSelection } from "@/interaction/useMoveSelection";
+import { useMoveWalk } from "@/interaction/useMoveWalk";
 import {
   secondsUntil,
   selectActivePlayer,
@@ -39,7 +43,9 @@ function playerTag(player: Player, myPlayerId: string | null): keyof typeof PLAY
 }
 
 function turnText(kind: TurnKind, name: string): string {
-  return kind === "human" ? TURN_TEXT.human(name) : TURN_TEXT[kind];
+  if (kind === "human") return TURN_TEXT.human(name);
+  if (kind === "noMove") return MESSAGES.turnPassed(name);
+  return TURN_TEXT[kind];
 }
 
 // FR-SYS-06, docs/02-board-model.md §6: piecesHome is the server's own count. If ours ever differs,
@@ -59,7 +65,7 @@ export interface GameScreenProps {
   store: GameStore;
 }
 
-// FR-SYS-09: every part of the game fits on this one screen. P8 adds moving a piece.
+// FR-SYS-09: every part of the game fits on this one screen.
 export function GameScreen({ store }: GameScreenProps) {
   const snapshot = useStore(store, (state) => state.snapshot);
   const myPlayerId = useStore(store, (state) => state.myPlayerId);
@@ -76,8 +82,28 @@ export function GameScreen({ store }: GameScreenProps) {
   const animation = useSettingsStore((state) => state.animation);
   const reducedMotion = useReducedMotion() === true;
 
-  const { rolling, roll } = useDiceRoll(store, diceTumbleMs(animation, reducedMotion));
-  useGameKeys(roll);
+  const dieRef = useRef<HTMLButtonElement>(null);
+  const { rolling, roll, skip: skipTumble } = useDiceRoll(
+    store,
+    diceTumbleMs(animation, reducedMotion),
+  );
+  const selection = useMoveSelection(store, dieRef, rolling);
+  const stepMs = pieceStepMs(animation, reducedMotion);
+  const { walk, skipped, skip: skipWalk } = useMoveWalk(snapshot, stepMs);
+
+  // D2 FR-38: only ever ends the pictures early. The game has already moved on.
+  const skip = useCallback(() => {
+    skipWalk();
+    skipTumble();
+  }, [skipWalk, skipTumble]);
+
+  useGameKeys({
+    onRoll: roll,
+    onPickNumber: selection.pickNumber,
+    onConfirm: selection.confirm,
+    onCancel: selection.cancel,
+    onSkip: skip,
+  });
 
   const deadline = snapshot?.turn.deadline;
   const getSecondsLeft = useCallback(() => secondsUntil(deadline, Date.now()), [deadline]);
@@ -86,14 +112,19 @@ export function GameScreen({ store }: GameScreenProps) {
     if (import.meta.env.DEV) reportHomeMismatches(progress);
   }, [progress]);
 
+  // Until the die lands, the words mustn't give away what it rolled either.
+  const shownKind: TurnKind | null = rolling && isMyTurn ? "myRoll" : turnKind;
   const turn: TurnDisplay | null =
-    turnKind && activePlayer
+    shownKind && activePlayer
       ? {
           colour: activePlayer.colour,
-          text: turnText(turnKind, activePlayer.name),
-          thinking: turnKind === "computer",
+          text: turnText(shownKind, activePlayer.name),
+          thinking: shownKind === "computer",
         }
       : null;
+
+  let announcement = "";
+  if (isMyTurn) announcement = selection.options.length > 0 ? TURN_TEXT.myMove : GAME_TEXT.yourTurn;
 
   const statusPlayers: StatusPanelPlayer[] = progress.map(({ player, counts }) => ({
     id: player.id,
@@ -116,7 +147,7 @@ export function GameScreen({ store }: GameScreenProps) {
 
       {/* Always on the page, because a screen reader only announces changes to a live region. */}
       <p aria-live="polite" className="sr-only">
-        {isMyTurn ? GAME_TEXT.yourTurn : ""}
+        {announcement}
       </p>
 
       {snapshot === null ? (
@@ -140,8 +171,32 @@ export function GameScreen({ store }: GameScreenProps) {
               pieces={snapshot.pieces}
               piecesByCell={piecesByCell}
               safeSquares={snapshot.rules.safeSquares}
-              tweenSeconds={pieceTweenSeconds(animation, reducedMotion)}
+              tweenSeconds={skipped ? 0 : pieceTweenSeconds(animation, reducedMotion)}
+              choice={
+                selection.options.length > 0
+                  ? {
+                      moves: selection.options,
+                      selected: selection.selected,
+                      locked: selection.locked,
+                      onPick: selection.pick,
+                      onPreview: selection.preview,
+                    }
+                  : null
+              }
+              walk={walk}
+              walkSeconds={stepMs / 1000}
             />
+            {/* On top of the board's empty corner, so appearing never moves anything else. */}
+            {(walk !== null || rolling) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={skip}
+                className="absolute right-1 top-1 z-20 bg-panel"
+              >
+                {GAME_TEXT.skip}
+              </Button>
+            )}
           </Board>
           <DicePanel
             value={snapshot.turn.lastRoll}
@@ -152,11 +207,26 @@ export function GameScreen({ store }: GameScreenProps) {
             getSecondsLeft={snapshot.rules.turnTimerSeconds === 0 ? null : getSecondsLeft}
             totalSeconds={snapshot.rules.turnTimerSeconds}
             showTimeUp={isMyTurn}
+            dieRef={dieRef}
             className="col-start-1 row-start-2 lg:col-start-3 lg:row-start-1"
           />
-          <Card className="col-span-2 row-start-3 lg:col-span-1 lg:col-start-3 lg:row-start-2 lg:min-h-0 lg:overflow-y-auto">
-            <MessageLog messages={NO_MESSAGES} />
-          </Card>
+          <div className="col-span-2 row-start-3 flex flex-col gap-3 lg:col-span-1 lg:col-start-3 lg:row-start-2 lg:min-h-0">
+            <Card className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+              <MessageLog messages={NO_MESSAGES} />
+            </Card>
+            {/* Below the messages, so appearing never pushes the latest message down. */}
+            {selection.options.length > 0 && (
+              <MoveList
+                moves={selection.options}
+                selectedId={selection.selected?.pieceId ?? null}
+                locked={selection.locked}
+                sending={selection.sending}
+                onPick={selection.pick}
+                onPreview={selection.preview}
+                onConfirm={selection.confirm}
+              />
+            )}
+          </div>
         </main>
       )}
     </div>

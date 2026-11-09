@@ -373,6 +373,13 @@ so a tick means "answered in writing", not "seen working".
       state first. The die waits for the state whose version the ack names (P7).
 - [ ] Does `turn.lastRoll` clear between turns? The mock keeps it until the next
       roll, so the die shows the previous roll until then (P7).
+- [ ] After a roll with no legal move, does the server stay in `AWAITING_MOVE`
+      with an empty `legalMoves` during its pause before `TURN_PASSED`? The mock
+      does. "<Name> can't move. Turn skipped." is built from that state, because
+      `TURN_PASSED` names no player (P8).
+- [ ] Does every accepted change raise `version` by exactly 1? The mock does. A
+      piece only walks between neighbouring versions, and jumps across a bigger
+      gap, because the contract names no fields for `MOVED` (P8).
 
 From our own D3 (see `docs/00-requirements.md` §5):
 

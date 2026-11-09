@@ -1,4 +1,16 @@
-import { diceTumbleMs, pieceTweenSeconds } from "@/feedback/motion";
+import { diceTumbleMs, pieceStepMs, pieceTweenSeconds } from "@/feedback/motion";
+
+describe("pieceStepMs", () => {
+  it("follows the animation budget", () => {
+    expect(pieceStepMs("on", false)).toBe(120);
+    expect(pieceStepMs("fast", false)).toBe(50);
+    expect(pieceStepMs("off", false)).toBe(0);
+  });
+
+  it("means no walk at all with reduced motion", () => {
+    expect(pieceStepMs("on", true)).toBe(0);
+  });
+});
 
 describe("diceTumbleMs", () => {
   it("follows the animation budget", () => {
