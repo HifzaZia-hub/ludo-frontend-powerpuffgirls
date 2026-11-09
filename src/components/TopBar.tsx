@@ -1,5 +1,6 @@
 import { Button } from "@/components/Button";
 import { FOCUS_RING } from "@/components/focusRing";
+import { GameMenu } from "@/components/GameMenu";
 import { PlayerMark } from "@/components/PlayerMark";
 import { Toggle } from "@/components/Toggle";
 import type { Colour } from "@/contract/types";
@@ -19,9 +20,21 @@ export interface TopBarProps {
   onSoundChange: (sound: boolean) => void;
   onRules: () => void;
   onSettings: () => void;
+  canRestart: boolean;
+  onRestart: () => void;
+  onLeave: () => void;
 }
 
-export function TopBar({ turn, sound, onSoundChange, onRules, onSettings }: TopBarProps) {
+export function TopBar({
+  turn,
+  sound,
+  onSoundChange,
+  onRules,
+  onSettings,
+  canRestart,
+  onRestart,
+  onLeave,
+}: TopBarProps) {
   return (
     <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-soft bg-panel px-3 py-2">
       <div className="flex items-center gap-2">
@@ -29,12 +42,7 @@ export function TopBar({ turn, sound, onSoundChange, onRules, onSettings }: TopB
         <h1 tabIndex={-1} className={`text-xl font-bold text-high ${FOCUS_RING}`}>
           {MAIN_TEXT.wordmark}
         </h1>
-        {/* P10 adds Restart and Leave. Until then there is nothing for this to open. */}
-        <Button variant="ghost" size="sm" disabled>
-          {/* U+FE0E asks for the plain glyph, so it takes the theme's text colour. */}
-          <span aria-hidden="true">{"☰︎"}</span>
-          {GAME_TEXT.menu}
-        </Button>
+        <GameMenu canRestart={canRestart} onRestart={onRestart} onLeave={onLeave} />
         <Button variant="ghost" size="sm" onClick={onRules}>
           <span aria-hidden="true">?</span>
           {GAME_TEXT.rules}

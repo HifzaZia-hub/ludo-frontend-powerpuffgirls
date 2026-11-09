@@ -12,6 +12,8 @@ import { MainScreen } from "@/screens/MainScreen";
 import { RulesModal } from "@/screens/RulesModal";
 import { SettingsModal } from "@/screens/SettingsModal";
 import { SetupScreen } from "@/screens/SetupScreen";
+import { StoppedScreen } from "@/screens/StoppedScreen";
+import { WinScreen } from "@/screens/WinScreen";
 import type { GameStore } from "@/store/gameStore";
 import { useUiStore } from "@/store/uiStore";
 
@@ -29,7 +31,6 @@ export function App({ store }: AppProps) {
   const dismissToast = useStore(store, (state) => state.dismissToast);
   const snapshot = useStore(store, (state) => state.snapshot);
   const resync = useStore(store, (state) => state.resync);
-  // P10 builds the win screen. Nothing navigates to it yet.
   const inGame = screen === "game" || screen === "win";
 
   const screenRef = useRef<HTMLDivElement>(null);
@@ -52,14 +53,15 @@ export function App({ store }: AppProps) {
         {/* Out here so it also catches a crash in the store selectors GameScreen reads. */}
         {inGame && (
           <ErrorBoundary resetKey={snapshot} onResync={() => void resync()}>
-            <GameScreen store={store} />
+            {screen === "game" ? <GameScreen store={store} /> : <WinScreen store={store} />}
           </ErrorBoundary>
         )}
+        {screen === "stopped" && <StoppedScreen store={store} />}
       </div>
 
       {/* After the screen in the page, so it is the last stop when tabbing. FR-SYS-10.
           The game screen has Settings in its top bar. */}
-      {!inGame && (
+      {screen !== "game" && (
         <div className="fixed right-4 top-4">
           <Button variant="ghost" size="sm" onClick={() => openModal("settings")}>
             {/* U+FE0E asks for the plain glyph, so it takes the theme's text colour, not an emoji's. */}

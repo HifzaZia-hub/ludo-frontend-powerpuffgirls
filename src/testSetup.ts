@@ -12,6 +12,9 @@ vi.mock("howler", () => ({
   },
 }));
 
+// jsdom has no canvas to draw on.
+vi.mock("canvas-confetti", () => ({ default: vi.fn(() => Promise.resolve()) }));
+
 // jsdom has no showModal() or close(). These stand-ins only flip the open state: the real Esc,
 // focus trap and focus return are the browser's job.
 if (typeof HTMLDialogElement !== "undefined" && !HTMLDialogElement.prototype.showModal) {

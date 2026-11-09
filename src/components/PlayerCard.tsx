@@ -1,7 +1,7 @@
 import { Card } from "@/components/Card";
 import { PlayerMark } from "@/components/PlayerMark";
 import type { Colour } from "@/contract/types";
-import { LABELS, PLAYER_TAGS } from "@/feedback/copy";
+import { LABELS, PLAYER_TAGS, winsLabel } from "@/feedback/copy";
 
 export interface PlayerCardCounts {
   base: number;
@@ -17,6 +17,8 @@ export interface PlayerCardProps {
   active?: boolean;
   /** A piece just got home, so the Home count pops. */
   homeBump?: boolean;
+  /** D2 FR-29: wins this session, as counted from the server's results. */
+  wins?: number;
 }
 
 export function PlayerCard({
@@ -26,6 +28,7 @@ export function PlayerCard({
   counts,
   active = false,
   homeBump = false,
+  wins = 0,
 }: PlayerCardProps) {
   const columns = [
     { label: LABELS.base, count: counts.base },
@@ -41,6 +44,11 @@ export function PlayerCard({
           <p className="truncate text-[15px] font-semibold text-high">{name}</p>
           {tag && <p className="text-xs text-mid">{PLAYER_TAGS[tag]}</p>}
         </div>
+        {wins > 0 && (
+          <span className="ml-auto shrink-0 rounded-full bg-raised px-2 py-0.5 text-xs font-semibold text-high">
+            {winsLabel(wins)}
+          </span>
+        )}
       </div>
       <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
         {columns.map(({ label, count }) => (

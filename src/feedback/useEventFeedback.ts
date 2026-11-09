@@ -41,6 +41,8 @@ interface Step {
   bumpPlayerId?: string;
   sixesFlash?: boolean;
   endsQueue?: boolean;
+  /** The server has said the match is over. */
+  matchOver?: boolean;
 }
 
 interface State {
@@ -55,6 +57,7 @@ interface State {
   held: ReadonlyMap<string, number>;
   banner: { id: number; text: string } | null;
   cue: { id: number; name: SoundName } | null;
+  gameOver: boolean;
 }
 
 const EMPTY: State = {
@@ -68,6 +71,7 @@ const EMPTY: State = {
   held: NOTHING_HELD,
   banner: null,
   cue: null,
+  gameOver: false,
 };
 
 function withLine(state: State, line: StepLine | undefined, rollBy: string | undefined): State {
@@ -91,6 +95,7 @@ function withLine(state: State, line: StepLine | undefined, rollBy: string | und
 
 function enter(state: State, step: Step): State {
   let next = withLine(state, step.line, step.rollBy);
+  if (step.matchOver) next = { ...next, gameOver: true };
   if (step.returningId) {
     const held = new Map(next.held);
     held.delete(step.returningId);
@@ -125,7 +130,10 @@ function drain(state: State): State {
     held: NOTHING_HELD,
     banner: null,
   };
-  for (const step of state.queue) next = withLine(next, step.line, step.rollBy);
+  for (const step of state.queue) {
+    next = withLine(next, step.line, step.rollBy);
+    if (step.matchOver) next = { ...next, gameOver: true };
+  }
   return next;
 }
 
@@ -183,7 +191,7 @@ function stepsFor(
       return [{ ms: timings.finishMs, line, sixesFlash: true }];
     case "GAME_OVER":
       // In the queue, not on arrival: the winning move's own events came in with this one.
-      return [{ ms: 0, line, sound: "win", endsQueue: true }];
+      return [{ ms: 0, line, sound: "win", endsQueue: true, matchOver: true }];
     case "GAME_RESTARTED":
       return [{ ms: 0, endsQueue: true }];
     default:
@@ -251,7 +259,7 @@ function receive(
   if (!snapshot) return drain(next);
 
   const sameMatch = before?.matchId === snapshot.matchId;
-  if (before && !sameMatch) next = { ...drain(next), messages: [], rollLine: null };
+  if (before && !sameMatch) next = { ...drain(next), messages: [], rollLine: null, gameOver: false };
   // The snapshot always wins: a piece has moved again, so whatever was still showing is out of date.
   else if (before && piecesMoved(before, snapshot)) next = drain(next);
 
@@ -296,6 +304,8 @@ export interface EventFeedback {
   sixesFlash: boolean;
   /** True while something is still playing out, which is when Skip is offered. */
   busy: boolean;
+  /** POST-06-2: the server's GAME_OVER has had its turn in the queue. */
+  gameOver: boolean;
   skip: () => void;
 }
 
@@ -359,6 +369,7 @@ export function useEventFeedback({
     bumpPlayerId: current?.bumpPlayerId ?? null,
     sixesFlash: current?.sixesFlash ?? false,
     busy: current !== null,
+    gameOver: state.gameOver,
     skip,
   };
 }

@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { FakeAdapter } from "@/adapter/FakeAdapter";
 import { pieceCell, piecePlacement } from "@/config/geometry";
 import type { EventType } from "@/contract/events";
-import type { GameStateSnapshot, LegalMove } from "@/contract/types";
+import type { GameStateSnapshot, LegalMove, RoomSnapshot } from "@/contract/types";
 import { FIXTURE_PLAYER_ID, FIXTURES } from "@/mock/fixtures";
 import { GameScreen } from "@/screens/GameScreen";
 import { createGameStore } from "@/store/gameStore";
@@ -1162,6 +1162,208 @@ describe("GameScreen", () => {
       expect(container.querySelector("[data-banner]")?.textContent).toBe(
         "No move possible — turn skipped",
       );
+    });
+  });
+
+  // FR-SYS-08
+  describe("menu", () => {
+    function roomFor(snapshot: GameStateSnapshot, hostId: string): RoomSnapshot {
+      return {
+        v: snapshot.v,
+        roomCode: snapshot.roomCode,
+        status: snapshot.status,
+        mode: "HUMAN_VS_HUMAN",
+        rules: snapshot.rules,
+        hostId,
+        seats: snapshot.players.map((player, seat) => ({ seat, colour: player.colour, player })),
+      };
+    }
+
+    function setup(hostId = FIXTURE_PLAYER_ID) {
+      const snapshot = fixture("spread");
+      const adapter = new FakeAdapter();
+      const store = createGameStore(adapter);
+      store.getState().listen();
+      store.setState({
+        myPlayerId: FIXTURE_PLAYER_ID,
+        connection: "live",
+        room: roomFor(snapshot, hostId),
+      });
+      store.getState().applySnapshot(snapshot);
+      const { container } = render(<GameScreen store={store} />);
+      return { adapter, container, store, snapshot, user: userEvent.setup() };
+    }
+
+    async function choose(user: ReturnType<typeof userEvent.setup>, name: string) {
+      await user.click(screen.getByRole("button", { name: "Menu" }));
+      await user.click(screen.getByRole("button", { name }));
+    }
+
+    const dialog = () => screen.queryByRole("dialog");
+    const inDialog = (name: string) => within(screen.getByRole("dialog")).getByRole("button", { name });
+
+    beforeEach(() => {
+      useSettingsStore.setState({ animation: "off" });
+    });
+
+    it("offers Restart to the host", async () => {
+      const { user } = setup();
+
+      await user.click(screen.getByRole("button", { name: "Menu" }));
+
+      expect(screen.getByRole("button", { name: "Restart" })).toBeTruthy();
+    });
+
+    it("offers only Leave to everyone else", async () => {
+      const { user } = setup("p2");
+
+      await user.click(screen.getByRole("button", { name: "Menu" }));
+
+      expect(screen.queryByRole("button", { name: "Restart" })).toBeNull();
+      expect(screen.getByRole("button", { name: "Leave game" })).toBeTruthy();
+    });
+
+    describe.each([
+      ["Restart", "Restart the game?", "Restart", "restart"],
+      ["Leave game", "Leave this game?", "Leave", "leave"],
+    ] as const)("%s", (menuItem, title, confirmLabel, command) => {
+      it("asks first and sends nothing", async () => {
+        const { adapter, user } = setup();
+
+        await choose(user, menuItem);
+
+        expect(within(screen.getByRole("dialog")).getByRole("heading").textContent).toBe(title);
+        expect(document.activeElement).toBe(inDialog("Cancel"));
+        expect(adapter.commands).toEqual([]);
+      });
+
+      // POST-08-1
+      it("changes nothing on Cancel", async () => {
+        const { adapter, store, snapshot, user } = setup();
+        await choose(user, menuItem);
+
+        await user.click(inDialog("Cancel"));
+
+        expect(dialog()).toBeNull();
+        expect(adapter.commands).toEqual([]);
+        expect(store.getState().snapshot).toBe(snapshot);
+      });
+
+      it("sends the command once confirmed", async () => {
+        const { adapter, user } = setup();
+        await choose(user, menuItem);
+
+        await user.click(inDialog(confirmLabel));
+
+        await waitFor(() => expect(adapter.commands).toEqual([{ name: command }]));
+      });
+
+      // POST-08-3
+      it("keeps the game and explains when the server refuses", async () => {
+        const { adapter, store, snapshot, user } = setup();
+        adapter.queueAck({ ok: false, error: { code: "SERVER_BUSY", message: "" } });
+        await choose(user, menuItem);
+
+        await user.click(inDialog(confirmLabel));
+
+        await waitFor(() => expect(dialog()).toBeNull());
+        expect(store.getState().snapshot).toBe(snapshot);
+        expect(store.getState().toasts).toHaveLength(1);
+      });
+    });
+
+    // The done-when for this task: no piece from the old match is left.
+    it("shows only the new match after a restart", () => {
+      const { adapter, container } = setup();
+      const fresh = { ...fixture("start"), matchId: "another", version: 1 };
+      expect(countsOf("Rida")).toEqual(["1", "3", "0"]);
+
+      act(() => {
+        adapter.pushEvent({ v: "1.0.0", version: 1, type: "GAME_RESTARTED", data: {} });
+        adapter.pushState(fresh);
+      });
+
+      expect(countsOf("Rida")).toEqual(["4", "0", "0"]);
+      expect(container.querySelectorAll("[data-piece]")).toHaveLength(fresh.pieces.length);
+    });
+  });
+
+  // FR-SYS-06
+  describe("the end of a match", () => {
+    function finishing() {
+      const adapter = new FakeAdapter();
+      const store = createGameStore(adapter);
+      store.getState().listen();
+      const spread = fixture("spread");
+      const start = {
+        ...spread,
+        turn: { ...spread.turn, activePlayerId: FIXTURE_PLAYER_ID, lastRoll: 3 },
+      };
+      store.setState({ myPlayerId: FIXTURE_PLAYER_ID, connection: "live" });
+      store.getState().applySnapshot(start);
+      render(<GameScreen store={store} />);
+      const won: GameStateSnapshot = {
+        ...start,
+        version: start.version + 1,
+        status: "FINISHED",
+        winnerId: FIXTURE_PLAYER_ID,
+        pieces: start.pieces.map((piece) => (piece.id === "R4" ? { ...piece, step: 57 } : piece)),
+      };
+      return { adapter, store, won };
+    }
+
+    function send(adapter: FakeAdapter, snapshot: GameStateSnapshot, ...types: EventType[]) {
+      act(() => {
+        for (const type of types) {
+          adapter.pushEvent({ v: "1.0.0", version: snapshot.version, type, data: {} });
+        }
+        adapter.pushState(snapshot);
+      });
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      useSettingsStore.setState({ animation: "on" });
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    function advance(ms: number) {
+      act(() => {
+        vi.advanceTimersByTime(ms);
+      });
+    }
+
+    it("moves to the win screen only after the winning move has played", () => {
+      const { adapter, won } = finishing();
+
+      send(adapter, won, "MOVED", "PIECE_FINISHED", "GAME_OVER");
+      for (let hop = 0; hop < 3; hop++) advance(120);
+      expect(useUiStore.getState().screen).toBe("game");
+
+      advance(400);
+      expect(useUiStore.getState().screen).toBe("win");
+    });
+
+    // POST-06-2
+    it("doesn't move there without the server's GAME_OVER", () => {
+      const { adapter, won } = finishing();
+
+      send(adapter, won);
+      advance(5000);
+
+      expect(useUiStore.getState().screen).toBe("game");
+    });
+
+    it("shows a player's wins on their card once they have some", () => {
+      const { adapter, won } = finishing();
+
+      send(adapter, won);
+
+      const card = nameInPanel("Rida").closest("li");
+      expect(card?.textContent).toContain("1 win");
+      expect(nameInPanel("Hamza").closest("li")?.textContent).not.toContain("win");
     });
   });
 
