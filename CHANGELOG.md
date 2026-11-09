@@ -9,3 +9,4 @@
 - P6: read-only game screen with board, pieces, status panel, message area, crash screen and dev-only fixtures (FR-SYS-09, FR-SYS-06, NFR-SYS-10, NFR-SYS-11, NFR-SYS-03, D2 FR-07).
 - P7: rolling the die, turn text, sixes counter and countdown, with the `R` key and a lint rule against `Math.random` (FR-SYS-02, NFR-SYS-05, FR-SYS-07).
 - P8: choosing and moving a piece by mouse or keyboard, a destination and capture preview, step-by-step walking and Skip (FR-SYS-03, FR-SYS-04, FR-SYS-05, D2 FR-18, D2 FR-38).
+- P9: event feedback in order, with the message log, capture and finish effects, banners and placeholder sounds (FR-SYS-05, FR-SYS-10, D2 FR-23, D2 FR-36, D2 FR-37).

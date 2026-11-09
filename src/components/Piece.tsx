@@ -15,9 +15,17 @@ const STATE_CLASSES: Record<PieceState, string> = {
   target: "outline-dashed outline-[3px] outline-offset-1 outline-danger",
 };
 
+export type PieceEffect = "capture" | "finish";
+
+const EFFECT_CLASSES: Record<PieceEffect, string> = {
+  capture: "animate-capture",
+  finish: "animate-finish ring-4 ring-accent",
+};
+
 export interface PieceProps {
   colour: Colour;
   state?: PieceState;
+  effect?: PieceEffect | null;
   label: string;
   disabled?: boolean;
   onSelect?: () => void;
@@ -28,6 +36,7 @@ export interface PieceProps {
 export function Piece({
   colour,
   state = "idle",
+  effect = null,
   label,
   disabled = false,
   onSelect,
@@ -35,7 +44,8 @@ export function Piece({
   className = "",
 }: PieceProps) {
   const { shape, token } = PLAYER_IDENTITY[colour];
-  const stateClasses = `block rounded-full transition-transform duration-150 ${STATE_CLASSES[state]} ${className}`;
+  const effectClasses = effect ? EFFECT_CLASSES[effect] : "";
+  const stateClasses = `block rounded-full transition-transform duration-150 ${STATE_CLASSES[state]} ${effectClasses} ${className}`;
 
   const face = (
     <span
@@ -70,7 +80,13 @@ export function Piece({
   }
 
   return (
-    <span role="img" aria-label={label} data-state={state} className={stateClasses}>
+    <span
+      role="img"
+      aria-label={label}
+      data-state={state}
+      data-effect={effect ?? undefined}
+      className={stateClasses}
+    >
       {face}
     </span>
   );

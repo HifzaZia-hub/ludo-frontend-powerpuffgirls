@@ -6,14 +6,16 @@ import { BoardGrid } from "@/components/BoardGrid";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { DicePanel } from "@/components/DicePanel";
-import { MessageLog, type LogMessage } from "@/components/MessageLog";
+import { EventBanner } from "@/components/EventBanner";
+import { MessageLog } from "@/components/MessageLog";
 import { MoveList } from "@/components/MoveList";
 import { PieceLayer } from "@/components/PieceLayer";
 import { StatusPanel, type StatusPanelPlayer } from "@/components/StatusPanel";
 import { TopBar, type TurnDisplay } from "@/components/TopBar";
 import type { Player } from "@/contract/types";
 import { GAME_TEXT, MESSAGES, TURN_TEXT, type PLAYER_TAGS } from "@/feedback/copy";
-import { diceTumbleMs, pieceStepMs, pieceTweenSeconds } from "@/feedback/motion";
+import { diceTumbleMs, eventTimings, pieceTweenSeconds } from "@/feedback/motion";
+import { useEventFeedback } from "@/feedback/useEventFeedback";
 import { useDiceRoll } from "@/interaction/useDiceRoll";
 import { useGameKeys } from "@/interaction/useGameKeys";
 import { useMoveSelection } from "@/interaction/useMoveSelection";
@@ -32,9 +34,6 @@ import {
 } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useUiStore } from "@/store/uiStore";
-
-// P9 turns server events into these lines. Until then the log shows its empty message.
-const NO_MESSAGES: readonly LogMessage[] = [];
 
 function playerTag(player: Player, myPlayerId: string | null): keyof typeof PLAYER_TAGS | undefined {
   if (player.isAi) return "computer";
@@ -88,14 +87,30 @@ export function GameScreen({ store }: GameScreenProps) {
     diceTumbleMs(animation, reducedMotion),
   );
   const selection = useMoveSelection(store, dieRef, rolling);
-  const stepMs = pieceStepMs(animation, reducedMotion);
-  const { walk, skipped, skip: skipWalk } = useMoveWalk(snapshot, stepMs);
+  const timings = eventTimings(animation, reducedMotion);
+  const { walk, skipped, skip: skipWalk } = useMoveWalk(snapshot, timings.stepMs);
+
+  const eventLog = useStore(store, (state) => state.eventLog);
+  const errorId = useStore(
+    store,
+    (state) => state.toasts.filter(({ kind }) => kind === "error").at(-1)?.id ?? null,
+  );
+  const feedback = useEventFeedback({
+    snapshot,
+    eventLog,
+    myPlayerId,
+    timings,
+    soundOn: sound,
+    errorId,
+  });
+  const { skip: skipFeedback } = feedback;
 
   // D2 FR-38: only ever ends the pictures early. The game has already moved on.
   const skip = useCallback(() => {
     skipWalk();
     skipTumble();
-  }, [skipWalk, skipTumble]);
+    skipFeedback();
+  }, [skipWalk, skipTumble, skipFeedback]);
 
   useGameKeys({
     onRoll: roll,
@@ -133,6 +148,7 @@ export function GameScreen({ store }: GameScreenProps) {
     tag: playerTag(player, myPlayerId),
     counts,
     active: player.id === snapshot?.turn.activePlayerId,
+    homeBump: player.id === feedback.bumpPlayerId,
   }));
 
   return (
@@ -184,10 +200,18 @@ export function GameScreen({ store }: GameScreenProps) {
                   : null
               }
               walk={walk}
-              walkSeconds={stepMs / 1000}
+              walkSeconds={timings.stepMs / 1000}
+              effects={{
+                held: feedback.held,
+                flashingId: feedback.flashingId,
+                returningId: feedback.returningId,
+                finishingId: feedback.finishingId,
+                returnSeconds: skipped ? 0 : timings.returnMs / 1000,
+              }}
             />
+            <EventBanner text={feedback.banner} />
             {/* On top of the board's empty corner, so appearing never moves anything else. */}
-            {(walk !== null || rolling) && (
+            {(walk !== null || rolling || feedback.busy) && (
               <Button
                 variant="outline"
                 size="sm"
@@ -204,6 +228,7 @@ export function GameScreen({ store }: GameScreenProps) {
             canRoll={canRoll}
             onRoll={roll}
             sixesInRow={snapshot.rules.threeSixesForfeit ? snapshot.turn.sixesInRow : null}
+            sixesFlash={feedback.sixesFlash}
             getSecondsLeft={snapshot.rules.turnTimerSeconds === 0 ? null : getSecondsLeft}
             totalSeconds={snapshot.rules.turnTimerSeconds}
             showTimeUp={isMyTurn}
@@ -212,7 +237,7 @@ export function GameScreen({ store }: GameScreenProps) {
           />
           <div className="col-span-2 row-start-3 flex flex-col gap-3 lg:col-span-1 lg:col-start-3 lg:row-start-2 lg:min-h-0">
             <Card className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
-              <MessageLog messages={NO_MESSAGES} />
+              <MessageLog messages={feedback.messages} />
             </Card>
             {/* Below the messages, so appearing never pushes the latest message down. */}
             {selection.options.length > 0 && (

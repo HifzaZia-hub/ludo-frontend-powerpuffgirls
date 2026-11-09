@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { PieceLayer, type PieceChoice } from "@/components/PieceLayer";
+import { PieceLayer, type PieceChoice, type PieceEffects } from "@/components/PieceLayer";
 import { cellKey, pieceCell, piecePlacement, stackOffsets } from "@/config/geometry";
 import type { Colour, Piece } from "@/contract/types";
 
@@ -250,6 +250,64 @@ describe("PieceLayer", () => {
       await userEvent.click(screen.getByRole("button"));
 
       expect(onPick).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("event effects", () => {
+    const CAPTURED = makePiece("G1", "GREEN", 0, null);
+    const ALONE = { dx: 0, dy: 0, scale: 1 };
+    const NO_EFFECTS = {
+      held: new Map<string, number>(),
+      flashingId: null,
+      returningId: null,
+      finishingId: null,
+      returnSeconds: 0,
+    };
+
+    function draw(effects: PieceEffects) {
+      return render(
+        <PieceLayer
+          pieces={[CAPTURED]}
+          piecesByCell={groupByCell([CAPTURED])}
+          safeSquares={[]}
+          tweenSeconds={0}
+          effects={effects}
+        />,
+      );
+    }
+
+    it("keeps a captured piece on its old square until its turn", () => {
+      const { container } = draw({ ...NO_EFFECTS, held: new Map([["G1", 14]]) });
+      const expected = piecePlacement(pieceCell({ ...CAPTURED, step: 14 }), ALONE);
+
+      expect(parseFloat(pieceElement(container, "G1").style.left)).toBeCloseTo(expected.left);
+      expect(parseFloat(pieceElement(container, "G1").style.top)).toBeCloseTo(expected.top);
+    });
+
+    it("draws it in its base once it is let go", () => {
+      const { container } = draw(NO_EFFECTS);
+      const expected = piecePlacement(pieceCell(CAPTURED), ALONE);
+
+      expect(parseFloat(pieceElement(container, "G1").style.left)).toBeCloseTo(expected.left);
+    });
+
+    it("keeps describing where the piece really is while it is held", () => {
+      draw({ ...NO_EFFECTS, held: new Map([["G1", 14]]) });
+
+      expect(screen.getByRole("img", { name: "Green piece 1, in base" })).toBeTruthy();
+    });
+
+    it("flashes the captured piece, above the piece that took it", () => {
+      const { container } = draw({ ...NO_EFFECTS, flashingId: "G1", held: new Map([["G1", 14]]) });
+
+      expect(container.querySelector('[data-effect="capture"]')).not.toBeNull();
+      expect(pieceElement(container, "G1").className).toContain("z-10");
+    });
+
+    it("makes a finishing piece glow", () => {
+      const { container } = draw({ ...NO_EFFECTS, finishingId: "G1" });
+
+      expect(container.querySelector('[data-effect="finish"]')).not.toBeNull();
     });
   });
 

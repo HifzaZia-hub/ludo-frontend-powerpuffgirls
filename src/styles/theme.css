@@ -4,6 +4,7 @@
 
 /* Tokens copied exactly from docs/03-ui-spec.md section 2. Change them there first. */
 :root, html[data-theme="dark"] {
+  color-scheme: dark; /* so the browser draws scrollbars to match */
   --bg-deep:     #060B18;
   --bg-panel:    #0C1627;
   --bg-raised:   #142238;
@@ -28,6 +29,7 @@
 }
 
 html[data-theme="light"] {
+  color-scheme: light;
   --bg-deep:     #EEF2F8;
   --bg-panel:    #FFFFFF;
   --bg-raised:   #F3F6FB;
@@ -55,6 +57,16 @@ html[data-theme="light"] {
    long CSS motion takes, so they can never change an outcome. */
 html[data-animation="fast"] .animate-tumble {
   animation-duration: 250ms;
+}
+
+html[data-animation="fast"] .animate-capture {
+  animation-duration: 60ms;
+}
+
+html[data-animation="fast"] .animate-finish,
+html[data-animation="fast"] .animate-bump,
+html[data-animation="fast"] .animate-sixes-flash {
+  animation-duration: 150ms;
 }
 
 html[data-animation="off"] *,

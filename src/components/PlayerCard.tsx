@@ -15,9 +15,18 @@ export interface PlayerCardProps {
   tag?: keyof typeof PLAYER_TAGS;
   counts: PlayerCardCounts;
   active?: boolean;
+  /** A piece just got home, so the Home count pops. */
+  homeBump?: boolean;
 }
 
-export function PlayerCard({ colour, name, tag, counts, active = false }: PlayerCardProps) {
+export function PlayerCard({
+  colour,
+  name,
+  tag,
+  counts,
+  active = false,
+  homeBump = false,
+}: PlayerCardProps) {
   const columns = [
     { label: LABELS.base, count: counts.base },
     { label: LABELS.track, count: counts.track },
@@ -37,7 +46,13 @@ export function PlayerCard({ colour, name, tag, counts, active = false }: Player
         {columns.map(({ label, count }) => (
           <div key={label}>
             <dt className="text-xs font-semibold uppercase text-low">{label}</dt>
-            <dd className="text-xl font-semibold text-high">{count}</dd>
+            <dd
+              className={`text-xl font-semibold text-high ${
+                homeBump && label === LABELS.home ? "animate-bump" : ""
+              }`}
+            >
+              {count}
+            </dd>
           </div>
         ))}
       </dl>

@@ -17,6 +17,18 @@ describe("Piece", () => {
     expect(screen.getByRole("button", { name: "Red piece 1" }).tagName).toBe("BUTTON");
   });
 
+  it.each(["capture", "finish"] as const)("can play the %s effect", (effect) => {
+    const { container } = render(<Piece colour="RED" effect={effect} label="Red piece 1" />);
+
+    expect(container.querySelector(`[data-effect="${effect}"]`)).not.toBeNull();
+  });
+
+  it("plays no effect unless asked", () => {
+    const { container } = render(<Piece colour="RED" label="Red piece 1" />);
+
+    expect(container.querySelector("[data-effect]")).toBeNull();
+  });
+
   it("says whether it is the chosen one", () => {
     const { rerender } = render(<Piece colour="RED" state="movable" label="Red piece 1" />);
     expect(screen.getByRole("button").getAttribute("aria-pressed")).toBe("false");

@@ -45,7 +45,7 @@ with no console errors.
 |---|---|
 | A walk of 6 squares, Animations On | Reached each square in order, at 157, 291, 424, 557, 717 and 841 ms after the click |
 | Skip with `S`, on a 5-square walk that takes 600 ms | Pressed at about 221 ms, on its final square at 259 ms. `FR-SYS-05-skip-during-walk.png` |
-| Interrupted: a computer's snapshot arrives 150 ms into a 5-square walk | On its final square at 451 ms, 0.000% from where the snapshot says |
+| Interrupted (re-measured in P9, when a snapshot that moves no piece stopped interrupting a walk): a computer moves a piece about 300 ms into a 5-square walk | On its final square at 594 ms, instead of about 715 ms if left to finish, and 0.000% from where the snapshot says |
 | The same last move with Animations Off and On (POST-05-2) | Off passed through no squares and On passed through each one. All 16 pieces ended in identical places |
 
 ## Other checks
