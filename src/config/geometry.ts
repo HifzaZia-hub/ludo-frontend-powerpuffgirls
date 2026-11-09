@@ -45,13 +45,18 @@ export function squareForStep(colour: Colour, step: number): number | null {
   return (START_SQUARE[colour] + step - 1) % TRACK_CELLS.length;
 }
 
+/** A piece's number on screen: "R3" is piece 3. */
+export function pieceNumber(pieceId: string): string {
+  return pieceId.slice(1);
+}
+
 /** Centre of the cell a piece sits on, in grid units. */
 export function pieceCell(piece: Piece): GridPoint {
   const { colour, step, id } = piece;
 
   if (step === 0) {
     const [originCol, originRow] = YARD_ORIGIN[colour];
-    const slot = YARD_SLOTS[Number(id.slice(1)) - 1];
+    const slot = YARD_SLOTS[Number(pieceNumber(id)) - 1];
     if (!slot) throw new RangeError(`No yard slot for piece ${id}`);
     return { col: originCol + slot[0], row: originRow + slot[1] };
   }

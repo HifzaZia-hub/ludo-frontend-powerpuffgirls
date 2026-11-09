@@ -125,6 +125,10 @@ export const GAME_TEXT = {
   board: "Game board",
   players: "Players",
   safeSquare: "Safe square",
+  yourMoves: "Your moves",
+  move: "Move",
+  skip: "Skip",
+  wouldBeCaptured: "would be captured",
   // NFR-SYS-03. The button re-asks the server for the game, in words a 12-year-old can use.
   crashed: "Something went wrong — your game is safe",
   retry: "Try again",
@@ -141,6 +145,7 @@ export const COLOUR_NAMES: Record<Colour, string> = {
 export const TURN_TEXT = {
   myRoll: "Your turn — roll the dice",
   myMove: "Your turn — pick a piece",
+  myAutoMove: "Your turn — moving your piece",
   computer: "Computer is thinking…",
   human: (name: string) => `${name}'s turn`,
 } as const;
@@ -160,6 +165,32 @@ export function pieceLabel(
 ): string {
   const where = onSafeSquare ? `${PIECE_PLACES[place]}, on a safe square` : PIECE_PLACES[place];
   return `${COLOUR_NAMES[colour]} piece ${number}, ${where}`;
+}
+
+/** What one of the server's moves would do, worded to follow "can" or "Piece 2 →". */
+export function moveChoiceText(
+  from: PiecePlace,
+  to: PiecePlace,
+  squares: number,
+  capturedNames: readonly string[],
+): string {
+  let action = squares === 1 ? "move 1 square" : `move ${squares} squares`;
+  if (from === "base") action = "come out of base";
+  else if (to === "home") action = "reach home";
+  else if (to === "homeColumn" && from !== "homeColumn") action = "enter the home column";
+
+  const [first] = capturedNames;
+  if (first === undefined) return action;
+  const victims = capturedNames.length === 1 ? `${first}'s piece` : `${capturedNames.length} pieces`;
+  return `${action} and capture ${victims}`;
+}
+
+export function movablePieceLabel(pieceDescription: string, phrase: string): string {
+  return `${pieceDescription}, can ${phrase}`;
+}
+
+export function moveCardText(number: string, phrase: string): string {
+  return `Piece ${number} → ${phrase}`;
 }
 
 export const PLAYER_TAGS = {

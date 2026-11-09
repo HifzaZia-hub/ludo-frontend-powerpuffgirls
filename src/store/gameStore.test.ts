@@ -21,6 +21,8 @@ import {
   selectIsMyTurn,
   selectLegalMoveFor,
   selectLegalPieceIds,
+  selectMoveOffered,
+  selectMoveOptions,
   selectMe,
   selectPiecesByCell,
   selectPlayerProgress,
@@ -774,11 +776,122 @@ describe("selectors", () => {
   });
 
   it("reads legal moves only from the server's list", () => {
-    const state = storeWith(makeSnapshot(5)).getState();
+    const store = storeWith(makeSnapshot(5));
+    store.setState({ connection: "live" });
+    const state = store.getState();
     expect(selectCanMove(state)).toBe(true);
     expect(selectLegalPieceIds(state)).toEqual(["R1"]);
     expect(selectLegalMoveFor("R1")(state)?.toStep).toBe(1);
     expect(selectLegalMoveFor("R2")(state)).toBeNull();
+  });
+
+  describe("choosing a move", () => {
+    const ONE_MOVE = rollTurn.legalMoves;
+    const TWO_MOVES = [...ONE_MOVE, { pieceId: "R2", fromStep: 3, toStep: 9, captures: [] }];
+
+    function liveStore(overrides: Partial<GameStateSnapshot> = {}, myPlayerId = "p1"): GameStore {
+      const store = storeWith(makeSnapshot(5, overrides), myPlayerId);
+      store.setState({ connection: "live" });
+      return store;
+    }
+
+    it("offers the server's moves on my move", () => {
+      const state = liveStore().getState();
+      expect(selectMoveOffered(state)).toBe(true);
+      expect(selectMoveOptions(state).map(({ pieceId }) => pieceId)).toEqual(["R1"]);
+    });
+
+    it("offers nothing on someone else's turn, even if the list has moves", () => {
+      const state = liveStore({}, "p2").getState();
+      expect(selectMoveOffered(state)).toBe(false);
+      expect(selectMoveOptions(state)).toEqual([]);
+    });
+
+    it("offers nothing in the roll phase", () => {
+      expect(selectMoveOffered(liveStore({ turn: awaitingRoll }).getState())).toBe(false);
+    });
+
+    it("never offers an empty choice", () => {
+      const turn = { ...rollTurn, legalMoves: [] };
+      expect(selectMoveOffered(liveStore({ turn }).getState())).toBe(false);
+    });
+
+    describe("when the server plays a lone option itself", () => {
+      const rules = { ...defaultRules, autoMoveSingleOption: true };
+
+      it("offers no choice for one move", () => {
+        const state = liveStore({ rules }).getState();
+        expect(selectMoveOffered(state)).toBe(false);
+        expect(selectTurnKind(state)).toBe("myAutoMove");
+      });
+
+      it("still offers two moves", () => {
+        const turn = { ...rollTurn, legalMoves: TWO_MOVES };
+        expect(selectMoveOffered(liveStore({ rules, turn }).getState())).toBe(true);
+      });
+    });
+
+    it("leaves the moves on show but can't press while a command is pending", () => {
+      const store = liveStore();
+      store.setState({ pendingCommand: { id: 1, kind: "move", pieceId: "R1" } });
+      expect(selectMoveOffered(store.getState())).toBe(true);
+      expect(selectCanMove(store.getState())).toBe(false);
+    });
+
+    it.each(["connecting", "reconnecting", "lost", null] as const)(
+      "can't press while the connection is %s",
+      (connection) => {
+        const store = liveStore();
+        store.setState({ connection });
+        expect(selectCanMove(store.getState())).toBe(false);
+      },
+    );
+
+    it("describes a move using the server's steps and names who would be captured", () => {
+      const turn = {
+        ...rollTurn,
+        legalMoves: [{ pieceId: "R2", fromStep: 3, toStep: 9, captures: ["Y1"] }],
+      };
+
+      const [option] = selectMoveOptions(liveStore({ turn }).getState());
+
+      expect(option?.number).toBe("2");
+      expect(option?.phrase).toBe("move 6 squares and capture Computer's piece");
+    });
+
+    it("gives back the same list until the snapshot changes", () => {
+      const state = liveStore().getState();
+      expect(selectMoveOptions(state)).toBe(selectMoveOptions(state));
+    });
+  });
+
+  describe("a roll with no move", () => {
+    const noMoves = { ...rollTurn, legalMoves: [] };
+
+    it("is reported for me", () => {
+      expect(selectTurnKind(storeWith(makeSnapshot(5, { turn: noMoves })).getState())).toBe("noMove");
+    });
+
+    it("is reported for anyone else", () => {
+      const turn = { ...noMoves, activePlayerId: "p2" };
+      expect(selectTurnKind(storeWith(makeSnapshot(5, { turn })).getState())).toBe("noMove");
+    });
+  });
+
+  describe("move", () => {
+    it("gives back the version of an accepted move", async () => {
+      const { adapter, store } = makeStore();
+      adapter.queueAck({ ok: true, version: 9 });
+
+      await expect(store.getState().move("R1")).resolves.toBe(9);
+    });
+
+    it("gives back null for a refused move", async () => {
+      const { adapter, store } = makeStore();
+      adapter.queueAck(rejection("ILLEGAL_MOVE"));
+
+      await expect(store.getState().move("R1")).resolves.toBeNull();
+    });
   });
 
   it("recognises a computer's turn", () => {

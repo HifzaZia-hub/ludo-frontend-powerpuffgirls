@@ -1,3 +1,4 @@
+import type { Ref } from "react";
 import { Card } from "@/components/Card";
 import { CountdownRing } from "@/components/CountdownRing";
 import { Dice } from "@/components/Dice";
@@ -14,6 +15,7 @@ export interface DicePanelProps {
   getSecondsLeft: (() => number | null) | null; // null when the rules have no turn timer
   totalSeconds: number;
   showTimeUp: boolean;
+  dieRef?: Ref<HTMLButtonElement>;
   className?: string;
 }
 
@@ -26,11 +28,12 @@ export function DicePanel({
   getSecondsLeft,
   totalSeconds,
   showTimeUp,
+  dieRef,
   className = "",
 }: DicePanelProps) {
   return (
     <Card className={`flex flex-col items-center gap-2 ${className}`}>
-      <Dice value={value} rolling={rolling} disabled={!canRoll} onRoll={onRoll} />
+      <Dice ref={dieRef} value={value} rolling={rolling} disabled={!canRoll} onRoll={onRoll} />
 
       {sixesInRow !== null && (
         <div role="img" aria-label={sixesLabel(sixesInRow)} className="flex items-center gap-1.5">

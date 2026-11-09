@@ -3,7 +3,7 @@ import { ShapeGlyph } from "@/components/ShapeGlyph";
 import { PLAYER_IDENTITY } from "@/config/players";
 import type { Colour } from "@/contract/types";
 
-export type PieceState = "idle" | "movable" | "selected" | "dimmed";
+export type PieceState = "idle" | "movable" | "selected" | "dimmed" | "target";
 
 // The board is light in both themes, so the rings use the dark piece edge to stay visible.
 const STATE_CLASSES: Record<PieceState, string> = {
@@ -11,17 +11,29 @@ const STATE_CLASSES: Record<PieceState, string> = {
   movable: "ring-2 ring-piece-edge ring-offset-1 ring-offset-board-cell",
   selected: "scale-110 ring-4 ring-piece-edge ring-offset-1 ring-offset-board-cell",
   dimmed: "opacity-40",
+  // NFR-SYS-07: dashed, so a capture still stands out from the solid rings without the red.
+  target: "outline-dashed outline-[3px] outline-offset-1 outline-danger",
 };
 
 export interface PieceProps {
   colour: Colour;
   state?: PieceState;
   label: string;
+  disabled?: boolean;
   onSelect?: () => void;
+  onPreview?: () => void;
   className?: string;
 }
 
-export function Piece({ colour, state = "idle", label, onSelect, className = "" }: PieceProps) {
+export function Piece({
+  colour,
+  state = "idle",
+  label,
+  disabled = false,
+  onSelect,
+  onPreview,
+  className = "",
+}: PieceProps) {
   const { shape, token } = PLAYER_IDENTITY[colour];
   const stateClasses = `block rounded-full transition-transform duration-150 ${STATE_CLASSES[state]} ${className}`;
 
@@ -43,7 +55,13 @@ export function Piece({ colour, state = "idle", label, onSelect, className = "" 
         type="button"
         aria-label={label}
         aria-pressed={state === "selected"}
-        onClick={onSelect}
+        // NFR-SYS-08: aria-disabled, so the keyboard keeps its place while a move is on its way.
+        aria-disabled={disabled || undefined}
+        data-state={state}
+        onClick={() => {
+          if (!disabled) onSelect?.();
+        }}
+        onFocus={onPreview}
         className={`${stateClasses} ${FOCUS_RING}`}
       >
         {face}
@@ -52,7 +70,7 @@ export function Piece({ colour, state = "idle", label, onSelect, className = "" 
   }
 
   return (
-    <span role="img" aria-label={label} className={stateClasses}>
+    <span role="img" aria-label={label} data-state={state} className={stateClasses}>
       {face}
     </span>
   );

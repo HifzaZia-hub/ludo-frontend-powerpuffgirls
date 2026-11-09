@@ -164,6 +164,45 @@ describe("useDiceRoll", () => {
     expect(result.current.rolling).toBe(false);
   });
 
+  // D2 FR-38
+  it("stops tumbling early on skip", async () => {
+    const { adapter, result } = setup();
+    adapter.queueAck(ACCEPTED);
+    act(() => {
+      result.current.roll();
+      adapter.pushState(rolledSnapshot(4));
+    });
+    await advance(100);
+    expect(result.current.rolling).toBe(true);
+
+    act(() => result.current.skip());
+    await advance(0);
+
+    expect(result.current.rolling).toBe(false);
+  });
+
+  // NFR-SYS-05: skipping must never show a value the server hasn't sent yet.
+  it("still waits for the server's value after a skip", async () => {
+    const { adapter, result } = setup();
+    adapter.queueAck(ACCEPTED);
+    act(() => result.current.roll());
+
+    act(() => result.current.skip());
+    await advance(100);
+    expect(result.current.rolling).toBe(true);
+
+    act(() => adapter.pushState(rolledSnapshot(4)));
+    await advance(0);
+    expect(result.current.rolling).toBe(false);
+  });
+
+  it("does nothing on skip when no die is tumbling", () => {
+    const { result } = setup();
+
+    expect(() => act(() => result.current.skip())).not.toThrow();
+    expect(result.current.rolling).toBe(false);
+  });
+
   it("does nothing when the roll isn't allowed", () => {
     const { adapter, store, result } = setup();
     store.setState({ connection: "reconnecting" });
