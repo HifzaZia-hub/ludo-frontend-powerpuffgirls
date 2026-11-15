@@ -19,6 +19,20 @@ export function saveSession(session: SavedSession): void {
   }
 }
 
+/** What a refresh needs to get back into the game, or null if there is nothing usable. */
+export function loadSavedSession(): SavedSession | null {
+  try {
+    const saved: unknown = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? "null");
+    if (typeof saved !== "object" || saved === null) return null;
+    const { sessionToken, playerId, roomCode } = saved as Partial<SavedSession>;
+    if (typeof sessionToken !== "string" || typeof playerId !== "string") return null;
+    if (typeof roomCode !== "string") return null;
+    return { sessionToken, playerId, roomCode };
+  } catch {
+    return null; // storage is blocked, or something else wrote there
+  }
+}
+
 export function clearSavedSession(): void {
   try {
     sessionStorage.removeItem(SESSION_KEY);

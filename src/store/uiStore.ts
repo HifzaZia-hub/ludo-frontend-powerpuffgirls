@@ -2,8 +2,9 @@
 
 import { create } from "zustand";
 import type { Difficulty, GameMode } from "@/contract/types";
+import { loadSavedSession } from "@/store/savedSession";
 
-export type Screen = "main" | "setup" | "lobby" | "game" | "win" | "stopped";
+export type Screen = "main" | "setup" | "lobby" | "game" | "win" | "stopped" | "rejoining";
 export type AppModal = "settings" | "rules";
 
 /** What the player last chose on the setup form. In memory only (NFR-SYS-14). */
@@ -26,7 +27,8 @@ interface UiState {
 }
 
 export const useUiStore = create<UiState>()((set) => ({
-  screen: "main",
+  // Decided before the first paint, so a refresh never flashes the main screen.
+  screen: loadSavedSession() === null ? "main" : "rejoining",
   modal: null,
   lastSetup: null,
   rememberSetup: (lastSetup) => set({ lastSetup }),

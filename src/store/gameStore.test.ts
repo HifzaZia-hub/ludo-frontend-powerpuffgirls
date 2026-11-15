@@ -21,6 +21,7 @@ import {
   selectIsMyTurn,
   selectLegalMoveFor,
   selectLegalPieceIds,
+  selectIsOffline,
   selectMoveOffered,
   selectMoveOptions,
   selectMe,
@@ -295,14 +296,136 @@ describe("connection changes", () => {
     expect(adapter.commands).toEqual([]);
   });
 
-  it("marks the connection lost and tells the player when another tab takes over", () => {
+  it("marks the connection lost and says so when another tab takes over", () => {
     const { adapter, store } = makeStore();
 
     adapter.pushConnection("live");
     adapter.pushSessionReplaced();
 
     expect(store.getState().connection).toBe("lost");
-    expect(store.getState().toasts[0]?.message).toBe("This game is open in another tab.");
+    expect(store.getState().sessionReplaced).toBe(true);
+  });
+
+  it("counts each return, because events sent meanwhile are gone", () => {
+    const { adapter, store } = makeStore();
+    adapter.pushConnection("live");
+    expect(store.getState().reconnects).toBe(0);
+
+    adapter.pushConnection("reconnecting");
+    adapter.pushConnection("live");
+
+    expect(store.getState().reconnects).toBe(1);
+  });
+
+  // NFR-SYS-04
+  it("keeps the board through a lost connection", () => {
+    const { adapter, store } = makeStore();
+    adapter.pushConnection("live");
+    adapter.pushState(makeSnapshot(5));
+    const before = store.getState().snapshot;
+
+    adapter.pushConnection("reconnecting");
+    adapter.pushConnection("lost");
+
+    expect(store.getState().snapshot).toBe(before);
+  });
+
+  it.each([
+    ["reconnecting", true],
+    ["lost", true],
+    ["live", false],
+    ["connecting", false],
+  ] as const)("while the connection is %s, offline is %s", (connection, offline) => {
+    const { store } = makeStore();
+
+    store.setState({ connection });
+
+    expect(selectIsOffline(store.getState())).toBe(offline);
+  });
+
+  describe("while away, the computer plays my turn", () => {
+    const TOLD = "You were away — the computer played your turn.";
+
+    // In makeSnapshot R2 is on step 3.
+    function withR2On(version: number, step: number, matchId = "match-1") {
+      const base = makeSnapshot(version, { matchId });
+      return {
+        ...base,
+        pieces: base.pieces.map((piece) => (piece.id === "R2" ? { ...piece, step } : piece)),
+      };
+    }
+
+    function goAway() {
+      const context = makeStore();
+      const { adapter, store } = context;
+      store.setState({ myPlayerId: "p1" });
+      adapter.pushConnection("live");
+      adapter.pushState(withR2On(5, 3));
+      adapter.pushConnection("reconnecting");
+      return context;
+    }
+
+    const messages = (store: GameStore) => store.getState().toasts.map(({ message }) => message);
+
+    it("says so when one of my pieces moved forward", () => {
+      const { adapter, store } = goAway();
+
+      adapter.pushConnection("live");
+      adapter.pushState(withR2On(7, 9));
+
+      expect(messages(store)).toEqual([TOLD]);
+      expect(store.getState().toasts[0]?.kind).toBe("info");
+    });
+
+    // A capture isn't the computer playing for me.
+    it("stays quiet when my piece was only sent back", () => {
+      const { adapter, store } = goAway();
+
+      adapter.pushConnection("live");
+      adapter.pushState(withR2On(7, 0));
+
+      expect(messages(store)).toEqual([]);
+    });
+
+    it("stays quiet when nothing of mine moved", () => {
+      const { adapter, store } = goAway();
+
+      adapter.pushConnection("live");
+      adapter.pushState(withR2On(7, 3));
+
+      expect(messages(store)).toEqual([]);
+    });
+
+    it("stays quiet about a different match", () => {
+      const { adapter, store } = goAway();
+
+      adapter.pushConnection("live");
+      adapter.pushState(withR2On(1, 9, "match-2"));
+
+      expect(messages(store)).toEqual([]);
+    });
+
+    it("only says it about the first state after coming back", () => {
+      const { adapter, store } = goAway();
+      adapter.pushConnection("live");
+      adapter.pushState(withR2On(6, 3));
+
+      adapter.pushState(withR2On(7, 9));
+
+      expect(messages(store)).toEqual([]);
+    });
+
+    it("doesn't blame the computer for my own next move when no state came back", async () => {
+      const { adapter, store } = goAway();
+      adapter.queueAck({ ok: true, version: 5 });
+      adapter.pushConnection("live");
+      await Promise.resolve();
+      await Promise.resolve();
+
+      adapter.pushState(withR2On(6, 9));
+
+      expect(messages(store)).toEqual([]);
+    });
   });
 
   it("stops listening when the unsubscribe function is called", () => {
@@ -775,6 +898,91 @@ describe("restarting", () => {
     store.getState().applySnapshot(makeSnapshot(1, { matchId: "m2" }));
 
     expect(store.getState().sessionWins).toEqual({ p1: 1 });
+  });
+});
+
+// NFR-SYS-04: coming back after a refresh or a lost connection.
+describe("picking a session back up", () => {
+  const SAVED = { sessionToken: "secret", playerId: "p1", roomCode: "K7QX2M" };
+
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
+  it("reconnects with the saved session after a refresh", () => {
+    sessionStorage.setItem("ludo-session", JSON.stringify(SAVED));
+    const { adapter, store } = makeStore();
+
+    expect(store.getState().resumeSession()).toBe(true);
+
+    expect(adapter.connectedToken).toBe("secret");
+    expect(store.getState().myPlayerId).toBe("p1");
+  });
+
+  it("does nothing when there is no session to pick up", () => {
+    const { adapter, store } = makeStore();
+
+    expect(store.getState().resumeSession()).toBe(false);
+
+    expect(adapter.connectedToken).toBeNull();
+  });
+
+  it.each(["not json", "null", '{"sessionToken":"secret"}', '{"sessionToken":1,"playerId":2,"roomCode":3}'])(
+    "ignores a saved value it can't use: %s",
+    (saved) => {
+      sessionStorage.setItem("ludo-session", saved);
+      const { adapter, store } = makeStore();
+
+      expect(store.getState().resumeSession()).toBe(false);
+
+      expect(adapter.connectedToken).toBeNull();
+    },
+  );
+
+  describe("Try again and Play here instead", () => {
+    function replaced() {
+      sessionStorage.setItem("ludo-session", JSON.stringify(SAVED));
+      const context = makeStore();
+      context.adapter.pushConnection("live");
+      context.adapter.pushSessionReplaced();
+      return context;
+    }
+
+    it("connects again and clears the card", () => {
+      const { adapter, store } = replaced();
+
+      store.getState().reconnect();
+
+      expect(adapter.connectedToken).toBe("secret");
+      expect(store.getState().sessionReplaced).toBe(false);
+    });
+
+    it("counts as coming back, so old events aren't trusted", () => {
+      const { store } = replaced();
+      const before = store.getState().reconnects;
+
+      store.getState().reconnect();
+
+      expect(store.getState().reconnects).toBe(before + 1);
+    });
+
+    it("lets go if the saved session has gone", () => {
+      const { adapter, store } = replaced();
+      sessionStorage.clear();
+
+      store.getState().reconnect();
+
+      expect(adapter.connectedToken).toBeNull();
+      expect(store.getState().sessionReplaced).toBe(false);
+    });
+  });
+
+  it("shows a message that isn't an error", () => {
+    const { store } = makeStore();
+
+    store.getState().notify("Hamza is back.");
+
+    expect(store.getState().toasts[0]).toMatchObject({ kind: "info", message: "Hamza is back." });
   });
 });
 

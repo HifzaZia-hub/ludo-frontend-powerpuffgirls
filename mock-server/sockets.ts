@@ -48,7 +48,8 @@ export function attachSockets(io: Server, registry: RoomRegistry): void {
   io.use((socket, next) => {
     const token = tokenOf(socket);
     if (token !== null && registry.sessionForToken(token)) {
-      next();
+      // Waiting, rather than refusing, leaves the client patiently retrying as in a real outage.
+      setTimeout(next, registry.holdFor(token));
       return;
     }
     next(

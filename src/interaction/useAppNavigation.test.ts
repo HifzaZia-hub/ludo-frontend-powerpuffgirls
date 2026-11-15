@@ -104,6 +104,86 @@ describe("useAppNavigation", () => {
     expect(screen()).toBe("stopped");
   });
 
+  // NFR-SYS-04: where a refresh lands, from what the server says.
+  describe("after a refresh", () => {
+    function rejoining() {
+      const context = setup("game");
+      act(() => useUiStore.setState({ screen: "rejoining" }));
+      act(() => context.store.setState({ myPlayerId: "p1", connection: "connecting" }));
+      return context;
+    }
+
+    it("waits for the server", () => {
+      rejoining();
+
+      expect(screen()).toBe("rejoining");
+    });
+
+    it("goes back to a running game", () => {
+      const { state } = rejoining();
+
+      state(start());
+
+      expect(screen()).toBe("game");
+    });
+
+    it("goes to the win screen if the match has finished", () => {
+      const { state } = rejoining();
+
+      state({ ...start(), status: "FINISHED" });
+
+      expect(screen()).toBe("win");
+    });
+
+    it("says so if the match was closed", () => {
+      const { state } = rejoining();
+
+      state({ ...start(), status: "CLOSED" });
+
+      expect(screen()).toBe("stopped");
+    });
+
+    it("goes to the lobby if the game hasn't started", () => {
+      const { adapter } = rejoining();
+
+      act(() => adapter.pushRoom(makeRoom({ status: "LOBBY" })));
+
+      expect(screen()).toBe("lobby");
+    });
+
+    it("keeps waiting for the game when the room says it's running", () => {
+      const { adapter } = rejoining();
+
+      act(() => adapter.pushRoom(makeRoom({ status: "IN_PROGRESS" })));
+
+      expect(screen()).toBe("rejoining");
+    });
+
+    it("goes to the main screen if the session can't be used", () => {
+      const { adapter } = rejoining();
+
+      act(() => adapter.pushConnection("lost"));
+
+      expect(screen()).toBe("main");
+    });
+
+    it("goes to the main screen if the server ended the session", () => {
+      const { store } = rejoining();
+
+      act(() => store.getState().forgetRoom());
+
+      expect(screen()).toBe("main");
+    });
+
+    it("stays put for the card if another tab has the game", () => {
+      const { store } = rejoining();
+
+      act(() => store.setState({ connection: "lost", sessionReplaced: true }));
+
+      expect(screen()).toBe("rejoining");
+    });
+  });
+
   it("goes to the main screen when the room goes away, and forgets any stop", () => {
     const { event, state, store } = setup("game");
     act(() => store.setState({ room: makeRoom() }));

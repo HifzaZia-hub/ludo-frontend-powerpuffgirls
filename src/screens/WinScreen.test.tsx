@@ -225,6 +225,15 @@ describe("WinScreen", () => {
     });
   });
 
+  it("can't send anything while the server can't be reached", () => {
+    const { store } = setup();
+
+    act(() => store.setState({ connection: "reconnecting" }));
+
+    expect(playAgain().disabled).toBe(true);
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "New game" }).disabled).toBe(true);
+  });
+
   describe("checking the dice", () => {
     const check = () => screen.getByRole("button", { name: "Check the dice were fair" });
 

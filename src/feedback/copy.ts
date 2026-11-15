@@ -28,7 +28,19 @@ const ERROR_COPY: Partial<Record<ErrorCode, string>> = {
   INTERNAL_ERROR: "Something went wrong. Your game is safe — try again.",
 };
 
-export const SESSION_REPLACED_MESSAGE = "This game is open in another tab.";
+// Contract §7. Never words like "socket" or "disconnected from server".
+export const CONNECTION_TEXT = {
+  reconnecting: "Reconnecting…",
+  lost: "Disconnected",
+  tryAgain: "Try again",
+  rejoining: "Rejoining your game…",
+  replaced: "This game is open in another tab.",
+  playHere: "Play here instead",
+  playedForYou: "You were away — the computer played your turn.",
+  stillThereTitle: "Still there?",
+  stillThereBody: "The computer has been playing your turns.",
+  stillHere: "I'm here",
+} as const;
 
 export function friendlyError(error: ServerError): string {
   return ERROR_COPY[error.code] ?? (error.message || GENERIC_ERROR);

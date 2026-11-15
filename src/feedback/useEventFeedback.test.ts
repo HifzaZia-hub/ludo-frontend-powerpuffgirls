@@ -47,18 +47,23 @@ interface Props {
   eventLog: readonly ServerEvent[];
   soundOn?: boolean;
   errorId?: number | null;
+  reconnects?: number;
 }
+
+const onNotice = vi.fn();
 
 function setup(first: GameStateSnapshot | null, timings = ON, eventLog: readonly ServerEvent[] = []) {
   return renderHook(
-    ({ snapshot, eventLog: log, soundOn = true, errorId = null }: Props) =>
+    ({ snapshot, eventLog: log, soundOn = true, errorId = null, reconnects = 0 }: Props) =>
       useEventFeedback({
         snapshot,
         eventLog: log,
         myPlayerId: "p1",
         timings,
+        reconnects,
         soundOn,
         errorId,
+        onNotice,
       }),
     { initialProps: { snapshot: first, eventLog } as Props },
   );
@@ -78,6 +83,7 @@ describe("useEventFeedback", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.mocked(playSound).mockClear();
+    onNotice.mockClear();
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -464,6 +470,124 @@ describe("useEventFeedback", () => {
     });
   });
 
+  // NFR-SYS-04: events sent while we were away are gone for good.
+  describe("after being away", () => {
+    it("says nothing about a change it may only have half heard", () => {
+      const start = ridasTurn();
+      const { result, rerender } = setup(start, OFF);
+      const moved = next(start, { R2: 10 });
+
+      rerender({ snapshot: moved, eventLog: eventsAt(moved.version, "MOVED"), reconnects: 1 });
+
+      expect(result.current.messages).toEqual([]);
+    });
+
+    it("hears the next change as usual", () => {
+      const start = ridasTurn();
+      const { result, rerender } = setup(start, OFF);
+      const back = next(start);
+      rerender({ snapshot: back, eventLog: [], reconnects: 1 });
+
+      const rolled = next(back);
+      rerender({ snapshot: rolled, eventLog: eventsAt(rolled.version, "ROLLED"), reconnects: 1 });
+
+      expect(texts(result)).toEqual(["Rida rolled 4."]);
+    });
+
+    // POST-06-2: the server's snapshot is still a completion response.
+    it("reports the end of a match it missed, one version later", () => {
+      const start = ridasTurn();
+      const { result, rerender } = setup(start, OFF);
+
+      rerender({
+        snapshot: next(start, {}, { status: "FINISHED", winnerId: "p2" }),
+        eventLog: [],
+        reconnects: 1,
+      });
+
+      expect(result.current.gameOver).toBe(true);
+    });
+
+    it("reports the end of a match it missed, across a version gap", () => {
+      const start = ridasTurn();
+      const { result, rerender } = setup(start, OFF);
+
+      rerender({
+        snapshot: { ...start, version: start.version + 9, status: "FINISHED", winnerId: "p2" },
+        eventLog: [],
+      });
+
+      expect(result.current.gameOver).toBe(true);
+    });
+
+    // POST-06-3
+    it("doesn't report an end the server gave no winner for", () => {
+      const start = ridasTurn();
+      const { result, rerender } = setup(start, OFF);
+
+      rerender({ snapshot: { ...start, version: start.version + 9, status: "FINISHED" }, eventLog: [] });
+
+      expect(result.current.gameOver).toBe(false);
+    });
+  });
+
+  describe("PLAYER_IDLE", () => {
+    function idle(activePlayerId: string) {
+      const base = ridasTurn();
+      const start = { ...base, turn: { ...base.turn, activePlayerId } };
+      const view = setup(start, OFF);
+      const after = next(start);
+      view.rerender({ snapshot: after, eventLog: eventsAt(after.version, "PLAYER_IDLE") });
+      return view;
+    }
+
+    it("asks if I'm still there when it was my turn", () => {
+      expect(idle("p1").result.current.stillThere).toBe(true);
+    });
+
+    // The event names nobody, so anything else would be a guess.
+    it("says nothing when it was someone else's turn", () => {
+      expect(idle("p2").result.current.stillThere).toBe(false);
+    });
+
+    it("goes away when dismissed", () => {
+      const { result } = idle("p1");
+
+      act(() => result.current.dismissStillThere());
+
+      expect(result.current.stillThere).toBe(false);
+    });
+  });
+
+  describe("PLAYER_RECONNECTED", () => {
+    function comesBack(name: string) {
+      const base = ridasTurn();
+      const start = {
+        ...base,
+        players: base.players.map((player) => ({ ...player, connected: player.name !== name })),
+      };
+      const view = setup(start, OFF);
+      const after = next(start, {}, {
+        players: start.players.map((player) => ({ ...player, connected: true })),
+      });
+      view.rerender({ snapshot: after, eventLog: eventsAt(after.version, "PLAYER_RECONNECTED") });
+      return view;
+    }
+
+    it("tells everyone who came back", () => {
+      const { result } = comesBack("Hamza");
+
+      expect(onNotice).toHaveBeenCalledWith("Hamza is back.");
+      expect(texts(result)).toEqual(["Hamza is back."]);
+    });
+
+    it("doesn't tell me that I came back", () => {
+      comesBack("Rida");
+
+      expect(onNotice).not.toHaveBeenCalled();
+    });
+  });
+
   describe("the roll line", () => {
     it("only joins the same player's move", () => {
       const start = ridasTurn();
@@ -584,8 +708,10 @@ describe("useEventFeedback", () => {
           eventLog: [],
           myPlayerId: "p1",
           timings: OFF,
+          reconnects: 0,
           soundOn: true,
           errorId: 3,
+          onNotice,
         }),
       );
 

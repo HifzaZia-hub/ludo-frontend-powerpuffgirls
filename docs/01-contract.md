@@ -383,6 +383,9 @@ so a tick means "answered in writing", not "seen working".
 - [ ] Does `CAPTURED` come once per captured piece? The mock does. Each one is
       matched to a piece that went backwards between the two snapshots, because
       the event doesn't say which piece it was (P9).
+- [ ] `PLAYER_IDLE` — who is it about, and after how many automatic actions? Our
+      task says three, and the mock sends it after one timeout. The "Still there?"
+      dialog shows only if it was this player's turn when it came (P11).
 - [ ] How is `seedHash` made from `seed`? The mock uses SHA-256 of the seed's
       text, written in hex, and the win screen's dice check assumes that. If the
       server does it differently, the check says "We couldn't check this game's

@@ -29,6 +29,14 @@ function connectionChanged(
   );
 }
 
+/** Who just came back, as far as the two snapshots can say. */
+export function reconnectedPlayer(
+  before: GameStateSnapshot,
+  after: GameStateSnapshot,
+): Player | null {
+  return connectionChanged(before, after, true);
+}
+
 /**
  * `before` is the snapshot just before this event's change, or null if we don't have it, as after
  * a version gap. The turn's owner is read from it because `after` may already be the next player's.

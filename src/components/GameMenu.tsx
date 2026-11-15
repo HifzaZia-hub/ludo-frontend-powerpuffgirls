@@ -4,13 +4,14 @@ import { GAME_TEXT } from "@/feedback/copy";
 
 export interface GameMenuProps {
   canRestart: boolean; // the server only accepts a restart from the host
+  disabled?: boolean; // nothing can reach the server right now
   onRestart: () => void;
   onLeave: () => void;
 }
 
 // A button that shows a short list of real buttons. Two choices don't need arrow-key menu behaviour,
 // and Tab reaches them like every other control on the screen.
-export function GameMenu({ canRestart, onRestart, onLeave }: GameMenuProps) {
+export function GameMenu({ canRestart, disabled = false, onRestart, onLeave }: GameMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -51,6 +52,7 @@ export function GameMenu({ canRestart, onRestart, onLeave }: GameMenuProps) {
         size="sm"
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
+        disabled={disabled}
         onClick={() => setOpen((wasOpen) => !wasOpen)}
       >
         {/* U+FE0E asks for the plain glyph, so it takes the theme's text colour. */}

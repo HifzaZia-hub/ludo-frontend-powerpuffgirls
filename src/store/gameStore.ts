@@ -17,8 +17,8 @@ import type {
   RoomSnapshot,
   ServerError,
 } from "@/contract/types";
-import { friendlyError, moveChoiceText, SESSION_REPLACED_MESSAGE } from "@/feedback/copy";
-import { clearSavedSession, saveSession } from "@/store/savedSession";
+import { CONNECTION_TEXT, friendlyError, moveChoiceText } from "@/feedback/copy";
+import { clearSavedSession, loadSavedSession, saveSession } from "@/store/savedSession";
 
 const EVENT_LOG_LIMIT = 50;
 
@@ -63,6 +63,12 @@ interface GameData {
   /** D2 FR-29: wins per player id. A history across matches, so no snapshot can hold it. */
   sessionWins: Readonly<Record<string, number>>;
   scoredMatchId: string | null;
+  /** Another tab took this session (contract §7). */
+  sessionReplaced: boolean;
+  /** Counts each return after being away, because events sent meanwhile are gone for good. */
+  reconnects: number;
+  /** The board as we last saw it before the connection dropped. */
+  snapshotBeforeAway: GameStateSnapshot | null;
 }
 
 export interface GameState extends GameData {
@@ -90,6 +96,12 @@ export interface GameState extends GameData {
   restart(): Promise<boolean>;
   /** Lets go of a room the server has already closed, so there is nothing left to ask it. */
   forgetRoom(): void;
+  /** After a refresh: picks the saved session back up. False if there is nothing to pick up. */
+  resumeSession(): boolean;
+  /** Try again, and Play here instead. Starts a new connection with the saved session. */
+  reconnect(): void;
+  /** Shows a short message that goes away by itself. */
+  notify(message: string): void;
   dismissToast(id: number): void;
 }
 
@@ -106,19 +118,38 @@ const INITIAL_DATA: GameData = {
   toasts: [],
   sessionWins: {},
   scoredMatchId: null,
+  sessionReplaced: false,
+  reconnects: 0,
+  snapshotBeforeAway: null,
 };
 
 export function createGameStore(adapter: GameAdapter): GameStore {
   let nextId = 1;
 
   return createStore<GameState>((set, get) => {
-    function pushToast(message: string): void {
+    function pushToast(message: string, kind: Toast["kind"] = "error"): void {
       // Error toasts stay until dismissed, so retrying the same failure must not stack them up.
       set((state) =>
         state.toasts.some((toast) => toast.message === message)
           ? state
-          : { toasts: [...state.toasts, { id: nextId++, kind: "error", message }] },
+          : { toasts: [...state.toasts, { id: nextId++, kind, message }] },
       );
+    }
+
+    // The first snapshot after coming back can show whether the computer played for us. Forwards
+    // only: a piece sent back to base was captured, which the player did nothing to cause.
+    function tellIfPlayedForMe(next: GameStateSnapshot): void {
+      const { snapshotBeforeAway: before, connection, myPlayerId } = get();
+      if (!before || connection !== "live") return;
+      set({ snapshotBeforeAway: null });
+
+      const me = next.players.find(({ id }) => id === myPlayerId);
+      if (!me || before.matchId !== next.matchId) return;
+      const playedForMe = next.pieces.some((piece) => {
+        const was = before.pieces.find(({ id }) => id === piece.id);
+        return piece.colour === me.colour && was !== undefined && piece.step > was.step;
+      });
+      if (playedForMe) pushToast(CONNECTION_TEXT.playedForYou, "info");
     }
 
     function enterRoom({
@@ -172,6 +203,7 @@ export function createGameStore(adapter: GameAdapter): GameStore {
       ...INITIAL_DATA,
 
       applySnapshot: (next) => {
+        tellIfPlayedForMe(next);
         const current = get().snapshot;
         // Contract §8: a restart begins again at version 1 with a new matchId, so comparing
         // versions across two matches would throw away every snapshot of the new one.
@@ -210,9 +242,15 @@ export function createGameStore(adapter: GameAdapter): GameStore {
       applyRoom: (room) => set({ room }),
 
       applyConnection: (status) => {
-        const wasReconnecting = get().connection === "reconnecting";
-        set({ connection: status });
-        if (status === "live" && wasReconnecting) void get().resync();
+        const { connection, snapshot } = get();
+        const cameBack = status === "live" && connection === "reconnecting";
+        const wentAway = connection === "live" && (status === "reconnecting" || status === "lost");
+        set((state) => ({
+          connection: status,
+          reconnects: cameBack ? state.reconnects + 1 : state.reconnects,
+          snapshotBeforeAway: wentAway ? snapshot : state.snapshotBeforeAway,
+        }));
+        if (cameBack) void get().resync();
       },
 
       roll: async () => {
@@ -229,7 +267,10 @@ export function createGameStore(adapter: GameAdapter): GameStore {
       // The reply arrives as game:state and goes through the usual version check. A failed
       // sync changes nothing, and it can't trigger another sync, so this can never loop.
       resync: async () => {
-        await adapter.sync(get().snapshot?.version ?? 0);
+        const known = get().snapshot?.version ?? 0;
+        const ack = await adapter.sync(known);
+        // No newer state is coming, so nothing happened while we were away.
+        if (!ack.ok || ack.version <= known) set({ snapshotBeforeAway: null });
       },
 
       // Leaves connection alone because the socket's state doesn't change here.
@@ -242,10 +283,7 @@ export function createGameStore(adapter: GameAdapter): GameStore {
           onEvent: (event) => get().applyEvent(event),
           onError: showError,
           onConnection: (status) => get().applyConnection(status),
-          onSessionReplaced: () => {
-            set({ connection: "lost" });
-            pushToast(SESSION_REPLACED_MESSAGE);
-          },
+          onSessionReplaced: () => set({ connection: "lost", sessionReplaced: true }),
         }),
 
       createRoom: async (request) => {
@@ -306,6 +344,26 @@ export function createGameStore(adapter: GameAdapter): GameStore {
 
       forgetRoom: endSession,
 
+      resumeSession: () => {
+        const saved = loadSavedSession();
+        if (!saved) return false;
+        set({ myPlayerId: saved.playerId });
+        adapter.connect(saved.sessionToken); // contract §7: the server then sends the room and game
+        return true;
+      },
+
+      reconnect: () => {
+        const saved = loadSavedSession();
+        if (!saved) {
+          endSession();
+          return;
+        }
+        set((state) => ({ sessionReplaced: false, reconnects: state.reconnects + 1 }));
+        adapter.connect(saved.sessionToken);
+      },
+
+      notify: (message) => pushToast(message, "info"),
+
       dismissToast: (id) =>
         set((state) => ({ toasts: state.toasts.filter((toast) => toast.id !== id) })),
     };
@@ -332,6 +390,11 @@ function perSnapshot<T>(
 export function selectIsMyTurn(state: GameState): boolean {
   const { snapshot, myPlayerId } = state;
   return snapshot?.status === "IN_PROGRESS" && snapshot.turn.activePlayerId === myPlayerId;
+}
+
+/** Only true once we had a connection and lost it. Before the first one, there's nothing to lose. */
+export function selectIsOffline(state: GameState): boolean {
+  return state.connection === "reconnecting" || state.connection === "lost";
 }
 
 export function selectCanRoll(state: GameState): boolean {

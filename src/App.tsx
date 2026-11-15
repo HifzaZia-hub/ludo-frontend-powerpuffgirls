@@ -2,13 +2,16 @@ import { useEffect, useRef } from "react";
 import { useStore } from "zustand";
 import { useAdapterSubscription } from "@/adapter/useAdapterSubscription";
 import { Button } from "@/components/Button";
+import { ConnectionBanner } from "@/components/ConnectionBanner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { SessionReplacedCard } from "@/components/SessionReplacedCard";
 import { ToastRegion } from "@/components/ToastRegion";
 import { SETTINGS_TEXT } from "@/feedback/copy";
 import { useAppNavigation } from "@/interaction/useAppNavigation";
 import { GameScreen } from "@/screens/GameScreen";
 import { LobbyScreen } from "@/screens/LobbyScreen";
 import { MainScreen } from "@/screens/MainScreen";
+import { RejoiningScreen } from "@/screens/RejoiningScreen";
 import { RulesModal } from "@/screens/RulesModal";
 import { SettingsModal } from "@/screens/SettingsModal";
 import { SetupScreen } from "@/screens/SetupScreen";
@@ -31,32 +34,52 @@ export function App({ store }: AppProps) {
   const dismissToast = useStore(store, (state) => state.dismissToast);
   const snapshot = useStore(store, (state) => state.snapshot);
   const resync = useStore(store, (state) => state.resync);
-  const inGame = screen === "game" || screen === "win";
+  const connection = useStore(store, (state) => state.connection);
+  const sessionReplaced = useStore(store, (state) => state.sessionReplaced);
+  const reconnect = useStore(store, (state) => state.reconnect);
 
   const screenRef = useRef<HTMLDivElement>(null);
-  const lastScreen = useRef(screen);
+  const showing = sessionReplaced ? "replaced" : screen;
+  const lastShowing = useRef(showing);
+  const resumed = useRef(false);
+
+  // After the two hooks above, so the store is already listening when the connection opens.
+  useEffect(() => {
+    if (resumed.current) return;
+    resumed.current = true;
+    store.getState().resumeSession();
+  }, [store]);
 
   // NFR-SYS-08: the button just pressed no longer exists, so put keyboard and screen-reader users
   // at the top of the new screen. Compared rather than run once so StrictMode can't trigger it.
   useEffect(() => {
-    if (lastScreen.current === screen) return;
-    lastScreen.current = screen;
+    if (lastShowing.current === showing) return;
+    lastShowing.current = showing;
     screenRef.current?.querySelector("h1")?.focus();
-  }, [screen]);
+  }, [showing]);
+
+  const offline = connection === "reconnecting" || connection === "lost" ? connection : null;
 
   return (
     <>
+      <ConnectionBanner status={sessionReplaced ? null : offline} onRetry={reconnect} />
+
       <div ref={screenRef}>
-        {screen === "main" && <MainScreen store={store} />}
-        {screen === "setup" && <SetupScreen store={store} />}
-        {screen === "lobby" && <LobbyScreen store={store} />}
-        {/* Out here so it also catches a crash in the store selectors GameScreen reads. */}
-        {inGame && (
-          <ErrorBoundary resetKey={snapshot} onResync={() => void resync()}>
-            {screen === "game" ? <GameScreen store={store} /> : <WinScreen store={store} />}
+        {sessionReplaced ? (
+          <SessionReplacedCard onPlayHere={reconnect} />
+        ) : (
+          // NFR-SYS-03: around every screen. Out here so it also catches a crash in the store
+          // selectors a screen reads.
+          <ErrorBoundary resetKey={snapshot ?? screen} onResync={() => void resync()}>
+            {screen === "main" && <MainScreen store={store} />}
+            {screen === "setup" && <SetupScreen store={store} />}
+            {screen === "lobby" && <LobbyScreen store={store} />}
+            {screen === "game" && <GameScreen store={store} />}
+            {screen === "win" && <WinScreen store={store} />}
+            {screen === "stopped" && <StoppedScreen store={store} />}
+            {screen === "rejoining" && <RejoiningScreen store={store} />}
           </ErrorBoundary>
         )}
-        {screen === "stopped" && <StoppedScreen store={store} />}
       </div>
 
       {/* After the screen in the page, so it is the last stop when tabbing. FR-SYS-10.

@@ -21,6 +21,7 @@ export interface TopBarProps {
   onRules: () => void;
   onSettings: () => void;
   canRestart: boolean;
+  offline: boolean;
   onRestart: () => void;
   onLeave: () => void;
 }
@@ -32,6 +33,7 @@ export function TopBar({
   onRules,
   onSettings,
   canRestart,
+  offline,
   onRestart,
   onLeave,
 }: TopBarProps) {
@@ -42,7 +44,12 @@ export function TopBar({
         <h1 tabIndex={-1} className={`text-xl font-bold text-high ${FOCUS_RING}`}>
           {MAIN_TEXT.wordmark}
         </h1>
-        <GameMenu canRestart={canRestart} onRestart={onRestart} onLeave={onLeave} />
+        <GameMenu
+          canRestart={canRestart}
+          disabled={offline}
+          onRestart={onRestart}
+          onLeave={onLeave}
+        />
         <Button variant="ghost" size="sm" onClick={onRules}>
           <span aria-hidden="true">?</span>
           {GAME_TEXT.rules}

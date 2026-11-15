@@ -105,6 +105,10 @@ class Client {
     }, label);
   }
 
+  isConnected(): boolean {
+    return this.socket.connected;
+  }
+
   close(): void {
     this.socket.disconnect();
   }
@@ -282,7 +286,7 @@ describe("REST", () => {
   });
 
   it("has no debug routes unless debug mode is on", async () => {
-    for (const path of ["force-roll", "scenario", "rules"]) {
+    for (const path of ["force-roll", "scenario", "rules", "skip-state", "drop-connection"]) {
       const response = await fetch(`${baseUrl}/debug/${path}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -635,6 +639,50 @@ describe("debug helpers", () => {
     await debugPost("scenario", { name: "no-legal-move" });
     await host.send("game:roll");
     await host.untilEvent("TURN_PASSED");
+  });
+
+  it("skip-state loses one game:state but not its events", async () => {
+    const { host } = await startedGame();
+    const scenario = await debugPost("scenario", { name: "no-legal-move" });
+    const before = scenario.version as number;
+    await host.untilState(({ version }) => version === before, "the scenario");
+    await debugPost("skip-state", {});
+
+    await host.send("game:roll");
+    await host.untilEvent("ROLLED");
+
+    // The turn then passes, and that state arrives two versions on.
+    await host.untilEvent("TURN_PASSED");
+    await host.untilState(({ version }) => version === before + 2, "the state after the gap");
+    expect(host.states().some(({ snapshot }) => snapshot.version === before + 1)).toBe(false);
+  });
+
+  it("drop-connection cuts the connection without ending the session", async () => {
+    const { created, host } = await startedGame();
+
+    await debugPost("drop-connection", {});
+
+    await vi.waitFor(() => expect(host.isConnected()).toBe(false));
+    const back = await connect(created.sessionToken);
+    await back.untilState(() => true, "the game after coming back");
+  });
+
+  it("drop-connection can keep a player out for a while", async () => {
+    const { created } = await startedGame();
+    const started = Date.now();
+
+    await debugPost("drop-connection", { holdMs: 150 });
+    await connect(created.sessionToken);
+
+    expect(Date.now() - started).toBeGreaterThanOrEqual(140);
+  });
+
+  it("drop-connection refuses a silly hold", async () => {
+    await startedGame();
+
+    const refused = await request("POST", "/debug/drop-connection", { holdMs: -1 });
+
+    expect(refused.status).not.toBe(200);
   });
 
   it("force-roll holds until it is cleared", async () => {

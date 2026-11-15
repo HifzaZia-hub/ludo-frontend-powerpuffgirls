@@ -21,6 +21,7 @@ function setUp() {
     toSocket: (_socketId, event, payload) => sent.push({ event, payload }),
     dropSocket: () => undefined,
     evictRoom: () => undefined,
+    closeConnection: () => undefined,
   };
   const registry = new RoomRegistry(outbox, { passDelayMs: 1000, absenceMs: TWO_MINUTES });
 
