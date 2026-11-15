@@ -12,7 +12,8 @@
     "format": "prettier --write src mock-server \"*.config.{ts,js}\"",
     "test": "vitest run",
     "mock": "tsx mock-server/index.ts",
-    "mock:debug": "tsx mock-server/index.ts --debug"
+    "mock:debug": "tsx mock-server/index.ts --debug",
+    "e2e": "node scripts/e2e.mjs"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.3",

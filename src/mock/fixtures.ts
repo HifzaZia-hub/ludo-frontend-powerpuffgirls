@@ -137,10 +137,29 @@ export const FIXTURES: Record<string, GameStateSnapshot> = {
   }),
 };
 
+/** The name of the one fixture that is wrong on purpose. */
+export const BROKEN_FIXTURE = "broken";
+
+// NFR-SYS-03: a piece on a step that doesn't exist makes the board throw, so the error screen can
+// be seen in a real browser. It is kept out of FIXTURES because every one of those must be valid.
+function brokenFixture(): GameStateSnapshot {
+  const snapshot = makeFixture(BROKEN_FIXTURE, {
+    steps: { RED: [0, 0, 0, 0], BLUE: [0, 0, 0, 0] },
+    active: "RED",
+  });
+  return {
+    ...snapshot,
+    pieces: snapshot.pieces.map((piece) =>
+      piece.id === "R1" ? { ...piece, step: 99, boardSquare: null } : piece,
+    ),
+  };
+}
+
 export function showFixture(name: string, store: GameStore): void {
-  const snapshot = FIXTURES[name];
+  const snapshot = name === BROKEN_FIXTURE ? brokenFixture() : FIXTURES[name];
   if (!snapshot) {
-    console.error(`No fixture "${name}". Try: ${Object.keys(FIXTURES).join(", ")}.`);
+    const names = [...Object.keys(FIXTURES), BROKEN_FIXTURE].join(", ");
+    console.error(`No fixture "${name}". Try: ${names}.`);
     return;
   }
   store.setState({ myPlayerId: FIXTURE_PLAYER_ID });
