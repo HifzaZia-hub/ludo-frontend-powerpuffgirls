@@ -12,3 +12,4 @@
 - P9: event feedback in order, with the message log, capture and finish effects, banners and placeholder sounds (FR-SYS-05, FR-SYS-10, D2 FR-23, D2 FR-36, D2 FR-37).
 - P10: win screen with ranking, session score and dice check, restart and leave behind confirm dialogs, and the stopped screen (FR-SYS-06, FR-SYS-08, D2 FR-29, D2 FR-33, D2 FR-34).
 - P11: surviving a refresh, a lost connection and a second tab, with a reconnecting banner, error boundaries on every screen and new mock debug routes (NFR-SYS-03, NFR-SYS-04, FR-SYS-04).
+- P12: the requirements pass, with `npm run e2e` for rerunnable browser checks, a dev-only log of computer turn times and a dev-only broken fixture, plus evidence for NFR-SYS-01 to NFR-SYS-10 (MVP).

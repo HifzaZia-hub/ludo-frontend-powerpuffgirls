@@ -1,7 +1,7 @@
 import { FakeAdapter } from "@/adapter/FakeAdapter";
 import { pieceCell, progressCounts, squareForStep } from "@/config/geometry";
 import type { GameStateSnapshot } from "@/contract/types";
-import { FIXTURE_PLAYER_ID, FIXTURES, showFixture } from "@/mock/fixtures";
+import { BROKEN_FIXTURE, FIXTURE_PLAYER_ID, FIXTURES, showFixture } from "@/mock/fixtures";
 import { createGameStore } from "@/store/gameStore";
 import { useUiStore } from "@/store/uiStore";
 
@@ -76,7 +76,19 @@ describe("showFixture", () => {
     showFixture("nope", store);
 
     expect(errorLog).toHaveBeenCalledWith(expect.stringContaining("twoPlayer"));
+    expect(errorLog).toHaveBeenCalledWith(expect.stringContaining(BROKEN_FIXTURE));
     expect(store.getState().snapshot).toBeNull();
     expect(useUiStore.getState().screen).toBe("main");
+  });
+
+  // NFR-SYS-03
+  it("has one fixture the board can't draw, for seeing the error screen", () => {
+    const store = createGameStore(new FakeAdapter());
+
+    showFixture(BROKEN_FIXTURE, store);
+
+    const steps = store.getState().snapshot?.pieces.map(({ step }) => step) ?? [];
+    expect(steps).toContain(99);
+    expect(useUiStore.getState().screen).toBe("game");
   });
 });

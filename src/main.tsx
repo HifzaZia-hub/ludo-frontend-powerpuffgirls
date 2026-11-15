@@ -33,6 +33,11 @@ if (import.meta.env.DEV && fixtureName !== null) {
   void import("@/mock/fixtures").then(({ showFixture }) => showFixture(fixtureName, store));
 }
 
+// NFR-SYS-02: dev only, a console line for each computer turn saying how long it took.
+if (import.meta.env.DEV) {
+  void import("@/feedback/aiTimings").then(({ logComputerTurns }) => logComputerTurns(store));
+}
+
 createRoot(rootElement).render(
   <StrictMode>
     {KitchenSink && showKitchenSink ? (

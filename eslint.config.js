@@ -71,4 +71,13 @@ export default tseslint.config(
       globals: globals.node,
     },
   },
+  // P12: the end-to-end script runs in Node and drives a browser over the DevTools Protocol.
+  {
+    files: ["scripts/**/*.mjs"],
+    extends: [js.configs.recommended],
+    languageOptions: {
+      ecmaVersion: 2024,
+      globals: globals.node,
+    },
+  },
 );
