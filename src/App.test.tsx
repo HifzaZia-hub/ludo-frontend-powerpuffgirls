@@ -26,6 +26,126 @@ describe("App", () => {
     useSettingsStore.setState({ theme: "dark", sound: true, animation: "on" });
   });
 
+  // NFR-SYS-04
+  describe("coming back", () => {
+    const SAVED = { sessionToken: "secret", playerId: "p1", roomCode: "K7QX2M" };
+
+    it("picks the saved session back up by itself", () => {
+      sessionStorage.setItem("ludo-session", JSON.stringify(SAVED));
+      useUiStore.setState({ screen: "rejoining" });
+
+      const { adapter } = renderApp();
+
+      expect(adapter.connectedToken).toBe("secret");
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Rejoining your game…");
+    });
+
+    it("has a way out if the server can't be reached", async () => {
+      sessionStorage.setItem("ludo-session", JSON.stringify(SAVED));
+      useUiStore.setState({ screen: "rejoining" });
+      const { adapter, user } = renderApp();
+
+      await user.click(screen.getByRole("button", { name: "Main menu" }));
+
+      expect(useUiStore.getState().screen).toBe("main");
+      expect(adapter.connectedToken).toBeNull();
+      expect(sessionStorage.getItem("ludo-session")).toBeNull();
+    });
+
+    it("connects to nothing with no saved session", () => {
+      const { adapter } = renderApp();
+
+      expect(adapter.connectedToken).toBeNull();
+    });
+
+    describe("the connection banner", () => {
+      it("is absent when connected", () => {
+        const { store } = renderApp();
+
+        act(() => store.setState({ connection: "live" }));
+
+        expect(document.querySelector("[data-connection]")).toBeNull();
+      });
+
+      it("says it is reconnecting, with the screen still there", () => {
+        const { store } = renderApp();
+
+        act(() => store.setState({ connection: "reconnecting" }));
+
+        expect(screen.getByText("Reconnecting…")).toBeTruthy();
+        expect(screen.getByRole("button", { name: "New Game" })).toBeTruthy();
+      });
+
+      it("offers Try again when the connection is lost", async () => {
+        sessionStorage.setItem("ludo-session", JSON.stringify(SAVED));
+        useUiStore.setState({ screen: "game" });
+        const { adapter, store, user } = renderApp();
+        act(() => adapter.disconnect());
+        act(() => store.setState({ connection: "lost" }));
+
+        await user.click(screen.getByRole("button", { name: "Try again" }));
+
+        expect(adapter.connectedToken).toBe("secret");
+      });
+    });
+
+    describe("when another tab takes the game", () => {
+      function replaced() {
+        sessionStorage.setItem("ludo-session", JSON.stringify(SAVED));
+        useUiStore.setState({ screen: "game" });
+        const app = renderApp();
+        act(() => app.adapter.pushConnection("live"));
+        act(() => app.adapter.pushSessionReplaced());
+        return app;
+      }
+
+      it("blocks the game with a card, and no banner", () => {
+        replaced();
+
+        expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+          "This game is open in another tab.",
+        );
+        expect(document.querySelector("[data-connection]")).toBeNull();
+      });
+
+      it("gives the card the keyboard", () => {
+        replaced();
+
+        expect(document.activeElement?.textContent).toBe("This game is open in another tab.");
+      });
+
+      it("takes it back on Play here instead", async () => {
+        const { adapter, store, user } = replaced();
+        act(() => adapter.disconnect());
+
+        await user.click(screen.getByRole("button", { name: "Play here instead" }));
+
+        expect(adapter.connectedToken).toBe("secret");
+        expect(store.getState().sessionReplaced).toBe(false);
+      });
+    });
+  });
+
+  // NFR-SYS-03
+  describe("when a screen can't be drawn", () => {
+    it("shows the way back on screens other than the game too", () => {
+      const app = renderApp();
+      const broken = {
+        v: "1.0.0",
+        seats: null,
+      } as unknown as ReturnType<typeof makeRoom>;
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+      act(() => {
+        app.store.setState({ room: broken });
+        useUiStore.getState().goTo("lobby");
+      });
+
+      expect(screen.getByRole("alert").textContent).toBe("Something went wrong — your game is safe");
+      vi.restoreAllMocks();
+    });
+  });
+
   describe("main screen", () => {
     it("offers every way in", () => {
       renderApp();

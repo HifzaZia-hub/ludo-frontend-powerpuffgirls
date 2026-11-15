@@ -79,6 +79,12 @@ describe("GameMenu", () => {
     expect(screen.queryByRole("button", { name: "Leave game" })).toBeNull();
   });
 
+  it("can't be opened while the server can't be reached", () => {
+    render(<GameMenu canRestart disabled onRestart={vi.fn()} onLeave={vi.fn()} />);
+
+    expect(trigger().hasAttribute("disabled")).toBe(true);
+  });
+
   it("closes when pressed again", async () => {
     const { user } = setup();
     await user.click(trigger());

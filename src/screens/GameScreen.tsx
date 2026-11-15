@@ -12,6 +12,7 @@ import { MessageLog } from "@/components/MessageLog";
 import { MoveList } from "@/components/MoveList";
 import { PieceLayer } from "@/components/PieceLayer";
 import { StatusPanel, type StatusPanelPlayer } from "@/components/StatusPanel";
+import { StillThereDialog } from "@/components/StillThereDialog";
 import { TopBar, type TurnDisplay } from "@/components/TopBar";
 import { SHOW_SESSION_SCORE } from "@/config/app";
 import type { Player } from "@/contract/types";
@@ -30,6 +31,7 @@ import {
   selectPiecesByCell,
   selectPlayerProgress,
   selectIsHost,
+  selectIsOffline,
   selectTurnKind,
   type GameStore,
   type PlayerProgress,
@@ -98,17 +100,22 @@ export function GameScreen({ store }: GameScreenProps) {
     store,
     (state) => state.toasts.filter(({ kind }) => kind === "error").at(-1)?.id ?? null,
   );
+  const reconnects = useStore(store, (state) => state.reconnects);
+  const notify = useStore(store, (state) => state.notify);
   const feedback = useEventFeedback({
     snapshot,
     eventLog,
     myPlayerId,
     timings,
+    reconnects,
     soundOn: sound,
     errorId,
+    onNotice: notify,
   });
   const { skip: skipFeedback, gameOver, busy: feedbackBusy } = feedback;
 
   const isHost = useStore(store, selectIsHost);
+  const offline = useStore(store, selectIsOffline);
   const sessionWins = useStore(store, (state) => state.sessionWins);
   const restart = useStore(store, (state) => state.restart);
   const leaveRoom = useStore(store, (state) => state.leaveRoom);
@@ -185,6 +192,7 @@ export function GameScreen({ store }: GameScreenProps) {
         onRules={() => openModal("rules")}
         onSettings={() => openModal("settings")}
         canRestart={isHost}
+        offline={offline}
         onRestart={() => setConfirming("restart")}
         onLeave={() => setConfirming("leave")}
       />
@@ -293,6 +301,7 @@ export function GameScreen({ store }: GameScreenProps) {
         onConfirm={() => void handleConfirm()}
         onCancel={() => setConfirming(null)}
       />
+      <StillThereDialog open={feedback.stillThere} onDismiss={feedback.dismissStillThere} />
     </div>
   );
 }

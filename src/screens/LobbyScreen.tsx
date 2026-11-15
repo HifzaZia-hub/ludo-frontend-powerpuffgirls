@@ -9,7 +9,7 @@ import { SeatRow } from "@/components/SeatRow";
 import { Toggle } from "@/components/Toggle";
 import { LOBBY_AI_DIFFICULTY } from "@/config/app";
 import { CONFIRM_TEXT, LOBBY_TEXT } from "@/feedback/copy";
-import { selectHostName, selectIsHost, type GameStore } from "@/store/gameStore";
+import { selectHostName, selectIsHost, selectIsOffline, type GameStore } from "@/store/gameStore";
 
 export interface LobbyScreenProps {
   store: GameStore;
@@ -21,6 +21,7 @@ export function LobbyScreen({ store }: LobbyScreenProps) {
   const pending = useStore(store, (state) => state.pendingCommand);
   const isHost = useStore(store, selectIsHost);
   const hostName = useStore(store, selectHostName);
+  const offline = useStore(store, selectIsOffline);
   const addAi = useStore(store, (state) => state.addAi);
   const startGame = useStore(store, (state) => state.startGame);
   const leaveRoom = useStore(store, (state) => state.leaveRoom);
@@ -32,7 +33,7 @@ export function LobbyScreen({ store }: LobbyScreenProps) {
   if (room === null) return null;
 
   // One command at a time, so the other controls are off while any of them is waiting.
-  const busy = pending !== null;
+  const busy = pending !== null || offline;
   const hasEmptySeat = room.seats.some((seat) => seat.player === null);
 
   async function handleLeave() {

@@ -17,6 +17,7 @@ import {
 import { asRecord, parseRules, type RoomRegistry } from "./rooms";
 import { jsonRoute } from "./rest";
 
+const MAX_HOLD_MS = 60000;
 const NEAR_WIN_STEP = 54;
 const LAST_TRACK_STEP = 51;
 
@@ -134,6 +135,31 @@ export function debugRouter(registry: RoomRegistry): Router {
         return scenario(match, player);
       });
       return { v: CONTRACT_VERSION, roomCode: room.code, scenario: body.name, version };
+    }),
+  );
+
+  // Loses the next game:state, so the following one arrives with a version gap.
+  router.post(
+    "/skip-state",
+    jsonRoute(200, (req) => {
+      const room = registry.debugRoom(asRecord(req.body).roomCode);
+      registry.skipNextState(room);
+      return { v: CONTRACT_VERSION, roomCode: room.code };
+    }),
+  );
+
+  // Cuts the connections as a network failure would, and keeps them out for holdMs.
+  router.post(
+    "/drop-connection",
+    jsonRoute(200, (req) => {
+      const body = asRecord(req.body);
+      const holdMs = body.holdMs ?? 0;
+      if (!Number.isInteger(holdMs) || Number(holdMs) < 0 || Number(holdMs) > MAX_HOLD_MS) {
+        throw new CommandError("INVALID_PAYLOAD", "holdMs must be a whole number up to 60000.");
+      }
+      const room = registry.debugRoom(body.roomCode);
+      registry.dropConnections(room, Number(holdMs));
+      return { v: CONTRACT_VERSION, roomCode: room.code };
     }),
   );
 

@@ -3,7 +3,7 @@ import type { ServerEvent } from "@/contract/events";
 import type { GameStateSnapshot } from "@/contract/types";
 import { piecePlace } from "@/config/geometry";
 import { BANNER_TEXT } from "@/feedback/copy";
-import { eventToMessage, mergedRollLine } from "@/feedback/messages";
+import { eventToMessage, mergedRollLine, reconnectedPlayer } from "@/feedback/messages";
 import type { EventTimings } from "@/feedback/motion";
 import {
   advancedPieces,
@@ -43,6 +43,9 @@ interface Step {
   endsQueue?: boolean;
   /** The server has said the match is over. */
   matchOver?: boolean;
+  /** Shown as a short message that goes away by itself. */
+  notice?: string;
+  stillThere?: boolean;
 }
 
 interface State {
@@ -58,6 +61,9 @@ interface State {
   banner: { id: number; text: string } | null;
   cue: { id: number; name: SoundName } | null;
   gameOver: boolean;
+  notice: { id: number; text: string } | null;
+  stillThere: boolean;
+  reconnects: number;
 }
 
 const EMPTY: State = {
@@ -72,6 +78,9 @@ const EMPTY: State = {
   banner: null,
   cue: null,
   gameOver: false,
+  notice: null,
+  stillThere: false,
+  reconnects: 0,
 };
 
 function withLine(state: State, line: StepLine | undefined, rollBy: string | undefined): State {
@@ -96,6 +105,10 @@ function withLine(state: State, line: StepLine | undefined, rollBy: string | und
 function enter(state: State, step: Step): State {
   let next = withLine(state, step.line, step.rollBy);
   if (step.matchOver) next = { ...next, gameOver: true };
+  if (step.stillThere) next = { ...next, stillThere: true };
+  if (step.notice) {
+    next = { ...next, nextId: next.nextId + 1, notice: { id: next.nextId, text: step.notice } };
+  }
   if (step.returningId) {
     const held = new Map(next.held);
     held.delete(step.returningId);
@@ -133,6 +146,7 @@ function drain(state: State): State {
   for (const step of state.queue) {
     next = withLine(next, step.line, step.rollBy);
     if (step.matchOver) next = { ...next, gameOver: true };
+    if (step.stillThere) next = { ...next, stillThere: true };
   }
   return next;
 }
@@ -140,6 +154,7 @@ function drain(state: State): State {
 interface Context {
   myPlayerId: string | null;
   timings: EventTimings;
+  reconnects: number;
 }
 
 function stepsFor(
@@ -194,6 +209,13 @@ function stepsFor(
       return [{ ms: 0, line, sound: "win", endsQueue: true, matchOver: true }];
     case "GAME_RESTARTED":
       return [{ ms: 0, endsQueue: true }];
+    case "PLAYER_IDLE":
+      // The event names nobody, so this is only about me if it was my turn when it came.
+      return actorId === myPlayerId ? [{ ms: 0, stillThere: true }] : [];
+    case "PLAYER_RECONNECTED": {
+      const back = before ? reconnectedPlayer(before, after) : null;
+      return [{ ms: 0, line, notice: back && back.id !== myPlayerId ? line?.text : undefined }];
+    }
     default:
       return line ? [{ ms: 0, line }] : [];
   }
@@ -263,9 +285,23 @@ function receive(
   // The snapshot always wins: a piece has moved again, so whatever was still showing is out of date.
   else if (before && piecesMoved(before, snapshot)) next = drain(next);
 
-  // EXC-05-1: across a version gap the two snapshots can't say what these events did.
-  const neighbour = before && sameMatch && snapshot.version === before.version + 1 ? before : null;
+  // EXC-05-1: across a version gap the two snapshots can't say what these events did, and after
+  // being away the same goes for anything the server sent while we couldn't hear it.
+  const cameBack = context.reconnects !== state.reconnects;
+  next = { ...next, reconnects: context.reconnects };
+  const neighbour =
+    before && sameMatch && !cameBack && snapshot.version === before.version + 1 ? before : null;
   const events = ready.filter((event) => event.version === snapshot.version);
+
+  // POST-06-2: if GAME_OVER was missed, the result still came from the server.
+  if (
+    neighbour === null &&
+    snapshot.status === "FINISHED" &&
+    snapshot.winnerId !== undefined &&
+    !events.some((event) => event.type === "GAME_OVER")
+  ) {
+    next = { ...next, gameOver: true };
+  }
 
   if (neighbour && context.timings.flashMs > 0) {
     const count = events.filter((event) => event.type === "CAPTURED").length;
@@ -291,6 +327,7 @@ export interface EventFeedbackOptions extends Context {
   soundOn: boolean;
   /** Changes when the server refuses something, to play the error sound. */
   errorId: number | null;
+  onNotice: (message: string) => void;
 }
 
 export interface EventFeedback {
@@ -306,6 +343,8 @@ export interface EventFeedback {
   busy: boolean;
   /** POST-06-2: the server's GAME_OVER has had its turn in the queue. */
   gameOver: boolean;
+  stillThere: boolean;
+  dismissStillThere: () => void;
   skip: () => void;
 }
 
@@ -315,16 +354,18 @@ export function useEventFeedback({
   eventLog,
   myPlayerId,
   timings,
+  reconnects,
   soundOn,
   errorId,
+  onNotice,
 }: EventFeedbackOptions): EventFeedback {
-  const context = { myPlayerId, timings };
+  const context = { myPlayerId, timings, reconnects };
   const [state, setState] = useState(() => receive(EMPTY, snapshot, eventLog, context));
 
   // During render, or a captured piece would be painted in its base before its capture played.
   if (snapshot !== state.seen) setState(receive(state, snapshot, eventLog, context));
 
-  const { current, banner, cue } = state;
+  const { current, banner, cue, notice } = state;
 
   useEffect(() => {
     if (!current) return;
@@ -350,6 +391,13 @@ export function useEventFeedback({
     playSound(cue.name, soundOn);
   }, [cue, soundOn]);
 
+  const lastNotice = useRef<number | null>(null);
+  useEffect(() => {
+    if (!notice || notice.id === lastNotice.current) return;
+    lastNotice.current = notice.id;
+    onNotice(notice.text);
+  }, [notice, onNotice]);
+
   const lastError = useRef(errorId);
   useEffect(() => {
     if (errorId === lastError.current) return;
@@ -358,6 +406,10 @@ export function useEventFeedback({
   }, [errorId, soundOn]);
 
   const skip = useCallback(() => setState(drain), []);
+  const dismissStillThere = useCallback(
+    () => setState((old) => ({ ...old, stillThere: false })),
+    [],
+  );
 
   return {
     messages: state.messages,
@@ -370,6 +422,8 @@ export function useEventFeedback({
     sixesFlash: current?.sixesFlash ?? false,
     busy: current !== null,
     gameOver: state.gameOver,
+    stillThere: state.stillThere,
+    dismissStillThere,
     skip,
   };
 }

@@ -9,7 +9,7 @@ import { FOCUS_RING } from "@/components/focusRing";
 import { PlayerMark } from "@/components/PlayerMark";
 import { SHOW_SESSION_SCORE } from "@/config/app";
 import { MESSAGES, WIN_TEXT, winsLabel } from "@/feedback/copy";
-import { selectHostName, selectIsHost, type GameStore } from "@/store/gameStore";
+import { selectHostName, selectIsHost, selectIsOffline, type GameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useUiStore } from "@/store/uiStore";
 
@@ -26,6 +26,7 @@ export function WinScreen({ store }: WinScreenProps) {
   const pending = useStore(store, (state) => state.pendingCommand);
   const sessionWins = useStore(store, (state) => state.sessionWins);
   const isHost = useStore(store, selectIsHost);
+  const offline = useStore(store, selectIsOffline);
   const hostName = useStore(store, selectHostName);
   const restart = useStore(store, (state) => state.restart);
   const leaveRoom = useStore(store, (state) => state.leaveRoom);
@@ -53,7 +54,7 @@ export function WinScreen({ store }: WinScreenProps) {
     const player = snapshot.players.find(({ id }) => id === playerId);
     return player && playerId !== snapshot.winnerId ? [{ player, place: index + 1 }] : [];
   });
-  const busy = pending !== null;
+  const busy = pending !== null || offline;
 
   async function handlePlayAgain() {
     setCoolingDown(true);
@@ -110,7 +111,7 @@ export function WinScreen({ store }: WinScreenProps) {
           <Button
             size="lg"
             pending={pending?.kind === "restart"}
-            disabled={coolingDown && pending?.kind !== "restart"}
+            disabled={(coolingDown || offline) && pending?.kind !== "restart"}
             onClick={() => void handlePlayAgain()}
           >
             {WIN_TEXT.playAgain}

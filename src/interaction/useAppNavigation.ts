@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import type { GameStore } from "@/store/gameStore";
-import { useUiStore } from "@/store/uiStore";
+import type { GameState, GameStore } from "@/store/gameStore";
+import { useUiStore, type Screen } from "@/store/uiStore";
 
 export function isTyping(target: EventTarget | null): boolean {
   return (
@@ -13,6 +13,18 @@ export function isTyping(target: EventTarget | null): boolean {
 // this long means restarting never flashes "This game was stopped".
 export const ABANDON_WAIT_MS = 500;
 
+// After a refresh, the server's first messages say where the player belongs. Null means keep waiting.
+function afterRejoining(state: GameState): Screen | null {
+  const { snapshot, room, myPlayerId, connection, sessionReplaced } = state;
+  if (sessionReplaced) return null;
+  if (myPlayerId === null || connection === "lost") return "main";
+  if (snapshot) {
+    if (snapshot.status === "CLOSED") return "stopped";
+    return snapshot.status === "FINISHED" ? "win" : "game";
+  }
+  return room?.status === "LOBBY" ? "lobby" : null;
+}
+
 /** Moves between screens when the server says so, and adds the keys that work on every screen. */
 export function useAppNavigation(store: GameStore): void {
   useEffect(() => {
@@ -20,8 +32,14 @@ export function useAppNavigation(store: GameStore): void {
     const stayed = () => clearTimeout(abandoned);
 
     const unsubscribe = store.subscribe((state, previous) => {
-      const { goTo } = useUiStore.getState();
+      const { goTo, screen } = useUiStore.getState();
       const event = state.lastEvent !== previous.lastEvent ? state.lastEvent : null;
+
+      if (screen === "rejoining") {
+        const destination = afterRejoining(state);
+        if (destination) goTo(destination);
+        return;
+      }
 
       if (event?.type === "GAME_ABANDONED") {
         stayed();

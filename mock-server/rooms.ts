@@ -42,6 +42,7 @@ export interface Outbox {
   toRoom(roomCode: string, event: string, payload: unknown): void;
   toSocket(socketId: string, event: string, payload: unknown): void;
   dropSocket(socketId: string): void;
+  closeConnection(socketId: string): void;
   evictRoom(roomCode: string): void;
 }
 
@@ -69,6 +70,8 @@ export interface Room {
   match: Match | null;
   forcedRoll: number | null;
   scriptedRolls: number[];
+  skipNextState: boolean; // debug: lose one game:state, to test the version-gap repair
+  holdUntil: number; // debug: nobody can reconnect to this room before this time
   autoplayFor: string | null; // a human who ran out of time; the computer ends their turn
   turnTimer: NodeJS.Timeout | null;
   closeTimer: NodeJS.Timeout | null;
@@ -404,6 +407,27 @@ export class RoomRegistry {
     room.scriptedRolls = []; // an explicit force must beat whatever a scenario queued up
   }
 
+  skipNextState(room: Room): void {
+    room.skipNextState = true;
+  }
+
+  /** Cuts everyone's connection without ending their sessions, as a network blip would. */
+  dropConnections(room: Room, holdMs: number): void {
+    room.holdUntil = Date.now() + holdMs;
+    for (const session of this.sessions.values()) {
+      if (session.roomCode === room.code && session.socketId) {
+        this.outbox.closeConnection(session.socketId);
+      }
+    }
+  }
+
+  /** How long this session has to wait before the debug hold lets it back in. */
+  holdFor(token: string): number {
+    const roomCode = this.sessions.get(token)?.roomCode;
+    const room = roomCode === undefined ? undefined : this.rooms.get(roomCode);
+    return room ? Math.max(0, room.holdUntil - Date.now()) : 0;
+  }
+
   setNextRules(room: Room, rules: Partial<RuleConfig>): void {
     room.rules = { ...room.rules, ...rules };
     this.broadcastRoom(room);
@@ -476,6 +500,8 @@ export class RoomRegistry {
       match: null,
       forcedRoll: null,
       scriptedRolls: [],
+      skipNextState: false,
+      holdUntil: 0,
       autoplayFor: null,
       turnTimer: null,
       closeTimer: null,
@@ -576,7 +602,8 @@ export class RoomRegistry {
         data: {}, // the contract names no fields for any event yet (docs/01-contract.md §8)
       });
     }
-    this.outbox.toRoom(room.code, "game:state", stateMessage(match));
+    if (room.skipNextState) room.skipNextState = false;
+    else this.outbox.toRoom(room.code, "game:state", stateMessage(match));
     this.schedule(room, match);
   }
 

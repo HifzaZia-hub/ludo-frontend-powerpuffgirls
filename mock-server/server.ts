@@ -67,6 +67,10 @@ export function createMockServer(options: MockServerOptions): MockServer {
     dropSocket: (socketId) => {
       io.sockets.sockets.get(socketId)?.disconnect(true);
     },
+    // Unlike dropSocket, this looks like a network failure, so the client tries to come back.
+    closeConnection: (socketId) => {
+      io.sockets.sockets.get(socketId)?.conn.close();
+    },
     evictRoom: (roomCode) => {
       io.in(roomCode).socketsLeave(roomCode);
     },
