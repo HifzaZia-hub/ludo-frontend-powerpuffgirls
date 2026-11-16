@@ -41,14 +41,24 @@ export function PlayerCard({
       <div className="flex items-center gap-2">
         <PlayerMark colour={colour} />
         <div className="min-w-0">
-          <p className="truncate text-[15px] font-semibold text-high">{name}</p>
-          {tag && <p className="text-xs text-mid">{PLAYER_TAGS[tag]}</p>}
+          {/* A very long name still has to fit, so it can be cut short; the title shows it whole. */}
+          <p className="truncate text-[15px] font-semibold text-high" title={name}>
+            {name}
+          </p>
+          {/* The wins sit on this second line, which has room, so they never squeeze the name. */}
+          {(tag || wins > 0) && (
+            <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-mid">
+              {tag && <span>{PLAYER_TAGS[tag]}</span>}
+              {/* NFR-SYS-08: a real space, so a screen reader says "you, 1 win", not "you1 win". */}
+              {tag && wins > 0 && " "}
+              {wins > 0 && (
+                <span className="rounded-full bg-raised px-2 py-0.5 font-semibold text-high">
+                  {winsLabel(wins)}
+                </span>
+              )}
+            </p>
+          )}
         </div>
-        {wins > 0 && (
-          <span className="ml-auto shrink-0 rounded-full bg-raised px-2 py-0.5 text-xs font-semibold text-high">
-            {winsLabel(wins)}
-          </span>
-        )}
       </div>
       <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
         {columns.map(({ label, count }) => (
