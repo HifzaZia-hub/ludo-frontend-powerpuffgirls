@@ -1340,6 +1340,21 @@ async function smoke(browser) {
   await winNow(page, code);
   const win = await page.evaluate(WIN_PAGE);
   check("win: the win screen appears", win.heading.includes("wins"), win.heading);
+  // FR-SYS-06: Play again must be in view without scrolling, whatever else the screen shows.
+  for (const [w, h] of [[1280, 720], [1024, 768]]) {
+    await page.size(w, h);
+    await sleep(500);
+    const layout = await page.evaluate(`(() => {
+      const button = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Play again');
+      const r = button?.getBoundingClientRect();
+      const de = document.documentElement;
+      return { playAgainInView: !!r && r.top >= 0 && r.bottom <= innerHeight, sideways: de.scrollWidth > de.clientWidth, scrolls: de.scrollHeight > de.clientHeight };
+    })()`);
+    check(`win screen at ${w}x${h}: Play again in view, no sideways scroll`, layout.playAgainInView && !layout.sideways, `page scrolls down: ${layout.scrolls}`);
+  }
+  await page.size(1280, 720);
+  await sleep(1500);
+  await page.shot("FR-SYS-06-win-copy-result.png");
   reportErrors(page, "smoke");
   await page.close();
 }

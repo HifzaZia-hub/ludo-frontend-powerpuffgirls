@@ -65,6 +65,62 @@ describe("WinScreen", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Hamza wins!");
   });
 
+  // P14: built only from the server's ranking, in its order (POST-06-3, EXC-06-1).
+  describe("Copy result", () => {
+    it("copies every place in the server's order", async () => {
+      const { user } = setup();
+
+      await user.click(screen.getByRole("button", { name: "Copy result" }));
+
+      expect(await navigator.clipboard.readText()).toBe(
+        "Ludo result: 1. Hamza, 2. Computer 1, 3. Rida, 4. Maryam",
+      );
+      expect(screen.getByRole("button", { name: "Copied!" })).toBeTruthy();
+    });
+
+    it("copies just the winner when the server sent no ranking", async () => {
+      const { user } = setup({ snapshot: finished({ ranking: undefined }) });
+
+      await user.click(screen.getByRole("button", { name: "Copy result" }));
+
+      expect(await navigator.clipboard.readText()).toBe("Ludo result: Hamza won");
+    });
+
+    it("says so when the browser won't copy", async () => {
+      const { user } = setup();
+      vi.spyOn(navigator.clipboard, "writeText").mockRejectedValueOnce(new Error("blocked"));
+
+      await user.click(screen.getByRole("button", { name: "Copy result" }));
+
+      expect(screen.getByText("Couldn't copy. Your browser didn't allow it.")).toBeTruthy();
+    });
+  });
+
+  // P14: the places appear one after another, but never with Animations Off.
+  describe("revealing the places", () => {
+    const places = () =>
+      within(screen.getByRole("region", { name: "Final places" })).getAllByRole("listitem");
+
+    it("starts them hidden and reveals them, with Animations On", () => {
+      setup();
+
+      expect(places()[0]?.style.opacity).toBe("0");
+    });
+
+    it("shows them all at once with Animations Off", () => {
+      useSettingsStore.setState({ animation: "off" });
+      setup();
+
+      expect(places().every((place) => place.style.opacity !== "0")).toBe(true);
+      // Each place starts with the player's letter, from their mark.
+      expect(places().map((place) => place.textContent)).toEqual([
+        "B2. Computer 1",
+        "R3. Rida",
+        "Y4. Maryam",
+      ]);
+    });
+  });
+
   it("says the game is over if the server named nobody, rather than guessing", () => {
     setup({ snapshot: finished({ winnerId: undefined }) });
 
@@ -137,9 +193,9 @@ describe("WinScreen", () => {
       setup({ hostId: "p2" });
 
       expect(screen.queryByRole("button", { name: "Play again" })).toBeNull();
-      expect(screen.getByRole("status").textContent).toBe(
-        "Waiting for Hamza to start a new game.",
-      );
+      // The Copy result button has a status line too, so find this one by its words.
+      const waiting = screen.getByText("Waiting for Hamza to start a new game.");
+      expect(waiting.getAttribute("role")).toBe("status");
     });
 
     // FR-SYS-08 POST-08-3

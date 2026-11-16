@@ -38,6 +38,20 @@ export function eventTimings(animation: AnimationMode, reducedMotion: boolean): 
   };
 }
 
+const REVEAL_SECONDS: Record<AnimationMode, number> = { on: 0.25, fast: 0.1, off: 0 };
+const REVEAL_STAGGER_SECONDS: Record<AnimationMode, number> = { on: 0.15, fast: 0.06, off: 0 };
+
+export interface RevealTimings {
+  seconds: number;
+  staggerSeconds: number;
+}
+
+// P14: the final places appear one after another. The order and the names never change.
+export function revealTimings(animation: AnimationMode, reducedMotion: boolean): RevealTimings {
+  const pick = (table: Record<AnimationMode, number>) => (reducedMotion ? 0 : table[animation]);
+  return { seconds: pick(REVEAL_SECONDS), staggerSeconds: pick(REVEAL_STAGGER_SECONDS) };
+}
+
 // POST-10-2: this only changes how long the die spins. It always lands on the server's value.
 export function diceTumbleMs(animation: AnimationMode, reducedMotion: boolean): number {
   return reducedMotion ? 0 : DICE_TUMBLE_MS[animation];
