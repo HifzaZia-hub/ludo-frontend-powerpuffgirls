@@ -159,6 +159,8 @@ export const COLOUR_NAMES: Record<Colour, string> = {
 export const TURN_TEXT = {
   myRoll: "Your turn — roll the dice",
   myMove: "Your turn — pick a piece",
+  // NFR-SYS-06: once a piece is picked, say the next step, or a first-timer waits for it to move.
+  myConfirm: "Your turn — now press Move",
   myAutoMove: "Your turn — moving your piece",
   computer: "Computer is thinking…",
   human: (name: string) => `${name}'s turn`,
