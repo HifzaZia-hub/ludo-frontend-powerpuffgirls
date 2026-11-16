@@ -1,7 +1,9 @@
 # Keyboard-only game and wording review (NFR-SYS-08)
 
-Run on 2026-11-15 with `npm run e2e -- keyboard --fast` in Chrome 157 (headless) against the mock
-server. The script sends key presses only. It never sends a mouse event in this mode.
+Run on 2026-11-16 with `npm run e2e -- keyboard --fast` in Chrome 157 and Firefox 160 (both
+headless) against the mock server. The script sends key presses only. It never sends a mouse event
+in this mode. A move counts only once the list of moves closes, so a press that did nothing can't
+pass as a move.
 
 ## The whole flow, by keyboard alone
 
@@ -13,14 +15,15 @@ server. The script sends key presses only. It never sends a mouse event in this 
 | Fill empty seats | Tab to the switch, Space | Switched from off to on |
 | Start the game | Tab to Start game, Enter | Board |
 | Roll, choose and move | R, then a number key, Tab to a piece or Tab to a move, then Enter | 3 moves made |
-| Restart | Tab to Menu, Enter, Tab to Restart, Enter | The question opened with **Cancel** focused |
+| Restart | Shift+Tab to Menu, Enter, Tab to Restart, Enter | The question opened with **Cancel** focused |
 | Confirm the restart | Tab to Restart, Enter | New match, every piece back in base |
-| A whole game | R, number keys, Tab and Enter | 101 rolls and 65 moves to "Computer 2 wins!" in 142 s |
+| A whole game | R, number keys, Tab and Enter | Chrome: 135 rolls and 124 moves to "Rida wins!" in 235 s. Firefox: 110 rolls and 81 moves to "Computer 3 wins!" in 160 s |
 | Play again | Tab to Play again, Enter | New match |
 | Leave, then Cancel | Menu, Leave game, Enter on the focused Cancel | Question closed, game kept |
 | Leave | Menu, Leave game, Tab to Leave, Enter | Main screen |
 
-Every choice of a piece selected exactly what was pressed. There were no console errors.
+In both browsers every step passed, every choice of a piece selected exactly what was pressed, no
+move press was missed, and there were no console errors.
 
 The game type step chose "Play with friends", because only a game with friends has a waiting room.
 The mock starts a game against the computer straight away. The empty seats were filled with computer
@@ -51,4 +54,5 @@ Nothing was changed. No string failed the review.
 
 ```
 npm run e2e -- keyboard --fast
+npm run e2e -- keyboard --fast --browser firefox
 ```

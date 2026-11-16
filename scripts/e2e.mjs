@@ -1,7 +1,10 @@
 // End-to-end checks for P12 (NFR-SYS-01 to NFR-SYS-10), run against the mock server in a real
-// Chrome or Edge. It uses only Node's built-ins and the DevTools Protocol, so it adds no library.
+// Chrome, Edge or Firefox. It drives Chrome and Edge over the DevTools Protocol and Firefox over
+// WebDriver BiDi, using only Node's built-ins, so it adds no library.
 //
-//   npm run e2e -- <mode> [--browser chrome|edge] [--count 5] [--fast] [--build] [--save] [--headed]
+//   npm run e2e -- <mode> [--browser chrome|edge|firefox] [--count 5] [--fast] [--build] [--save] [--headed]
+//
+// Every mode runs in all three browsers except grayscale and perf, which need Chrome or Edge.
 //
 // Modes
 //   keyboard   a whole game with no mouse: setup, lobby, roll, choose, move, restart, leave (NFR-SYS-08)
@@ -90,7 +93,18 @@ const BROWSERS = {
     "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
     "/usr/bin/microsoft-edge",
   ],
+  firefox: [
+    process.env.FIREFOX_PATH,
+    "C:/Program Files/Mozilla Firefox/firefox.exe",
+    "C:/Program Files (x86)/Mozilla Firefox/firefox.exe",
+    process.env.LOCALAPPDATA && `${process.env.LOCALAPPDATA}/Mozilla Firefox/firefox.exe`,
+    "/Applications/Firefox.app/Contents/MacOS/firefox",
+    "/usr/bin/firefox",
+  ],
 };
+const FIREFOX = browserName === "firefox";
+// These modes use DevTools features that Firefox doesn't have: vision emulation and tracing.
+const CHROMIUM_ONLY = new Set(["grayscale", "perf"]);
 
 // ---------------------------------------------------------------------------------------------
 // Small helpers
@@ -263,39 +277,15 @@ async function openPage(cdp, width = 1280, height = 720) {
     }
     return result.value;
   };
-  page.waitUntil = async (expression, label, ms = 30000) => {
-    const until = Date.now() + ms;
-    while (Date.now() < until) {
-      if (await page.evaluate(expression)) return;
-      await sleep(60);
-    }
-    // Leave something to look at: what the page said, and a picture of it.
-    const text = await page.evaluate(`document.body.innerText.replace(/\\s+/g, ' ').slice(0, 300)`);
-    const picture = await page.shot(`timeout-${label.replace(/[^a-z0-9]+/gi, "-")}.png`);
-    throw new Error(`timed out waiting for ${label}. The page said: "${text}". Screenshot: ${picture}`);
-  };
-  page.goto = async (url, ready) => {
-    await call("Page.navigate", { url });
-    await page.waitUntil(ready, url);
-    await sleep(300);
-  };
+  page.navigate = (url) => call("Page.navigate", { url });
   page.size = (w, h) =>
     call("Emulation.setDeviceMetricsOverride", { width: w, height: h, deviceScaleFactor: 1, mobile: false });
-  page.shot = async (name) => {
+  page.capture = async () => {
     // A tab in the background draws no frames, so capturing it can wait forever.
     await call("Page.bringToFront");
-    const captured = await Promise.race([
-      call("Page.captureScreenshot", { format: "png" }),
-      sleep(15000).then(() => null),
-    ]);
-    if (!captured) {
-      problem(`screenshot timed out: ${name}`);
-      return null;
-    }
-    const file = path.join(OUT, name);
-    writeFileSync(file, Buffer.from(captured.data, "base64"));
-    return file;
+    return (await call("Page.captureScreenshot", { format: "png" })).data;
   };
+  page.preload = (source) => call("Page.addScriptToEvaluateOnNewDocument", { source });
   page.press = async (name, { shift = false, pause = 120 } = {}) => {
     const { key, code, keyCode, text } = KEYS[name];
     const common = { key, code, windowsVirtualKeyCode: keyCode, modifiers: shift ? 8 : 0 };
@@ -314,6 +304,41 @@ async function openPage(cdp, width = 1280, height = 720) {
     await call("Input.dispatchMouseEvent", { type: "mouseReleased", ...event });
     if (pause) await sleep(pause);
   };
+  page.close = () => cdp.send("Target.closeTarget", { targetId });
+
+  addHelpers(page);
+  await page.size(width, height);
+  return page;
+}
+
+/** What every page can do, built on the few calls each protocol provides. */
+function addHelpers(page) {
+  page.waitUntil = async (expression, label, ms = 30000) => {
+    const until = Date.now() + ms;
+    while (Date.now() < until) {
+      if (await page.evaluate(expression)) return;
+      await sleep(60);
+    }
+    // Leave something to look at: what the page said, and a picture of it.
+    const text = await page.evaluate(`document.body.innerText.replace(/\\s+/g, ' ').slice(0, 300)`);
+    const picture = await page.shot(`timeout-${label.replace(/[^a-z0-9]+/gi, "-")}.png`);
+    throw new Error(`timed out waiting for ${label}. The page said: "${text}". Screenshot: ${picture}`);
+  };
+  page.goto = async (url, ready) => {
+    await page.navigate(url);
+    await page.waitUntil(ready, url);
+    await sleep(300);
+  };
+  page.shot = async (name) => {
+    const data = await Promise.race([page.capture(), sleep(15000).then(() => null)]);
+    if (!data) {
+      problem(`screenshot timed out: ${name}`);
+      return null;
+    }
+    const file = path.join(OUT, name);
+    writeFileSync(file, Buffer.from(data, "base64"));
+    return file;
+  };
   page.centreOf = (expression) =>
     page.evaluate(`(() => {
       const el = ${expression};
@@ -331,8 +356,141 @@ async function openPage(cdp, width = 1280, height = 720) {
     if (!centre) throw new Error(`no button named ${name}`);
     await page.click(centre.x, centre.y);
   };
-  page.close = () => cdp.send("Target.closeTarget", { targetId });
+}
 
+// ---------------------------------------------------------------------------------------------
+// WebDriver BiDi, for Firefox, which no longer speaks the DevTools Protocol. Its pages have the
+// same methods as the DevTools ones, so no mode needs to know which browser it is driving.
+
+async function connectBidi() {
+  let socket = null;
+  for (let i = 0; i < 160 && socket === null; i++) {
+    socket = await new Promise((resolve) => {
+      const attempt = new WebSocket(`ws://127.0.0.1:${DEBUG_PORT}/session`);
+      attempt.addEventListener("open", () => resolve(attempt), { once: true });
+      attempt.addEventListener("error", () => resolve(null), { once: true });
+    });
+    if (socket === null) await sleep(250);
+  }
+  if (socket === null) throw new Error("Firefox did not start");
+
+  let nextId = 1;
+  const waiting = new Map();
+  const listeners = new Map();
+  socket.addEventListener("message", ({ data }) => {
+    const message = JSON.parse(data);
+    if (message.type === "event") {
+      if (message.method === "log.entryAdded") listeners.get(message.params.source?.context)?.(message.params);
+      return;
+    }
+    const entry = waiting.get(message.id);
+    if (!entry) return;
+    waiting.delete(message.id);
+    if (message.type === "error") entry.reject(new Error(`${entry.method}: ${message.error}: ${message.message}`));
+    else entry.resolve(message.result);
+  });
+  socket.addEventListener("close", () => {
+    for (const { reject, method } of waiting.values()) reject(new Error(`${method}: the browser went away`));
+    waiting.clear();
+  });
+  const send = (method, params = {}) =>
+    new Promise((resolve, reject) => {
+      const id = nextId++;
+      const timer = setTimeout(() => {
+        waiting.delete(id);
+        reject(new Error(`${method}: no answer from the browser in 60 s`));
+      }, 60000);
+      const settle = (fn) => (value) => {
+        clearTimeout(timer);
+        fn(value);
+      };
+      waiting.set(id, { resolve: settle(resolve), reject: settle(reject), method });
+      socket.send(JSON.stringify({ id, method, params }));
+    });
+
+  const { capabilities } = await send("session.new", { capabilities: {} });
+  await send("session.subscribe", { events: ["log.entryAdded"] });
+  return {
+    send,
+    listeners,
+    product: `Firefox/${capabilities.browserVersion}`,
+    close: () => socket.close(),
+  };
+}
+
+// WebDriver's codes for keys that aren't characters.
+const BIDI_KEYS = {
+  Enter: "",
+  Tab: "",
+  Escape: "",
+  Space: " ",
+  ArrowLeft: "",
+  ArrowUp: "",
+  ArrowRight: "",
+  ArrowDown: "",
+};
+const SHIFT = "";
+
+async function openBidiPage(bidi, width = 1280, height = 720) {
+  const { context } = await bidi.send("browsingContext.create", { type: "tab" });
+  const page = { errors: [], logs: [], traceEvents: [], traceDone: null };
+  bidi.listeners.set(context, ({ level, text }) => (level === "error" ? page.errors : page.logs).push(text ?? ""));
+
+  page.call = (method) => {
+    throw new Error(`${method} needs Chrome or Edge`);
+  };
+  page.evaluate = async (expression) => {
+    // Values come back as JSON text, which is simpler than reading BiDi's own value format.
+    const outcome = await bidi.send("script.evaluate", {
+      expression: `(async () => { const value = await (${expression}); return value === undefined ? undefined : JSON.stringify(value); })()`,
+      target: { context },
+      awaitPromise: true,
+      resultOwnership: "none",
+    });
+    if (outcome.type === "exception") throw new Error(outcome.exceptionDetails?.text ?? "exception");
+    return outcome.result.type === "string" ? JSON.parse(outcome.result.value) : undefined;
+  };
+  page.navigate = (url) => bidi.send("browsingContext.navigate", { context, url, wait: "complete" });
+  page.size = (w, h) => bidi.send("browsingContext.setViewport", { context, viewport: { width: w, height: h } });
+  page.capture = async () => {
+    await bidi.send("browsingContext.activate", { context });
+    return (await bidi.send("browsingContext.captureScreenshot", { context })).data;
+  };
+  page.preload = (source) =>
+    bidi.send("script.addPreloadScript", { functionDeclaration: `() => { ${source}; }`, contexts: [context] });
+  const keys = (actions) =>
+    bidi.send("input.performActions", { context, actions: [{ type: "key", id: "keyboard", actions }] });
+  page.press = async (name, { shift = false, pause = 120 } = {}) => {
+    const value = BIDI_KEYS[name] ?? KEYS[name].key;
+    const strokes = [{ type: "keyDown", value }, { type: "keyUp", value }];
+    await keys(shift ? [{ type: "keyDown", value: SHIFT }, ...strokes, { type: "keyUp", value: SHIFT }] : strokes);
+    if (pause) await sleep(pause);
+  };
+  page.type = async (text) => {
+    await keys([...text].flatMap((value) => [{ type: "keyDown", value }, { type: "keyUp", value }]));
+    await sleep(100);
+  };
+  page.click = async (x, y, pause = 200) => {
+    await bidi.send("input.performActions", {
+      context,
+      actions: [
+        {
+          type: "pointer",
+          id: "mouse",
+          parameters: { pointerType: "mouse" },
+          actions: [
+            { type: "pointerMove", x: Math.round(x), y: Math.round(y) },
+            { type: "pointerDown", button: 0 },
+            { type: "pointerUp", button: 0 },
+          ],
+        },
+      ],
+    });
+    if (pause) await sleep(pause);
+  };
+  page.close = () => bidi.send("browsingContext.close", { context });
+
+  addHelpers(page);
   await page.size(width, height);
   return page;
 }
@@ -371,7 +529,7 @@ const STATE = `(() => {
 })()`;
 const ACTIVE = `(() => {
   const a = document.activeElement;
-  if (!a || a === document.body) return { tag: 'BODY', name: '', role: null, checked: null, piece: null, card: false, pressed: null, inDialog: false };
+  if (!a || a === document.body) return { tag: 'BODY', name: '', role: null, checked: null, piece: null, card: false, pressed: null, inDialog: false, pageFocused: document.hasFocus() };
   return {
     tag: a.tagName,
     name: (a.getAttribute('aria-label') || a.textContent || '').trim(),
@@ -381,6 +539,7 @@ const ACTIVE = `(() => {
     card: !!a.closest('section[aria-label="Your moves"]') && a.tagName === 'BUTTON' && a.textContent.trim() !== 'Move',
     pressed: a.getAttribute('aria-pressed'),
     inDialog: !!a.closest('dialog[open]'),
+    pageFocused: document.hasFocus(),
   };
 })()`;
 const WIN_PAGE = `(() => {
@@ -479,9 +638,24 @@ async function tabUntil(page, test, label, { back = false, limit = 80 } = {}) {
   for (let i = 0; i < limit; i++) {
     await page.press("Tab", { shift: back });
     const active = await page.evaluate(ACTIVE);
+    // Headless Firefox doesn't give the page its focus back after Tab passes the end of it, and
+    // from then on Enter and Space press nothing. A real Firefox window does, so this is the test's
+    // problem, not the app's: say so rather than fail somewhere later.
+    if (FIREFOX && !active.pageFocused) {
+      throw new Error(`Tab went past the end of the page while looking for ${label}, which headless Firefox can't come back from. Go the other way.`);
+    }
     if (test(active)) return active;
   }
   throw new Error(`Tab never reached ${label}`);
+}
+
+// The list of moves closes, or locks, once the move has gone to the server.
+async function moveWentThrough(page) {
+  for (let i = 0; i < 40; i++) {
+    if (!(await page.evaluate(OPTIONS_OPEN))) return true;
+    await sleep(50);
+  }
+  return false;
 }
 
 async function clickCardThenMove(page) {
@@ -493,7 +667,8 @@ async function clickCardThenMove(page) {
 /** Plays my turns until the match ends, or until `stopAfter` moves. */
 async function play(page, { label, keyboardOnly = false, stopAfter = Infinity }) {
   const started = Date.now();
-  const stats = { rolls: 0, moves: 0, oddPresses: 0 };
+  const stats = { rolls: 0, moves: 0, oddPresses: 0, missed: 0 };
+  let missedInARow = 0;
   for (;;) {
     const state = await page.evaluate(STATE);
     if (state.crashed) throw new Error(`${label}: the error screen appeared`);
@@ -514,7 +689,7 @@ async function play(page, { label, keyboardOnly = false, stopAfter = Infinity })
       continue;
     }
     if (state.open) {
-      const way = stats.moves % 3;
+      const way = (stats.moves + stats.missed) % 3;
       if (keyboardOnly && way === 1) {
         const active = await tabUntil(page, ({ piece }) => piece !== null, "a piece", { back: true });
         if ((await page.evaluate(STATE)).pressed !== active.piece) stats.oddPresses += 1;
@@ -530,7 +705,15 @@ async function play(page, { label, keyboardOnly = false, stopAfter = Infinity })
         if (!(await page.evaluate(STATE)).pressed) stats.oddPresses += 1;
         await page.press("Enter");
       }
-      stats.moves += 1;
+      // Count a move only once it has really gone, so a press that did nothing can't pass as one.
+      if (await moveWentThrough(page)) {
+        stats.moves += 1;
+        missedInARow = 0;
+      } else {
+        stats.missed += 1;
+        missedInARow += 1;
+        if (missedInARow >= 3) throw new Error(`${label}: 3 moves in a row didn't go through. ${JSON.stringify(stats)}`);
+      }
       continue;
     }
     await sleep(25);
@@ -626,10 +809,22 @@ async function keyboard(browser) {
   await page.close();
 }
 
+const MENU_OPEN = `[...document.querySelectorAll('button[aria-expanded]')].some((b) => b.textContent.includes('Menu') && b.getAttribute('aria-expanded') === 'true')`;
+
 async function menuItem(page, item) {
-  await tabUntil(page, ({ tag, name }) => tag === "BUTTON" && name.includes("Menu"), "Menu");
+  // Towards the Menu without passing either end of the page: backwards if focus is below it, and
+  // not at all if focus is already on it, as it is after Cancel.
+  const where = await page.evaluate(`(() => {
+    const menu = [...document.querySelectorAll('button[aria-expanded]')].find((b) => b.textContent.includes('Menu'));
+    const here = document.activeElement;
+    if (!menu || here === menu) return 'on';
+    return here !== document.body && menu.compareDocumentPosition(here) & Node.DOCUMENT_POSITION_FOLLOWING ? 'below' : 'above';
+  })()`);
+  const isMenu = ({ tag, name }) => tag === "BUTTON" && name.includes("Menu");
+  if (where !== "on") await tabUntil(page, isMenu, "Menu", { back: where === "below" });
   await page.press("Enter");
-  await tabUntil(page, ({ name }) => name === item, item);
+  if (!(await page.evaluate(MENU_OPEN))) throw new Error("Enter on Menu didn't open it");
+  await tabUntil(page, ({ name }) => name === item, item, { limit: 6 });
   await page.press("Enter");
   await page.waitUntil(DIALOG_OPEN, `the question after ${item}`);
 }
@@ -1006,7 +1201,7 @@ const SPY = `(() => {
 
 async function invalid(browser) {
   const page = await browser.page();
-  await page.call("Page.addScriptToEvaluateOnNewDocument", { source: SPY });
+  await page.preload(SPY);
   // The computer is slow on purpose, so there is time to press keys during its turn.
   await computerGame(page, { aiDelayMs: 700, turnTimerSeconds: 0 });
   const sent = (name) => page.evaluate(`window.__sent.filter((n) => n === '${name}').length`);
@@ -1121,14 +1316,28 @@ if (!MODES[mode]) {
   console.error(`Unknown mode "${mode}". Use one of: ${Object.keys(MODES).join(", ")}.`);
   process.exit(2);
 }
+if (FIREFOX && CHROMIUM_ONLY.has(mode)) {
+  console.error(`The ${mode} mode needs Chrome or Edge.`);
+  process.exit(2);
+}
 const browserPath = (BROWSERS[browserName] ?? []).find((candidate) => candidate && existsSync(candidate));
 if (!browserPath) {
-  console.error(`Couldn't find ${browserName}. Set CHROME_PATH or EDGE_PATH to its program file.`);
+  console.error(`Couldn't find ${browserName}. Set CHROME_PATH, EDGE_PATH or FIREFOX_PATH to its program file.`);
   process.exit(2);
 }
 
+// A fresh Firefox profile would otherwise open welcome and default-browser pages.
+const FIREFOX_PREFS = [
+  'user_pref("browser.shell.checkDefaultBrowser", false);',
+  'user_pref("browser.aboutwelcome.enabled", false);',
+  'user_pref("browser.startup.homepage_override.mstone", "ignore");',
+  'user_pref("datareporting.policy.dataSubmissionEnabled", false);',
+  'user_pref("toolkit.telemetry.reportingpolicy.firstRun", false);',
+  'user_pref("app.update.disabledForTesting", true);',
+].join("\n");
+
 const profile = mkdtempSync(path.join(os.tmpdir(), "ludo-e2e-profile-"));
-let cdp = null;
+let connection = null;
 try {
   await ensureFree(MOCK_PORT, "mock");
   await ensureFree(APP_PORT, "app");
@@ -1150,9 +1359,19 @@ try {
   } else {
     startNode([vite, "--port", String(APP_PORT), "--strictPort"], { VITE_SERVER_URL: MOCK });
   }
+  if (FIREFOX) writeFileSync(path.join(profile, "user.js"), FIREFOX_PREFS);
+  const firefoxArgs = [
+    ...(headed ? [] : ["-headless"]),
+    "--remote-debugging-port",
+    String(DEBUG_PORT),
+    "-profile",
+    profile,
+    "-no-remote",
+    "about:blank",
+  ];
   const browserProcess = spawn(
     browserPath,
-    [
+    FIREFOX ? firefoxArgs : [
       ...(headed ? [] : ["--headless=new"]),
       `--remote-debugging-port=${DEBUG_PORT}`,
       `--user-data-dir=${profile}`,
@@ -1172,10 +1391,19 @@ try {
 
   await waitFor(`${MOCK}/api/v1/health`, "the mock server");
   await waitFor(APP, "the app");
-  cdp = await connect();
-  const { product } = await cdp.send("Browser.getVersion");
-  const connection = cdp;
-  const browser = { page: (w, h) => openPage(connection, w, h) };
+  let browser;
+  let product;
+  if (FIREFOX) {
+    const bidi = await connectBidi();
+    connection = bidi;
+    product = bidi.product;
+    browser = { page: (w, h) => openBidiPage(bidi, w, h) };
+  } else {
+    const cdp = await connect();
+    connection = cdp;
+    product = (await cdp.send("Browser.getVersion")).product;
+    browser = { page: (w, h) => openPage(cdp, w, h) };
+  }
   console.log(`mode ${mode} | ${product} | ${build ? "production build" : "dev server"} | ${fast ? "fast computer" : "default rules"} | output ${OUT}`);
 
   if (!build) {
@@ -1189,7 +1417,7 @@ try {
 } catch (error) {
   problem(error instanceof Error ? error.message : String(error));
 } finally {
-  cdp?.close();
+  connection?.close();
   for (const child of children.reverse()) stop(child);
   await sleep(500);
   try {

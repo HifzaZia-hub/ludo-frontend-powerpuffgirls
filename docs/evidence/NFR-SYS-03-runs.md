@@ -20,7 +20,8 @@ All five reached the win screen. The error screen never appeared, and the consol
 
 Other whole games on the P12 code, also with no error screen and no console errors:
 
-- One played by keyboard alone, from the main screen to "Computer 2 wins!" (`NFR-SYS-08-keyboard.md`).
+- Two played by keyboard alone, from the main screen to a winner: one in Chrome and one in Firefox
+  (`NFR-SYS-08-keyboard.md`).
 - One at the default speed, for the computer timings (`NFR-SYS-02-ai-times.md`).
 
 ## The error screen, forced in a real browser
