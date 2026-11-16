@@ -8,6 +8,8 @@ import type { AdapterHandlers, ConnectionStatus } from "@/adapter/GameAdapter";
 import { LgsAdapter } from "@/adapter/LgsAdapter";
 import type { GameStateSnapshot, ServerError } from "@/contract/types";
 
+// Only the test that waits for a timeout uses this. Every other test keeps the adapter's real
+// timeout, because on a busy machine a real socket can take longer than 100 ms to answer.
 const SHORT_TIMEOUT_MS = 100;
 
 type RestReply = { status: number; contentType: string; body: string };
@@ -50,9 +52,15 @@ beforeEach(async () => {
 
   statuses = [];
   handlers = emptyHandlers();
-  adapter = new LgsAdapter(url, SHORT_TIMEOUT_MS);
+  adapter = new LgsAdapter(url);
   adapter.on(handlers);
 });
+
+function useShortTimeout(): void {
+  adapter.disconnect();
+  adapter = new LgsAdapter(url, SHORT_TIMEOUT_MS);
+  adapter.on(handlers);
+}
 
 afterEach(async () => {
   adapter.disconnect();
@@ -93,6 +101,7 @@ describe("commands", () => {
 
   // FR-SYS-04 EXC-04-1
   it("resolves to INTERNAL_ERROR when the server never answers", async () => {
+    useShortTimeout();
     const socket = await connected();
     socket.on("game:roll", () => undefined);
 
