@@ -82,6 +82,7 @@ export const SETTINGS_TEXT = {
   sound: "Sound effects",
   animations: "Animations",
   fast: "Fast",
+  dice3d: "3D dice",
 } as const;
 
 export const RULES_MODAL_TITLE = "Rules";

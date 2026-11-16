@@ -34,6 +34,17 @@ describe("settingsStore", () => {
     expect(store.getState().sound).toBe(false);
   });
 
+  // P14: off unless the player turns it on, and remembered like the other settings.
+  it("keeps the 3D die off by default, and remembers turning it on", async () => {
+    const first = await freshStore();
+    expect(first.getState().dice3d).toBe(false);
+
+    first.getState().setDice3d(true);
+    const second = await freshStore();
+
+    expect(second.getState().dice3d).toBe(true);
+  });
+
   // FR-SYS-10 POST-10-3: a theme change is only this attribute.
   it("puts the chosen theme on the page", async () => {
     const store = await freshStore();

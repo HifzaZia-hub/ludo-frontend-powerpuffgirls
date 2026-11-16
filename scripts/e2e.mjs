@@ -13,6 +13,7 @@
 //   grayscale  game and win screens with colour vision turned off, in both themes (NFR-SYS-07)
 //   contrast   the contrast of every piece of text on every screen, in every theme
 //   themes     the game screen in every theme, and the Settings window's theme choice
+//   die3d      the 3D die loads, lands on the server's value and still rolls from the keyboard
 //   perf       time from pressing Roll or Move to the next frame drawn (NFR-SYS-01)
 //   invalid    fast repeated presses, and presses for moves that aren't on offer (NFR-SYS-04)
 //   boundary   the dev-only broken fixture shows the error screen (NFR-SYS-03)
@@ -1116,6 +1117,63 @@ async function themes(browser) {
   await page.close();
 }
 
+// P14: the 3D die. It must load, land on the server's value, and still roll from the keyboard.
+async function die3d(browser) {
+  const page = await browser.page();
+  await computerGame(page, FAST_RULES);
+  await page.clickButton("Settings");
+  await page.waitUntil(DIALOG_OPEN, "the settings");
+  await page.clickButton("3D dice");
+  await page.press("Escape");
+  await page.waitUntil(`!!${DIE}.querySelector('canvas')`, "the 3D die to load", 20000);
+  check("the 3D die loads inside the die button", true);
+
+  const LAST_ROLL_LINE = `([...document.querySelectorAll('section[aria-label="Messages"] p, section[aria-label="Messages"] li')].map((l) => l.textContent).find((t) => /^Rida rolled \\d/.test(t)) ?? '')`;
+  const FACE = `(${DIE}.getAttribute('aria-label').match(/shows (\\d)/) ?? [])[1] ?? null`;
+  let matched = 0;
+  let rolls = 0;
+  for (let i = 0; i < 6; i++) {
+    await page.waitUntil(CAN_ROLL, "my roll", 60000);
+    if (i % 2 === 0) await page.press("r");
+    else {
+      // NFR-SYS-08: the button around the drawing still takes Enter.
+      await page.evaluate(`${DIE}.focus()`);
+      await page.press("Enter");
+    }
+    rolls += 1;
+    if (i === 0) {
+      await sleep(150);
+      await page.shot("NFR-SYS-05-die3d-rolling.png");
+    }
+    await page.waitUntil(`!${DIE}.hasAttribute('aria-busy')`, "the die to land", 15000);
+    await sleep(300);
+    const face = await page.evaluate(FACE);
+    const line = await page.evaluate(LAST_ROLL_LINE);
+    if (face !== null && line.includes(`rolled ${face}`)) matched += 1;
+    else console.log(`face ${face} vs log "${line}"`);
+    if (i === 0) await page.shot("NFR-SYS-05-die3d-landed.png");
+    const state = await page.evaluate(STATE);
+    if (state.open) {
+      await page.press(pieceNumber(state.options[0]));
+      await page.press("Enter");
+      await sleep(600);
+    }
+  }
+  check(`every landed face matches the server's roll (${matched} of ${rolls})`, matched === rolls);
+
+  // How smooth the spin is here. Headless Chrome draws WebGL in software, so a real one is faster.
+  await page.waitUntil(CAN_ROLL, "my roll", 60000);
+  const fps = await page.evaluate(`new Promise((resolve) => {
+    let frames = 0;
+    const start = performance.now();
+    const tick = (now) => { frames += 1; if (now - start < 500) requestAnimationFrame(tick); else resolve(Math.round(frames * 1000 / (now - start))); };
+    requestAnimationFrame(tick);
+  })`);
+  console.log(`frames per second in this headless browser: ${fps}`);
+  reportErrors(page, "die3d");
+  await page.close();
+}
+
 // First DOM change after an input, and the frame that draws it (NFR-SYS-01).
 const ARM = `(() => {
   const mark = { input: null, change: null, frame: null };
@@ -1362,7 +1420,7 @@ async function smoke(browser) {
 // ---------------------------------------------------------------------------------------------
 // Main
 
-const MODES = { keyboard, games, sizes, grayscale, contrast, themes, perf, invalid, boundary, smoke };
+const MODES = { keyboard, games, sizes, grayscale, contrast, themes, die3d, perf, invalid, boundary, smoke };
 if (!MODES[mode]) {
   console.error(`Unknown mode "${mode}". Use one of: ${Object.keys(MODES).join(", ")}.`);
   process.exit(2);

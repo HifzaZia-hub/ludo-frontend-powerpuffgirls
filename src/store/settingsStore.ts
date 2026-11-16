@@ -12,12 +12,15 @@ interface SettingsData {
   theme: Theme;
   sound: boolean;
   animation: AnimationMode;
+  /** P14: off by default, and only drawn while Animations is on (see Dice). */
+  dice3d: boolean;
 }
 
 export interface SettingsState extends SettingsData {
   setTheme(theme: Theme): void;
   setSound(sound: boolean): void;
   setAnimation(animation: AnimationMode): void;
+  setDice3d(dice3d: boolean): void;
 }
 
 const SETTINGS_KEY = "ludo-settings";
@@ -28,9 +31,11 @@ function buildSettings(set: (partial: Partial<SettingsData>) => void): SettingsS
     theme: DEFAULT_THEME,
     sound: true,
     animation: "on",
+    dice3d: false,
     setTheme: (theme) => set({ theme }),
     setSound: (sound) => set({ sound }),
     setAnimation: (animation) => set({ animation }),
+    setDice3d: (dice3d) => set({ dice3d }),
   };
 }
 
@@ -39,7 +44,12 @@ export const useSettingsStore: UseBoundStore<StoreApi<SettingsState>> = PERSIST_
       persist(buildSettings, {
         name: SETTINGS_KEY,
         version: SETTINGS_VERSION,
-        partialize: ({ theme, sound, animation }): SettingsData => ({ theme, sound, animation }),
+        partialize: ({ theme, sound, animation, dice3d }): SettingsData => ({
+          theme,
+          sound,
+          animation,
+          dice3d,
+        }),
         // Nothing has changed shape yet. When it does, raise the version and convert old saves here.
         migrate: (saved) => saved as SettingsData,
         // A saved theme that no longer exists, or a hand-edited one, falls back to the default.

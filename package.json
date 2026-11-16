@@ -16,12 +16,14 @@
     "e2e": "node scripts/e2e.mjs"
   },
   "dependencies": {
+    "@react-three/fiber": "^8.18.0",
     "canvas-confetti": "^1.9.3",
     "framer-motion": "^11.18.2",
     "howler": "^2.2.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "socket.io-client": "^4.8.1",
+    "three": "^0.186.1",
     "uuid": "^11.1.0",
     "zustand": "^5.0.3"
   },
@@ -36,6 +38,7 @@
     "@types/node": "^22.15.3",
     "@types/react": "^18.3.20",
     "@types/react-dom": "^18.3.6",
+    "@types/three": "^0.186.0",
     "@vitejs/plugin-react": "^4.4.1",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.25.1",
