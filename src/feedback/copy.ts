@@ -58,6 +58,9 @@ export const LABELS = {
   theme: "Theme",
   dark: "Dark",
   light: "Light",
+  neon: "Neon",
+  forest: "Forest",
+  minimal: "Minimal",
   roll: "Roll",
   rolling: "Rolling…",
   messages: "Messages",
@@ -79,6 +82,7 @@ export const SETTINGS_TEXT = {
   sound: "Sound effects",
   animations: "Animations",
   fast: "Fast",
+  dice3d: "3D dice",
 } as const;
 
 export const RULES_MODAL_TITLE = "Rules";
@@ -229,6 +233,14 @@ export const WIN_TEXT = {
   mainMenu: "Main menu",
   waitingForHost: (name: string) => `Waiting for ${name} to start a new game.`,
   waitingForAnyHost: "Waiting for the host to start a new game.",
+  copyResult: "Copy result",
+  copiedResult: "Copied!",
+  copyResultFailed: "Couldn't copy. Your browser didn't allow it.",
+  copyResultFailedShort: "Couldn't copy",
+  // P14: the line that gets copied, in the server's order (POST-06-3).
+  resultInOrder: (names: readonly string[]) =>
+    `Ludo result: ${names.map((name, index) => `${index + 1}. ${name}`).join(", ")}`,
+  resultWinner: (name: string) => `Ludo result: ${name} won`,
 } as const;
 
 export const STOPPED_TEXT = { title: "This game was stopped" } as const;

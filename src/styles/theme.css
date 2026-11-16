@@ -53,6 +53,84 @@ html[data-theme="light"] {
   --p-blue:   #2367D8;
 }
 
+/* P14: extra themes. Not in the UI spec, so these blocks are their source. Each defines every token
+   above, which src/config/themes.test.ts checks, and `npm run e2e -- contrast` checks every text in
+   each one. The board stays light in all of them, so the stars and arrows keep their contrast. */
+html[data-theme="neon"] {
+  color-scheme: dark;
+  --bg-deep:     #07050F;
+  --bg-panel:    #120D24;
+  --bg-raised:   #1C1536;
+  --border-soft: #2E2456;
+  --focus-ring:  #FF4FD8;
+  --text-high:   #F7F3FF;
+  --text-mid:    #BCAFE6;
+  --text-low:    #A99BDB;
+  --accent:      #2BFFB0;
+  --accent-press:#12E69A;
+  --on-accent:   #04261A;
+  --danger:      #FF4D7A;
+  --on-danger:   #2A0510;
+  --warning:     #FFC83D;
+  --piece-edge:  #0B0820;
+  --board-cell:  #F3F0FF;
+  --board-line:  #C7BDF0;
+  --p-red:    #FF3B5C;
+  --p-green:  #22D96B;
+  --p-yellow: #FFD23F;
+  --p-blue:   #3D8BFF;
+}
+
+html[data-theme="forest"] {
+  color-scheme: light;
+  --bg-deep:     #E6EEE3;
+  --bg-panel:    #F8FBF6;
+  --bg-raised:   #EDF3E9;
+  --border-soft: #C9D8C3;
+  --focus-ring:  #1F6F43;
+  --text-high:   #12261A;
+  --text-mid:    #3E5646;
+  --text-low:    #4A6152;
+  --accent:      #23744A;
+  --accent-press:#1D6340;
+  --on-accent:   #FFFFFF;
+  --danger:      #B3261E;
+  --on-danger:   #FFFFFF;
+  --warning:     #8A5A00;
+  --piece-edge:  #12261A;
+  --board-cell:  #FBFDF8;
+  --board-line:  #B9CBB2;
+  --p-red:    #CC3A33;
+  --p-green:  #2F9E57;
+  --p-yellow: #C79A00;
+  --p-blue:   #2C6BC9;
+}
+
+html[data-theme="minimal"] {
+  color-scheme: light;
+  --bg-deep:     #F5F5F5;
+  --bg-panel:    #FFFFFF;
+  --bg-raised:   #F0F0F0;
+  --border-soft: #DDDDDD;
+  --focus-ring:  #1F5FD6;
+  --text-high:   #111111;
+  --text-mid:    #4D4D4D;
+  --text-low:    #5C5C5C;
+  --accent:      #1A1A1A;
+  --accent-press:#333333;
+  --on-accent:   #FFFFFF;
+  --danger:      #C62828;
+  --on-danger:   #FFFFFF;
+  --warning:     #9A6200;
+  --piece-edge:  #1A1A1A;
+  --board-cell:  #FFFFFF;
+  --board-line:  #CFCFCF;
+  --p-red:    #D93A35;
+  --p-green:  #23994E;
+  --p-yellow: #C59600;
+  --p-blue:   #2563D9;
+}
+
 /* POST-10-2: the Animations setting and the device's reduced-motion preference only change how
    long CSS motion takes, so they can never change an outcome. */
 html[data-animation="fast"] .animate-tumble {

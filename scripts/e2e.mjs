@@ -11,7 +11,9 @@
 //   games      --count full games against the computer, one after another (NFR-SYS-02, NFR-SYS-03)
 //   sizes      main, setup, lobby and game screens at three window sizes (NFR-SYS-10)
 //   grayscale  game and win screens with colour vision turned off, in both themes (NFR-SYS-07)
-//   contrast   the contrast of every piece of text on every screen, in both themes
+//   contrast   the contrast of every piece of text on every screen, in every theme
+//   themes     the game screen in every theme, and the Settings window's theme choice
+//   die3d      the 3D die loads, lands on the server's value and still rolls from the keyboard
 //   perf       time from pressing Roll or Move to the next frame drawn (NFR-SYS-01)
 //   invalid    fast repeated presses, and presses for moves that aren't on offer (NFR-SYS-04)
 //   boundary   the dev-only broken fixture shows the error screen (NFR-SYS-03)
@@ -983,7 +985,15 @@ const CONTRAST = `(() => {
 })()`;
 
 async function contrast(browser) {
-  for (const theme of ["Dark", "Light"]) {
+  // Every theme the Settings window offers, so a new one is checked without changing this.
+  const first = await browser.page();
+  await mainScreen(first);
+  await first.clickButton("Settings");
+  await first.waitUntil(DIALOG_OPEN, "the settings");
+  const themes = await first.evaluate(`[...document.querySelectorAll('dialog[open] [role="radiogroup"][aria-label="Theme"] [role="radio"]')].map((b) => b.textContent.trim())`);
+  await first.close();
+  console.log(`themes: ${themes.join(", ")}`);
+  for (const theme of themes) {
     const page = await browser.page();
     const failures = [];
     const unsure = [];
@@ -1078,6 +1088,90 @@ async function contrast(browser) {
     reportErrors(page, `contrast ${theme}`);
     await page.close();
   }
+}
+
+// FR-SYS-10, P14: the game screen in every theme the Settings window offers, and the window itself.
+async function themes(browser) {
+  const page = await browser.page();
+  await computerGame(page, FAST_RULES);
+  await play(page, { label: "themes", stopAfter: 4 });
+  for (;;) {
+    await page.waitUntil(`${CAN_ROLL} || ${OPTIONS_OPEN}`, "my turn", 60000);
+    if (await page.evaluate(OPTIONS_OPEN)) break;
+    await page.press("r");
+    await sleep(800);
+  }
+  await page.clickButton("Settings");
+  await page.waitUntil(DIALOG_OPEN, "the settings");
+  const names = await page.evaluate(`[...document.querySelectorAll('dialog[open] [role="radiogroup"][aria-label="Theme"] [role="radio"]')].map((b) => b.textContent.trim())`);
+  const fits = await page.evaluate(`(() => { const g = document.querySelector('dialog[open] [role="radiogroup"][aria-label="Theme"]'); const d = document.querySelector('dialog[open]'); return g.getBoundingClientRect().right <= d.getBoundingClientRect().right; })()`);
+  check(`the Settings window fits all ${names.length} themes`, fits);
+  await page.shot("FR-SYS-10-theme-choice.png");
+  await page.press("Escape");
+  for (const name of names) {
+    await setTheme(page, name);
+    await page.shot(`FR-SYS-10-theme-${name.toLowerCase()}.png`);
+  }
+  await setTheme(page, "Dark");
+  reportErrors(page, "themes");
+  await page.close();
+}
+
+// P14: the 3D die. It must load, land on the server's value, and still roll from the keyboard.
+async function die3d(browser) {
+  const page = await browser.page();
+  await computerGame(page, FAST_RULES);
+  await page.clickButton("Settings");
+  await page.waitUntil(DIALOG_OPEN, "the settings");
+  await page.clickButton("3D dice");
+  await page.press("Escape");
+  await page.waitUntil(`!!${DIE}.querySelector('canvas')`, "the 3D die to load", 20000);
+  check("the 3D die loads inside the die button", true);
+
+  const LAST_ROLL_LINE = `([...document.querySelectorAll('section[aria-label="Messages"] p, section[aria-label="Messages"] li')].map((l) => l.textContent).find((t) => /^Rida rolled \\d/.test(t)) ?? '')`;
+  const FACE = `(${DIE}.getAttribute('aria-label').match(/shows (\\d)/) ?? [])[1] ?? null`;
+  let matched = 0;
+  let rolls = 0;
+  for (let i = 0; i < 6; i++) {
+    await page.waitUntil(CAN_ROLL, "my roll", 60000);
+    if (i % 2 === 0) await page.press("r");
+    else {
+      // NFR-SYS-08: the button around the drawing still takes Enter.
+      await page.evaluate(`${DIE}.focus()`);
+      await page.press("Enter");
+    }
+    rolls += 1;
+    if (i === 0) {
+      await sleep(150);
+      await page.shot("NFR-SYS-05-die3d-rolling.png");
+    }
+    await page.waitUntil(`!${DIE}.hasAttribute('aria-busy')`, "the die to land", 15000);
+    await sleep(300);
+    const face = await page.evaluate(FACE);
+    const line = await page.evaluate(LAST_ROLL_LINE);
+    if (face !== null && line.includes(`rolled ${face}`)) matched += 1;
+    else console.log(`face ${face} vs log "${line}"`);
+    if (i === 0) await page.shot("NFR-SYS-05-die3d-landed.png");
+    const state = await page.evaluate(STATE);
+    if (state.open) {
+      await page.press(pieceNumber(state.options[0]));
+      await page.press("Enter");
+      await sleep(600);
+    }
+  }
+  check(`every landed face matches the server's roll (${matched} of ${rolls})`, matched === rolls);
+
+  // How smooth the spin is here. Headless Chrome draws WebGL in software, so a real one is faster.
+  await page.waitUntil(CAN_ROLL, "my roll", 60000);
+  const fps = await page.evaluate(`new Promise((resolve) => {
+    let frames = 0;
+    const start = performance.now();
+    const tick = (now) => { frames += 1; if (now - start < 500) requestAnimationFrame(tick); else resolve(Math.round(frames * 1000 / (now - start))); };
+    requestAnimationFrame(tick);
+  })`);
+  console.log(`frames per second in this headless browser: ${fps}`);
+  reportErrors(page, "die3d");
+  await page.close();
 }
 
 // First DOM change after an input, and the frame that draws it (NFR-SYS-01).
@@ -1304,6 +1398,21 @@ async function smoke(browser) {
   await winNow(page, code);
   const win = await page.evaluate(WIN_PAGE);
   check("win: the win screen appears", win.heading.includes("wins"), win.heading);
+  // FR-SYS-06: Play again must be in view without scrolling, whatever else the screen shows.
+  for (const [w, h] of [[1280, 720], [1024, 768]]) {
+    await page.size(w, h);
+    await sleep(500);
+    const layout = await page.evaluate(`(() => {
+      const button = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Play again');
+      const r = button?.getBoundingClientRect();
+      const de = document.documentElement;
+      return { playAgainInView: !!r && r.top >= 0 && r.bottom <= innerHeight, sideways: de.scrollWidth > de.clientWidth, scrolls: de.scrollHeight > de.clientHeight };
+    })()`);
+    check(`win screen at ${w}x${h}: Play again in view, no sideways scroll`, layout.playAgainInView && !layout.sideways, `page scrolls down: ${layout.scrolls}`);
+  }
+  await page.size(1280, 720);
+  await sleep(1500);
+  await page.shot("FR-SYS-06-win-copy-result.png");
   reportErrors(page, "smoke");
   await page.close();
 }
@@ -1311,7 +1420,7 @@ async function smoke(browser) {
 // ---------------------------------------------------------------------------------------------
 // Main
 
-const MODES = { keyboard, games, sizes, grayscale, contrast, perf, invalid, boundary, smoke };
+const MODES = { keyboard, games, sizes, grayscale, contrast, themes, die3d, perf, invalid, boundary, smoke };
 if (!MODES[mode]) {
   console.error(`Unknown mode "${mode}". Use one of: ${Object.keys(MODES).join(", ")}.`);
   process.exit(2);

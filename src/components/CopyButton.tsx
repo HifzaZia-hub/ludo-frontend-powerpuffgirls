@@ -10,9 +10,21 @@ export interface CopyButtonProps {
   failedMessage: string;
   /** Shown in the message line when there is nothing else to say. */
   hint?: string;
+  /**
+   * No message line: the result shows in the button's own label, for a place with no room to
+   * spare. A screen reader still hears the full message.
+   */
+  compactFailedLabel?: string;
 }
 
-export function CopyButton({ text, label, copiedLabel, failedMessage, hint }: CopyButtonProps) {
+export function CopyButton({
+  text,
+  label,
+  copiedLabel,
+  failedMessage,
+  hint,
+  compactFailedLabel,
+}: CopyButtonProps) {
   const [result, setResult] = useState<"copied" | "failed" | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>();
 
@@ -28,6 +40,22 @@ export function CopyButton({ text, label, copiedLabel, failedMessage, hint }: Co
     }
     setResult("copied");
     timer.current = setTimeout(() => setResult(null), COPIED_MS);
+  }
+
+  if (compactFailedLabel !== undefined) {
+    const labels = { copied: copiedLabel, failed: compactFailedLabel, none: label };
+    const shown = labels[result ?? "none"];
+    return (
+      <>
+        <Button variant="ghost" size="sm" onClick={() => void copy()}>
+          {shown}
+        </Button>
+        <span role="status" className="sr-only">
+          {result === "copied" && copiedLabel}
+          {result === "failed" && failedMessage}
+        </span>
+      </>
+    );
   }
 
   return (

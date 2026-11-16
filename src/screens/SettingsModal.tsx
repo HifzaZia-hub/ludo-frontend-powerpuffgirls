@@ -24,11 +24,14 @@ export function SettingsModal() {
   const setSound = useSettingsStore((state) => state.setSound);
   const setAnimation = useSettingsStore((state) => state.setAnimation);
   const setTheme = useSettingsStore((state) => state.setTheme);
+  const dice3d = useSettingsStore((state) => state.dice3d);
+  const setDice3d = useSettingsStore((state) => state.setDice3d);
 
   return (
     <Modal open={open} title={SETTINGS_TEXT.title} onClose={closeModal}>
       <div className="flex flex-col items-start gap-4">
         <Toggle label={SETTINGS_TEXT.sound} checked={sound} onChange={setSound} />
+        <Toggle label={SETTINGS_TEXT.dice3d} checked={dice3d} onChange={setDice3d} />
         <FormRow label={SETTINGS_TEXT.animations}>
           <SegmentedControl
             label={SETTINGS_TEXT.animations}

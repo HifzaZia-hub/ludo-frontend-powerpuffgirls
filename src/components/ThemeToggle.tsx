@@ -1,16 +1,13 @@
 import { SegmentedControl } from "@/components/SegmentedControl";
+import { THEMES, type Theme } from "@/config/themes";
 import { LABELS } from "@/feedback/copy";
 
-type ThemeName = "dark" | "light";
-
-const THEME_OPTIONS = [
-  { value: "dark", label: LABELS.dark },
-  { value: "light", label: LABELS.light },
-] as const;
+// Built from the theme list, so a new theme needs no change here.
+const THEME_OPTIONS = THEMES.map((theme) => ({ value: theme, label: LABELS[theme] }));
 
 export interface ThemeToggleProps {
-  value: ThemeName;
-  onChange: (theme: ThemeName) => void;
+  value: Theme;
+  onChange: (theme: Theme) => void;
 }
 
 export function ThemeToggle({ value, onChange }: ThemeToggleProps) {

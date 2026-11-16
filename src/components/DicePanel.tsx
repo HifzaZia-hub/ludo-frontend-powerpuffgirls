@@ -18,6 +18,8 @@ export interface DicePanelProps {
   showTimeUp: boolean;
   dieRef?: Ref<HTMLButtonElement>;
   className?: string;
+  /** P14: draw the die in 3D. */
+  threeD?: boolean;
 }
 
 export function DicePanel({
@@ -32,10 +34,18 @@ export function DicePanel({
   showTimeUp,
   dieRef,
   className = "",
+  threeD = false,
 }: DicePanelProps) {
   return (
     <Card className={`flex flex-col items-center gap-2 ${className}`}>
-      <Dice ref={dieRef} value={value} rolling={rolling} disabled={!canRoll} onRoll={onRoll} />
+      <Dice
+        ref={dieRef}
+        value={value}
+        rolling={rolling}
+        disabled={!canRoll}
+        onRoll={onRoll}
+        threeD={threeD}
+      />
 
       {sixesInRow !== null && (
         <div
