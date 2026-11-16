@@ -3,8 +3,9 @@
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import { persist } from "zustand/middleware";
 import { PERSIST_SETTINGS } from "@/config/app";
+import { DEFAULT_THEME, isTheme, type Theme } from "@/config/themes";
 
-export type Theme = "dark" | "light";
+export type { Theme };
 export type AnimationMode = "on" | "fast" | "off";
 
 interface SettingsData {
@@ -24,7 +25,7 @@ const SETTINGS_VERSION = 1;
 
 function buildSettings(set: (partial: Partial<SettingsData>) => void): SettingsState {
   return {
-    theme: "dark",
+    theme: DEFAULT_THEME,
     sound: true,
     animation: "on",
     setTheme: (theme) => set({ theme }),
@@ -41,6 +42,11 @@ export const useSettingsStore: UseBoundStore<StoreApi<SettingsState>> = PERSIST_
         partialize: ({ theme, sound, animation }): SettingsData => ({ theme, sound, animation }),
         // Nothing has changed shape yet. When it does, raise the version and convert old saves here.
         migrate: (saved) => saved as SettingsData,
+        // A saved theme that no longer exists, or a hand-edited one, falls back to the default.
+        merge: (saved, current) => {
+          const data = (saved ?? {}) as Partial<SettingsData>;
+          return { ...current, ...data, theme: isTheme(data.theme) ? data.theme : current.theme };
+        },
       }),
     )
   : create<SettingsState>()(buildSettings);

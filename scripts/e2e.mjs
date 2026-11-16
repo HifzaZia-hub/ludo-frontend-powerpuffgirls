@@ -11,7 +11,8 @@
 //   games      --count full games against the computer, one after another (NFR-SYS-02, NFR-SYS-03)
 //   sizes      main, setup, lobby and game screens at three window sizes (NFR-SYS-10)
 //   grayscale  game and win screens with colour vision turned off, in both themes (NFR-SYS-07)
-//   contrast   the contrast of every piece of text on every screen, in both themes
+//   contrast   the contrast of every piece of text on every screen, in every theme
+//   themes     the game screen in every theme, and the Settings window's theme choice
 //   perf       time from pressing Roll or Move to the next frame drawn (NFR-SYS-01)
 //   invalid    fast repeated presses, and presses for moves that aren't on offer (NFR-SYS-04)
 //   boundary   the dev-only broken fixture shows the error screen (NFR-SYS-03)
@@ -983,7 +984,15 @@ const CONTRAST = `(() => {
 })()`;
 
 async function contrast(browser) {
-  for (const theme of ["Dark", "Light"]) {
+  // Every theme the Settings window offers, so a new one is checked without changing this.
+  const first = await browser.page();
+  await mainScreen(first);
+  await first.clickButton("Settings");
+  await first.waitUntil(DIALOG_OPEN, "the settings");
+  const themes = await first.evaluate(`[...document.querySelectorAll('dialog[open] [role="radiogroup"][aria-label="Theme"] [role="radio"]')].map((b) => b.textContent.trim())`);
+  await first.close();
+  console.log(`themes: ${themes.join(", ")}`);
+  for (const theme of themes) {
     const page = await browser.page();
     const failures = [];
     const unsure = [];
@@ -1078,6 +1087,33 @@ async function contrast(browser) {
     reportErrors(page, `contrast ${theme}`);
     await page.close();
   }
+}
+
+// FR-SYS-10, P14: the game screen in every theme the Settings window offers, and the window itself.
+async function themes(browser) {
+  const page = await browser.page();
+  await computerGame(page, FAST_RULES);
+  await play(page, { label: "themes", stopAfter: 4 });
+  for (;;) {
+    await page.waitUntil(`${CAN_ROLL} || ${OPTIONS_OPEN}`, "my turn", 60000);
+    if (await page.evaluate(OPTIONS_OPEN)) break;
+    await page.press("r");
+    await sleep(800);
+  }
+  await page.clickButton("Settings");
+  await page.waitUntil(DIALOG_OPEN, "the settings");
+  const names = await page.evaluate(`[...document.querySelectorAll('dialog[open] [role="radiogroup"][aria-label="Theme"] [role="radio"]')].map((b) => b.textContent.trim())`);
+  const fits = await page.evaluate(`(() => { const g = document.querySelector('dialog[open] [role="radiogroup"][aria-label="Theme"]'); const d = document.querySelector('dialog[open]'); return g.getBoundingClientRect().right <= d.getBoundingClientRect().right; })()`);
+  check(`the Settings window fits all ${names.length} themes`, fits);
+  await page.shot("FR-SYS-10-theme-choice.png");
+  await page.press("Escape");
+  for (const name of names) {
+    await setTheme(page, name);
+    await page.shot(`FR-SYS-10-theme-${name.toLowerCase()}.png`);
+  }
+  await setTheme(page, "Dark");
+  reportErrors(page, "themes");
+  await page.close();
 }
 
 // First DOM change after an input, and the frame that draws it (NFR-SYS-01).
@@ -1311,7 +1347,7 @@ async function smoke(browser) {
 // ---------------------------------------------------------------------------------------------
 // Main
 
-const MODES = { keyboard, games, sizes, grayscale, contrast, perf, invalid, boundary, smoke };
+const MODES = { keyboard, games, sizes, grayscale, contrast, themes, perf, invalid, boundary, smoke };
 if (!MODES[mode]) {
   console.error(`Unknown mode "${mode}". Use one of: ${Object.keys(MODES).join(", ")}.`);
   process.exit(2);
