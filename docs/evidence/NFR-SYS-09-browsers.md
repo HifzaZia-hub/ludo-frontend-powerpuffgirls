@@ -7,31 +7,31 @@ screen. The win uses the mock's debug scenario `near-win`, so it doesn't take a 
 |---|---|---|---|---|---|---|---|---|
 | Chrome | 157.0.8103.51 | `npm run e2e -- smoke --browser chrome` | ✓ | ✓ | ✓ | ✓ | 0 | 2026-11-15 |
 | Edge | 157.0.4341.46 | `npm run e2e -- smoke --browser edge` | ✓ | ✓ | ✓ | ✓ | 0 | 2026-11-15 |
-| Firefox | — | **not run yet** | | | | | | |
+| Firefox | 160.0 | `npm run e2e -- smoke --browser firefox` | ✓ | ✓ | ✓ | ✓ | 0 | 2026-11-15 |
 
-Both runs used headless browsers on Windows 11 against the dev server. Every other P12 check (the
-keyboard game, five full games, sizes, grayscale, contrast and timing) also ran in Chrome, and every
-check from P6 to P11 ran in Edge.
+All three ran headless on Windows 11 against the dev server. Every other P12 check (five full games,
+sizes, grayscale, contrast and timing) also ran in Chrome, and every check from P6 to P11 ran in Edge.
 
-## Firefox
+## More in Firefox
 
-Firefox isn't installed on the machine used for these checks. The script can't drive it either: it
-uses the Chrome DevTools Protocol, and Firefox no longer supports that. Playwright could, but it isn't
-in our locked stack (CLAUDE.md §2).
+Beyond the smoke test, these ran in Firefox 160.0 on 2026-11-16, all passing:
 
-To finish this row by hand, with the latest Firefox:
+- **A whole game by keyboard alone** (`keyboard --fast`): setup, the waiting room, restart, a full
+  game to "Computer 3 wins!" (110 rolls, 81 moves), Play again, Cancel and leave. No console errors.
+- **Invalid input** (`invalid`): ten fast clicks send one roll, keys for pieces that can't move send
+  nothing, and Enter pressed three times sends one move.
+- **The error screen** (`boundary`): a board that can't be drawn shows "Something went wrong — your
+  game is safe" with Try again.
 
-1. Run `npm run mock:debug` and `npm run dev`, and open `http://localhost:5173` in Firefox.
-2. **Start:** New Game, "Play with computer", type a name, Start. The board appears.
-3. **Roll and move:** press Roll (or R). When you can move, pick a piece and press Move. Do it twice.
-4. **Win:** a game against the computer has no waiting room, so get its code from the console (F12):
-   `JSON.parse(sessionStorage['ludo-session']).roomCode`. When it is your turn to roll, run this in
-   another terminal with your code in place of `ABC234`:
+## How Firefox is driven
 
-   ```
-   curl -X POST http://localhost:3001/debug/scenario -H "content-type: application/json" -d "{\"roomCode\":\"ABC234\",\"name\":\"near-win\"}"
-   ```
+Firefox no longer supports the Chrome DevTools Protocol, so the script drives it with WebDriver BiDi,
+the standard protocol Firefox supports, over a plain WebSocket. It still needs no extra library.
+`grayscale` and `perf` need Chrome or Edge, because they use DevTools-only vision emulation and
+tracing.
 
-   Then roll and move the piece that can reach home. The win screen appears.
-5. Check the console (F12) for red errors, and fill in the Firefox row above with the version from
-   Help → About Firefox.
+One quirk of **headless** Firefox: if Tab goes past the end of the page, focus passes through the
+browser's invisible toolbar and the page never gets it back, so Enter and Space stop pressing
+buttons. A tiny page with none of our code does the same, so it is the test setup, not the app. A
+real Firefox window gives the page its focus back. The script avoids it by tabbing towards a control
+without passing either end of the page, and stops with a clear message if Tab ever leaves the page.
