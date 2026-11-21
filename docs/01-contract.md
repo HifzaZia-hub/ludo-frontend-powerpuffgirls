@@ -1,9 +1,11 @@
 # 01 — Integration Contract (LGS v1.0.0)
 
-Source of truth: **D3 System Requirements, section 3.4**, written by The Assemblers.
-This file is the frontend-side mirror. If this file and the backend's published
-`@assemblers/ludo-contract` package disagree, **the package wins** — raise a
-GitHub issue on `ZohaibCodez/ludo-multiplayer-backend` and fix this file.
+Started from **D3 System Requirements, section 3.4**, written by The Assemblers.
+
+**Since 2026-11-21 this file is the spec.** The backend team asked us to build the front end
+first, and they will build the LGS to match it. So this file, with the mock server in
+`mock-server/` as its working example, says what the LGS must do. Where it decides something new,
+it says so. §8 lists what is still to settle.
 
 All payloads are JSON (UTF-8). Every server message carries a contract version
 field `v` (currently `"1.0.0"`). REST paths are prefixed `/api/v1`.
@@ -24,33 +26,51 @@ Request body:
   seats: 2 | 3 | 4;
   aiDifficulty?: "EASY" | "NORMAL"; // default NORMAL
   rules?: Partial<RuleConfig>;      // see section 5
+  colour?: Colour;                  // the host's colour, default "RED" (FR-SYS-01, D2 FR-06)
 }
 ```
 Success `201`:
 ```ts
 { v: string; roomCode: string; playerId: string; sessionToken: string; room: RoomSnapshot }
 ```
-Errors: `400 INVALID_PAYLOAD`, `400 INVALID_NAME`, `400 INVALID_RULES`, `503 SERVER_BUSY`.
+Errors: `400 INVALID_PAYLOAD` (including a `colour` that isn't one of the four), `400 INVALID_NAME`,
+`400 INVALID_RULES`, `503 SERVER_BUSY`.
 
 Notes:
-- The creator is always the **host** and always takes **seat 1 (Red)**.
+- The creator is always the **host** and takes **seat 1, in the colour they chose** (Red if they
+  chose none).
+- **Decided 2026-11-21 (colour choice):** the room's colours go clockwise round the board from the
+  host's colour, and seat order is that clockwise order:
+  - 2 seats: the host's colour and the **opposite corner** (our rule R1), e.g. Green and Blue.
+  - 3 seats: the host's colour and the **next two clockwise**, e.g. Blue, Red, Green.
+  - 4 seats: all four, starting from the host's.
+  With no `colour` this gives Red and Yellow, Red to Yellow, or all four, as before.
 - In `HUMAN_VS_AI` the other seats are filled with AI players immediately.
 
 ### POST /api/v1/rooms/{roomCode}/join — join a room
 
-Request body: `{ displayName: string }`
+Request body:
+```ts
+{
+  displayName: string;
+  colour?: Colour; // one of the room's free seats' colours. Left out: the first free seat.
+}
+```
 Success `200`: `{ v, playerId, sessionToken, room }`
-Errors: `400 INVALID_CODE`, `404 ROOM_NOT_FOUND`, `409 ROOM_FULL`,
-`409 GAME_ALREADY_STARTED`, `409 NAME_TAKEN`, `429 RATE_LIMITED`.
+Errors: `400 INVALID_CODE`, `400 INVALID_PAYLOAD` (a `colour` that isn't one of the four),
+`404 ROOM_NOT_FOUND`, `409 ROOM_FULL`, `409 GAME_ALREADY_STARTED`, `409 NAME_TAKEN`,
+`409 COLOUR_TAKEN` (the colour isn't free in this room: taken, or not one of its colours),
+`429 RATE_LIMITED`.
 
 The server upper-cases the code. The client should also upper-case before
 sending and strip spaces.
 
 ### GET /api/v1/rooms/{roomCode} — preview before joining
 
-Success `200`: public summary — status, mode, host name, free seats.
+Success `200`: the room's `RoomSnapshot` (section 5), with its status, mode, rules, host and every
+seat with its colour and player. **Decided 2026-11-21:** this is how the join form knows which
+colours are still free (the seats whose `player` is `null`).
 Error: `404 ROOM_NOT_FOUND`.
-Use this to show "Room K7QX2M — 2/4 players, waiting" before the user commits a name.
 
 ### GET /api/v1/health
 
@@ -275,6 +295,7 @@ What the player sees (FR-SYS-04, NFR-SYS-08):
 | `ROOM_NOT_FOUND` | 404 | inline error on the join form |
 | `PIECE_NOT_FOUND` | 404 | our bug; resync with `state:sync` |
 | `NAME_TAKEN` | 409 | inline error, let them retry with a new name |
+| `COLOUR_TAKEN` | 409 | inline error under the colours; look the room up again and offer what is free now (added 2026-11-21) |
 | `ROOM_FULL` | 409 | inline error on the join form |
 | `GAME_ALREADY_STARTED` | 409 | inline error on the join form |
 | `GAME_NOT_STARTED` | 409 | toast |
@@ -317,6 +338,10 @@ While we are away, an AI stand-in plays our turns after ~3 seconds per decision.
 
 Keep this list alive. Tick items off as they are answered in writing.
 
+**Update 2026-11-21:** the backend team builds the LGS to this contract, so the open items below
+are now ours to decide. In most of them the mock already behaves one definite way, and that can
+become the answer. Settling them, so the backend has a finished spec, is the next task.
+
 Last checked on 2026-11-08 against the backend's D3 v1 and its unmerged
 `feature/phase-0-foundation` branch. The backend has no room or socket code yet,
 so a tick means "answered in writing", not "seen working".
@@ -344,11 +369,6 @@ so a tick means "answered in writing", not "seen working".
 - [ ] When can we connect, and at what address? The backend's plan says its
       Milestone 2. Its default port is 3000; our `.env.example` points at the
       mock on 3001.
-- [ ] `GET /rooms/{roomCode}` preview — what are the exact field names for
-      status, mode, host name and free seats? `RoomPreview` stays out of
-      `src/contract/types.ts` until we know. The mock returns a `RoomSnapshot`.
-      Until this is answered the join form says "Game found!", not
-      "2 of 4 players · waiting".
 - [ ] `game:event.data` — what are the fields for each of the 16 event types?
       D3 describes six, in words only: `GAME_STARTED` (turn order, seed hash),
       `ROLLED` (player, value, legal moves), `TURN_CHANGED` (player, deadline),
@@ -393,14 +413,16 @@ so a tick means "answered in writing", not "seen working".
 
 From our own D3 (see `docs/00-requirements.md` §5):
 
-- [ ] **Colour choice (FR-06, FR-SYS-01).** D3 REQ-HOST 1.1 and 2.1 assign
-      colours by seat, so there is no choice today. Can one be added?
-- [ ] **Same-device play (FR-03).** May one browser create a room and then
-      join it again under other names, holding several session tokens at once?
-      D3 limits failed code look-ups per IP but says nothing about this.
-
 ### Answered
 
+- [x] **Colour choice (FR-06, FR-SYS-01).** Decided 2026-11-21: players choose. The client asked
+      for it, and the backend builds to this contract. The host sends `colour` on create, and a
+      joiner sends one of the free colours on join, or gets `COLOUR_TAKEN`. A room's colours go
+      clockwise from the host's (2 seats: opposite corner; 3: the next two; 4: all). See §1.
+- [x] **Room preview.** Decided 2026-11-21: `GET /rooms/{roomCode}` returns the `RoomSnapshot`.
+      See §1.
+- [x] **Same-device play (FR-03).** Decided 2026-11-21: not needed (the client), so task P13 was
+      dropped and the server needn't let one browser hold several sessions.
 - [x] `game:state` envelope — nested as `(version, snapshot)` (D3 REQ-G1 2.1,
       step 4).
 - [x] `ROLLED` carries the legal moves (D3 REQ-PLAYER 2.1, step 7). They are in
