@@ -4,6 +4,7 @@
 import { randomBytes, randomInt, randomUUID } from "node:crypto";
 import type { EventType } from "../src/contract/events";
 import type {
+  Colour,
   CreateRoomRequest,
   CreateRoomResponse,
   Difficulty,
@@ -19,6 +20,7 @@ import {
   activePlayer,
   applyMove,
   applyRoll,
+  COLOUR_ORDER,
   CommandError,
   CONTRACT_VERSION,
   createMatch,
@@ -27,7 +29,7 @@ import {
   passTurn,
   requireLegalMove,
   requireTurn,
-  SEAT_COLOURS,
+  roomColours,
   toSnapshot,
   type Match,
 } from "./game";
@@ -139,6 +141,16 @@ function parseDifficulty(value: unknown): Difficulty {
   throw new CommandError("INVALID_PAYLOAD", "Computer players can be EASY or NORMAL.");
 }
 
+// FR-SYS-01: optional on create and join. Anything else is a malformed request.
+function parseColour(value: unknown): Colour | undefined {
+  if (value === undefined) return undefined;
+  const colour = COLOUR_ORDER.find((known) => known === value);
+  if (!colour) {
+    throw new CommandError("INVALID_PAYLOAD", "Colours are RED, GREEN, YELLOW or BLUE.");
+  }
+  return colour;
+}
+
 function parseCreateRequest(body: unknown): Required<CreateRoomRequest> {
   const input = asRecord(body);
   const displayName = parseName(input.displayName);
@@ -155,6 +167,7 @@ function parseCreateRequest(body: unknown): Required<CreateRoomRequest> {
     seats,
     aiDifficulty: parseDifficulty(input.aiDifficulty ?? "NORMAL"),
     rules: parseRules(input.rules),
+    colour: parseColour(input.colour) ?? "RED",
   };
 }
 
@@ -238,13 +251,21 @@ export class RoomRegistry {
     if (!CODE_PATTERN.test(code)) {
       throw new CommandError("INVALID_CODE", "Room codes are 6 letters and numbers.");
     }
-    const displayName = parseName(asRecord(body).displayName);
+    const input = asRecord(body);
+    const displayName = parseName(input.displayName);
+    const colour = parseColour(input.colour);
     const room = this.requireRoom(code);
     if (room.status !== "LOBBY") {
       throw new CommandError("GAME_ALREADY_STARTED", "That game has already started.");
     }
-    const slot = room.seats.find(({ player }) => player === null);
-    if (!slot) throw new CommandError("ROOM_FULL", "That room is full.");
+    const firstFree = room.seats.find(({ player }) => player === null);
+    if (!firstFree) throw new CommandError("ROOM_FULL", "That room is full.");
+    // FR-SYS-01: the chosen colour's seat, which must be in this room and still free.
+    const slot =
+      colour === undefined ? firstFree : room.seats.find((seat) => seat.colour === colour);
+    if (!slot || slot.player !== null) {
+      throw new CommandError("COLOUR_TAKEN", "That colour isn't free in this game. Pick another.");
+    }
 
     const lowerName = displayName.toLowerCase();
     if (seatedPlayers(room).some(({ name }) => name.toLowerCase() === lowerName)) {
@@ -489,8 +510,8 @@ export class RoomRegistry {
       mode: request.mode,
       rules: { ...structuredClone(DEFAULT_RULES), ...request.rules },
       hostId: "",
-      // Colours follow seats (docs/00-requirements.md §5).
-      seats: SEAT_COLOURS[request.seats].map((colour, index) => ({
+      // FR-SYS-01: clockwise from the host's colour, so the host is seat 1.
+      seats: roomColours(request.seats, request.colour).map((colour, index) => ({
         seat: index + 1,
         colour,
         player: null,

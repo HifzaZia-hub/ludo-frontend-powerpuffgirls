@@ -12,6 +12,7 @@
 //   sizes      main, setup, lobby and game screens at three window sizes (NFR-SYS-10)
 //   grayscale  game and win screens with colour vision turned off, in both themes (NFR-SYS-07)
 //   contrast   the contrast of every piece of text on every screen, in both themes
+//   colours    a host and a friend each choose a colour, and play in them (FR-SYS-01)
 //   perf       time from pressing Roll or Move to the next frame drawn (NFR-SYS-01)
 //   invalid    fast repeated presses, and presses for moves that aren't on offer (NFR-SYS-04)
 //   boundary   the dev-only broken fixture shows the error screen (NFR-SYS-03)
@@ -1080,6 +1081,65 @@ async function contrast(browser) {
   }
 }
 
+// FR-SYS-01, D2 FR-06: a host picks a colour, a friend picks from what is still free, and both
+// play in the colours they chose.
+async function colours(browser) {
+  const ROWS = (selector) =>
+    `[...document.querySelectorAll('${selector}')].map((row) => row.innerText.replace(/\\s+/g, ' ').trim())`;
+  const host = await browser.page();
+  await mainScreen(host);
+  await host.clickButton("New Game");
+  await host.waitUntil(`document.querySelector('input') !== null`, "the setup screen");
+  await host.clickButton("Play with friends");
+  await host.clickButton("Blue");
+  await host.evaluate(`document.querySelector('input').focus()`);
+  await host.type("Rida");
+  await host.shot("FR-SYS-01-choose-colour.png");
+  await host.clickButton("Start");
+  await host.waitUntil(IN_LOBBY, "the waiting room");
+  const code = await host.evaluate(ROOM_CODE);
+  const hostRows = await host.evaluate(ROWS("main ul li"));
+  check("the host sits in blue", hostRows.some((row) => row.startsWith("B Rida")), JSON.stringify(hostRows));
+
+  const guest = await browser.page();
+  await mainScreen(guest);
+  await guest.clickButton("Join Game");
+  await guest.waitUntil(DIALOG_OPEN, "the join form");
+  await guest.evaluate(`document.querySelector('dialog[open] input').focus()`);
+  await guest.type(code);
+  await guest.waitUntil(`!!document.querySelector('dialog[open] [role="radiogroup"]')`, "the colour choice");
+  const offered = await guest.evaluate(
+    `[...document.querySelectorAll('dialog[open] [role="radio"]')].map((b) => b.getAttribute('aria-label'))`,
+  );
+  check("the join form offers only the free colours", offered.join() === "Red,Green,Yellow", offered.join(", "));
+  await guest.clickButton("Yellow", "document.querySelector('dialog[open]')");
+  await guest.evaluate(`document.querySelectorAll('dialog[open] input')[1].focus()`);
+  await guest.type("Hamza");
+  await guest.shot("FR-SYS-01-join-colour.png");
+  await guest.clickButton("Join", "document.querySelector('dialog[open]')");
+  await host.waitUntil(`document.body.innerText.includes('Hamza')`, "Hamza in the waiting room");
+  const joinedRows = await host.evaluate(ROWS("main ul li"));
+  check("the friend sits in yellow", joinedRows.some((row) => row.startsWith("Y Hamza")), JSON.stringify(joinedRows));
+
+  await debugPost("rules", { roomCode: code, ...FAST_RULES });
+  await host.clickButton("Fill empty seats");
+  await host.clickButton("Start game");
+  await host.waitUntil(ON_BOARD, "the board");
+  await guest.waitUntil(ON_BOARD, "the friend's board");
+  await sleep(600);
+  const cards = await host.evaluate(ROWS('section[aria-label="Players"] li'));
+  check(
+    "in the game, Rida plays blue and Hamza yellow",
+    cards.some((card) => card.startsWith("B Rida")) && cards.some((card) => card.startsWith("Y Hamza")),
+    JSON.stringify(cards),
+  );
+  await host.shot("FR-SYS-01-playing-blue.png");
+  reportErrors(host, "colours, host");
+  reportErrors(guest, "colours, friend");
+  await guest.close();
+  await host.close();
+}
+
 // First DOM change after an input, and the frame that draws it (NFR-SYS-01).
 const ARM = `(() => {
   const mark = { input: null, change: null, frame: null };
@@ -1311,7 +1371,7 @@ async function smoke(browser) {
 // ---------------------------------------------------------------------------------------------
 // Main
 
-const MODES = { keyboard, games, sizes, grayscale, contrast, perf, invalid, boundary, smoke };
+const MODES = { keyboard, games, sizes, grayscale, contrast, colours, perf, invalid, boundary, smoke };
 if (!MODES[mode]) {
   console.error(`Unknown mode "${mode}". Use one of: ${Object.keys(MODES).join(", ")}.`);
   process.exit(2);

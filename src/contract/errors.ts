@@ -11,6 +11,7 @@ export type ErrorCode =
   | "ROOM_NOT_FOUND"
   | "PIECE_NOT_FOUND"
   | "NAME_TAKEN"
+  | "COLOUR_TAKEN" // FR-SYS-01: the colour isn't free in that room (taken, or not one of its colours)
   | "ROOM_FULL"
   | "GAME_ALREADY_STARTED"
   | "GAME_NOT_STARTED"
@@ -25,7 +26,7 @@ export type ErrorCode =
   | "INTERNAL_ERROR";
 
 /** The form field an inline error message is shown under. */
-export type FormField = "name" | "roomCode";
+export type FormField = "name" | "roomCode" | "colour";
 
 // These codes mean our client state is stale, not that the player did anything wrong,
 // so they trigger state:sync instead of a telling-off.
@@ -38,6 +39,7 @@ export const RESYNC_CODES: readonly ErrorCode[] = [
 export const FIELD_ERRORS: Partial<Record<ErrorCode, FormField>> = {
   INVALID_NAME: "name",
   NAME_TAKEN: "name",
+  COLOUR_TAKEN: "colour",
   INVALID_CODE: "roomCode",
   ROOM_NOT_FOUND: "roomCode",
   ROOM_FULL: "roomCode",
