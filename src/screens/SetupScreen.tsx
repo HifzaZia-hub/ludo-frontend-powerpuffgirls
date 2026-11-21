@@ -2,14 +2,14 @@ import { useRef, useState, type FormEvent } from "react";
 import { useStore } from "zustand";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
+import { ColourPicker } from "@/components/ColourPicker";
 import { FOCUS_RING } from "@/components/focusRing";
 import { FormRow } from "@/components/FormRow";
-import { PlayerMark } from "@/components/PlayerMark";
 import { SegmentedControl, type SegmentedOption } from "@/components/SegmentedControl";
 import { TextField } from "@/components/TextField";
-import { HOST_COLOUR } from "@/config/players";
-import type { Difficulty, GameMode } from "@/contract/types";
-import { COLOUR_NAMES, INVALID_NAME_MESSAGE, SETUP_TEXT } from "@/feedback/copy";
+import { COLOURS, HOST_COLOUR } from "@/config/players";
+import type { Colour, Difficulty, GameMode } from "@/contract/types";
+import { INVALID_NAME_MESSAGE, SETUP_TEXT } from "@/feedback/copy";
 import { isValidName } from "@/interaction/formChecks";
 import type { GameStore } from "@/store/gameStore";
 import { useUiStore } from "@/store/uiStore";
@@ -50,6 +50,8 @@ export function SetupScreen({ store }: SetupScreenProps) {
   const [mode, setMode] = useState<GameMode>(last?.mode ?? "HUMAN_VS_AI");
   const [difficulty, setDifficulty] = useState<Difficulty>(last?.difficulty ?? "NORMAL");
   const [name, setName] = useState(last?.name ?? "");
+  // FR-SYS-01, D2 FR-06: the server builds the room's colours clockwise from this one.
+  const [colour, setColour] = useState<Colour>(last?.colour ?? HOST_COLOUR);
   const [nameError, setNameError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const nameFieldRef = useRef<HTMLInputElement>(null);
@@ -66,12 +68,13 @@ export function SetupScreen({ store }: SetupScreenProps) {
 
     setNameError(null);
     setSubmitting(true);
-    rememberSetup({ seats, mode, difficulty, name: name.trim() });
+    rememberSetup({ seats, mode, difficulty, name: name.trim(), colour });
     const result = await createRoom({
       displayName: name.trim(),
       mode,
       seats: SEAT_COUNTS[seats],
       ...(mode === "HUMAN_VS_AI" ? { aiDifficulty: difficulty } : {}),
+      colour,
     });
     if (result.ok) {
       goToLobby();
@@ -139,13 +142,15 @@ export function SetupScreen({ store }: SetupScreenProps) {
             autoComplete="off"
           />
 
-          {/* TODO(FR-06): read-only until the backend answers the colour question in
-              docs/01-contract.md §8. The colour picker goes here. */}
-          <p className="flex items-center gap-2 text-[15px] text-high">
-            <span>{SETUP_TEXT.youWillBe}</span>
-            <PlayerMark colour={HOST_COLOUR} size="sm" />
-            <span>{COLOUR_NAMES[HOST_COLOUR]}</span>
-          </p>
+          <FormRow label={SETUP_TEXT.colour}>
+            <ColourPicker
+              label={SETUP_TEXT.colour}
+              colours={COLOURS}
+              value={colour}
+              onChange={setColour}
+              disabled={submitting}
+            />
+          </FormRow>
 
           <div className="flex items-center justify-between gap-2">
             {/* Off while a request is out, so a room can't be created behind the player's back. */}

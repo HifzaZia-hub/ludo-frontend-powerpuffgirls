@@ -19,9 +19,9 @@ export type Result<T> = { ok: true; data: T } | { ok: false; error: ServerError 
 
 export type ConnectionStatus = "connecting" | "live" | "reconnecting" | "lost";
 
-// The contract describes a room preview but names none of its fields (docs/01-contract.md §8),
-// so nothing may read inside one until the backend team answers.
-export type RoomPreview = unknown;
+// docs/01-contract.md §1: the preview is the room's snapshot, so the join form can offer the
+// colours that are still free (FR-SYS-01).
+export type RoomPreview = RoomSnapshot;
 
 export interface AdapterHandlers {
   onRoom(room: RoomSnapshot): void;

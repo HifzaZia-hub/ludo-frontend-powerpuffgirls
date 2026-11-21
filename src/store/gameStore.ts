@@ -7,6 +7,7 @@ import { cellKey, pieceCell, pieceNumber, piecePlace, progressCounts } from "@/c
 import { FIELD_ERRORS, RESYNC_CODES, type FormField } from "@/contract/errors";
 import type { ServerEvent } from "@/contract/events";
 import type {
+  Colour,
   CreateRoomRequest,
   Difficulty,
   GameStateSnapshot,
@@ -47,6 +48,8 @@ export interface FormFailure {
 
 export type FormResult = { ok: true } | FormFailure;
 
+export type PreviewResult = { ok: true; freeColours: Colour[] } | FormFailure;
+
 function formFailure(error: ServerError): FormFailure {
   return { ok: false, field: FIELD_ERRORS[error.code] ?? null, message: friendlyError(error) };
 }
@@ -85,9 +88,10 @@ export interface GameState extends GameData {
   /** Starts feeding adapter messages into this store. Returns the function that stops it. */
   listen(): () => void;
   createRoom(request: CreateRoomRequest): Promise<FormResult>;
-  joinRoom(code: string, displayName: string): Promise<FormResult>;
-  /** Only says whether the code found a game. See the note in the function. */
-  previewRoom(code: string): Promise<FormResult>;
+  /** FR-SYS-01: `colour` is one of the free colours the preview offered. */
+  joinRoom(code: string, displayName: string, colour?: Colour): Promise<FormResult>;
+  /** Whether the code found a game, and which colours are still free in it. */
+  previewRoom(code: string): Promise<PreviewResult>;
   addAi(seat: number, difficulty: Difficulty): Promise<void>;
   startGame(options: { fillEmptySeatsWithAi: boolean }): Promise<void>;
   /** True once the server has accepted it and this tab has let go of the room. */
@@ -305,18 +309,24 @@ export function createGameStore(adapter: GameAdapter): GameStore {
 
       // Join runs inside a modal, which blocks a toast behind it, so the form shows every
       // failure itself. Unlike createRoom, this one pushes no toast.
-      joinRoom: async (code, displayName) => {
-        const joined = await adapter.joinRoom(code, { displayName });
+      joinRoom: async (code, displayName, colour) => {
+        const joined = await adapter.joinRoom(code, {
+          displayName,
+          ...(colour === undefined ? {} : { colour }),
+        });
         if (!joined.ok) return formFailure(joined.error);
         enterRoom(joined.data);
         return { ok: true };
       },
 
-      // Contract §8: the preview's field names are still an open question and we never guess
-      // one, so this doesn't read inside it. "2 of 4 players" waits for the backend's answer.
+      // FR-SYS-01: the colours on offer are the room's empty seats, as the server reports them.
       previewRoom: async (code) => {
         const preview = await adapter.previewRoom(code);
-        return preview.ok ? { ok: true } : formFailure(preview.error);
+        if (!preview.ok) return formFailure(preview.error);
+        const freeColours = preview.data.seats.flatMap(({ colour, player }) =>
+          player === null ? [colour] : [],
+        );
+        return { ok: true, freeColours };
       },
 
       // POST-07-2: the seat list only ever changes when room:updated arrives.
