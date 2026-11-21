@@ -20,7 +20,9 @@ mock server.
 
 1. **Main screen → How to play.** The rules text is built from the rules the server sends, so it
    always matches what the server does (NFR-SYS-11).
-2. **New Game → "Play with computer" → type a name → Start.** It's me against three computers.
+2. **New Game → "Play with computer" → type a name → pick a colour → Start.** It's me against three
+   computers. Pick Blue, say: the computers take the colours after it, clockwise (FR-SYS-01). The
+   colour buttons show the letter and shape too.
 3. **Play a few turns with the mouse.** Point out:
    - the turn line at the top;
    - the highlighted pieces and the list of moves;
