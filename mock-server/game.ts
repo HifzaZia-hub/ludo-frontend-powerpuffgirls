@@ -140,7 +140,7 @@ export function createMatch(input: NewMatch): Match {
     players: input.players,
     pieces: input.players.flatMap(newPieces),
     turn: {
-      activePlayerId: first.id, // seat 1 starts until the backend answers contract §8 (FR-08)
+      activePlayerId: first.id, // seat 1 starts so tests repeat; the LGS picks at random (FR-08)
       phase: "AWAITING_ROLL",
       lastRoll: null,
       sixesInRow: 0,
