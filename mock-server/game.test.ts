@@ -16,13 +16,13 @@ import {
   passTurn,
   placePiece,
   requireLegalMove,
-  SEAT_COLOURS,
+  roomColours,
   toSnapshot,
   type Match,
 } from "./game";
 
 function makePlayers(count: 2 | 3 | 4): Player[] {
-  return SEAT_COLOURS[count].map((colour, index) => ({
+  return roomColours(count).map((colour, index) => ({
     id: `p${index + 1}`,
     name: `Player ${index + 1}`,
     colour,

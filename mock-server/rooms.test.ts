@@ -71,6 +71,109 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+describe("colour choice (FR-SYS-01, D2 FR-06)", () => {
+  type Seats = 2 | 3 | 4;
+  const colours = (room: RoomSnapshot) => room.seats.map(({ colour }) => colour);
+  const create = (
+    context: ReturnType<typeof setUp>,
+    seats: Seats,
+    colour?: string,
+    mode = "HUMAN_VS_HUMAN",
+  ) =>
+    context.registry.createRoom({
+      displayName: "Host",
+      mode,
+      seats,
+      ...(colour ? { colour } : {}),
+    });
+  const errorCode = (attempt: () => unknown): string | undefined => {
+    try {
+      attempt();
+    } catch (error) {
+      return (error as { code?: string }).code;
+    }
+    return undefined;
+  };
+
+  it("keeps the old colours when the host picks none", () => {
+    const context = setUp();
+
+    expect(colours(create(context, 2).room)).toEqual(["RED", "YELLOW"]);
+    expect(colours(create(context, 3).room)).toEqual(["RED", "GREEN", "YELLOW"]);
+    expect(colours(create(context, 4).room)).toEqual(["RED", "GREEN", "YELLOW", "BLUE"]);
+  });
+
+  it("seats the host in their colour, with the room going clockwise from it", () => {
+    const context = setUp();
+
+    const four = create(context, 4, "GREEN");
+
+    expect(colours(four.room)).toEqual(["GREEN", "YELLOW", "BLUE", "RED"]);
+    expect(four.room.seats[0]?.player?.id).toBe(four.playerId);
+    expect(colours(create(context, 3, "BLUE").room)).toEqual(["BLUE", "RED", "GREEN"]);
+  });
+
+  // Our D3 rule R1: two players sit in opposite corners.
+  it("gives a 2-player game the opposite corner", () => {
+    const context = setUp();
+
+    expect(colours(create(context, 2, "GREEN").room)).toEqual(["GREEN", "BLUE"]);
+    expect(colours(create(context, 2, "YELLOW").room)).toEqual(["YELLOW", "RED"]);
+  });
+
+  it("lets a friend join in a free colour", () => {
+    const context = setUp();
+    const created = create(context, 4, "RED");
+
+    const joined = context.registry.joinRoom(created.roomCode, {
+      displayName: "Hamza",
+      colour: "BLUE",
+    });
+
+    const seat = joined.room.seats.find(({ player }) => player?.id === joined.playerId);
+    expect(seat?.colour).toBe("BLUE");
+  });
+
+  it("gives a friend who picks no colour the first free seat", () => {
+    const context = setUp();
+    const created = create(context, 4, "RED");
+
+    const joined = context.registry.joinRoom(created.roomCode, { displayName: "Hamza" });
+
+    const seat = joined.room.seats.find(({ player }) => player?.id === joined.playerId);
+    expect(seat?.colour).toBe("GREEN");
+  });
+
+  it("refuses a colour that is taken or isn't in the game", () => {
+    const context = setUp();
+    const created = create(context, 2, "RED"); // Red and Yellow
+    const join = (colour: string) => () =>
+      context.registry.joinRoom(created.roomCode, { displayName: "Hamza", colour });
+
+    expect(errorCode(join("RED"))).toBe("COLOUR_TAKEN");
+    expect(errorCode(join("GREEN"))).toBe("COLOUR_TAKEN");
+    expect(errorCode(join("YELLOW"))).toBeUndefined();
+  });
+
+  it("refuses something that isn't a colour", () => {
+    const context = setUp();
+
+    expect(errorCode(() => create(context, 4, "PURPLE"))).toBe("INVALID_PAYLOAD");
+  });
+
+  it("gives the computers the colours left over", () => {
+    const context = setUp();
+
+    const created = create(context, 4, "BLUE", "HUMAN_VS_AI");
+
+    expect(
+      created.room.seats.map(
+        ({ colour, player }) => `${colour}:${player?.isAi ? "computer" : "host"}`,
+      ),
+    ).toEqual(["BLUE:host", "RED:computer", "GREEN:computer", "YELLOW:computer"]);
+  });
+});
+
 describe("the turn timer (G-12)", () => {
   it("does nothing before the deadline", () => {
     const context = setUp();

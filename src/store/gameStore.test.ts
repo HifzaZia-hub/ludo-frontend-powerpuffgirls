@@ -628,12 +628,32 @@ describe("rooms", () => {
   });
 
   describe("previewing", () => {
-    it("says only that the code found a game", async () => {
+    // FR-SYS-01: the colours on offer are exactly the room's empty seats.
+    it("lists the colours still free in the game it found", async () => {
       const { adapter, store } = makeStore();
-      adapter.previewRoomResult = { ok: true, data: { whatever: "the backend sends" } };
+      adapter.previewRoomResult = { ok: true, data: makeRoom() };
 
-      expect(await store.getState().previewRoom("K7QX2M")).toEqual({ ok: true });
+      expect(await store.getState().previewRoom("K7QX2M")).toEqual({
+        ok: true,
+        freeColours: ["GREEN", "YELLOW", "BLUE"],
+      });
       expect(adapter.previewCodes).toEqual(["K7QX2M"]);
+    });
+
+    it("sends the colour picked when joining, and nothing when none was", async () => {
+      const { adapter, store } = makeStore();
+      adapter.joinRoomResult = {
+        ok: true,
+        data: { v: "1.0.0", playerId: "p2", sessionToken: "t", room: makeRoom() },
+      };
+
+      await store.getState().joinRoom("K7QX2M", "Hamza", "BLUE");
+      await store.getState().joinRoom("K7QX2M", "Maryam");
+
+      expect(adapter.joinRequests.map(({ request }) => request)).toEqual([
+        { displayName: "Hamza", colour: "BLUE" },
+        { displayName: "Maryam" },
+      ]);
     });
 
     it("points an unknown code at the code field", async () => {

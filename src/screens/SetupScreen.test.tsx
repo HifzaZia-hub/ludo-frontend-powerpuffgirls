@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FakeAdapter } from "@/adapter/FakeAdapter";
 import type { CreateRoomResponse } from "@/contract/types";
@@ -40,7 +40,7 @@ describe("SetupScreen", () => {
     await user.click(startButton());
 
     expect(adapter.createRequests).toEqual([
-      { displayName: "Rida", mode: "HUMAN_VS_HUMAN", seats: 2 },
+      { displayName: "Rida", mode: "HUMAN_VS_HUMAN", seats: 2, colour: "RED" },
     ]);
     expect(useUiStore.getState().screen).toBe("lobby");
   });
@@ -54,7 +54,7 @@ describe("SetupScreen", () => {
     await user.click(startButton());
 
     expect(adapter.createRequests).toEqual([
-      { displayName: "Maryam", mode: "HUMAN_VS_AI", seats: 4, aiDifficulty: "EASY" },
+      { displayName: "Maryam", mode: "HUMAN_VS_AI", seats: 4, aiDifficulty: "EASY", colour: "RED" },
     ]);
   });
 
@@ -67,9 +67,31 @@ describe("SetupScreen", () => {
     expect(screen.queryByRole("radiogroup", { name: "Computer difficulty" })).toBeNull();
   });
 
-  it("shows the colour the player will get, with its letter", () => {
+  // FR-SYS-01, D2 FR-06
+  it("offers all four colours, starting on red, and sends the one picked", async () => {
+    const { adapter, user } = renderSetup();
+    const colours = within(screen.getByRole("radiogroup", { name: "Your colour" }));
+
+    expect(colours.getAllByRole("radio").map((radio) => radio.getAttribute("aria-label"))).toEqual([
+      "Red",
+      "Green",
+      "Yellow",
+      "Blue",
+    ]);
+    expect(colours.getByRole("radio", { name: "Red" }).getAttribute("aria-checked")).toBe("true");
+
+    await user.click(colours.getByRole("radio", { name: "Blue" }));
+    await user.type(nameField(), "Rida");
+    await user.click(startButton());
+
+    expect(adapter.createRequests[0]?.colour).toBe("BLUE");
+  });
+
+  // NFR-SYS-07: a letter and a shape as well as the colour.
+  it("shows each colour's letter", () => {
     renderSetup();
-    expect(screen.getByRole("img", { name: "Red" }).textContent).toContain("R");
+    const blue = screen.getByRole("radio", { name: "Blue" });
+    expect(within(blue).getByRole("img", { name: "Blue" }).textContent).toContain("B");
   });
 
   // FR-SYS-01 ALT-01-1, EXC-01-1
@@ -165,13 +187,20 @@ describe("SetupScreen", () => {
   describe("after an earlier game", () => {
     it("starts from the choices of the last game", () => {
       useUiStore.setState({
-        lastSetup: { seats: "3", mode: "HUMAN_VS_HUMAN", difficulty: "EASY", name: "Rida" },
+        lastSetup: {
+          seats: "3",
+          mode: "HUMAN_VS_HUMAN",
+          difficulty: "EASY",
+          name: "Rida",
+          colour: "BLUE",
+        },
       });
 
       renderSetup();
 
       expect(isChosen("3")).toBe(true);
       expect(isChosen("Play with friends")).toBe(true);
+      expect(isChosen("Blue")).toBe(true);
       expect(nameField().value).toBe("Rida");
     });
 
@@ -187,6 +216,7 @@ describe("SetupScreen", () => {
         mode: "HUMAN_VS_AI",
         difficulty: "NORMAL",
         name: "Maryam",
+        colour: "RED",
       });
       expect(localStorage.length).toBe(stored);
     });
@@ -210,10 +240,17 @@ describe("SetupScreen", () => {
     await user.keyboard("{ArrowLeft}");
     await user.tab(); // choosing friends removed the difficulty, so this goes straight to the name
     expect(document.activeElement).toBe(nameField());
-    await user.keyboard("Rida{Enter}");
+    await user.keyboard("Rida");
+    await user.tab(); // to the chosen colour
+    expect(document.activeElement).toBe(screen.getByRole("radio", { name: "Red" }));
+    await user.keyboard("{ArrowRight}");
+    await user.tab(); // to Back
+    await user.tab(); // to Start
+    expect(document.activeElement).toBe(startButton());
+    await user.keyboard("{Enter}");
 
     expect(adapter.createRequests).toEqual([
-      { displayName: "Rida", mode: "HUMAN_VS_HUMAN", seats: 3 },
+      { displayName: "Rida", mode: "HUMAN_VS_HUMAN", seats: 3, colour: "GREEN" },
     ]);
   });
 });

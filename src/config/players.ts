@@ -14,6 +14,9 @@ export interface PlayerIdentity {
 // Contract §1: whoever creates a room always takes seat 1, which is Red.
 export const HOST_COLOUR: Colour = "RED";
 
+/** FR-SYS-01: every colour a host can choose, clockwise round the board. */
+export const COLOURS: readonly Colour[] = ["RED", "GREEN", "YELLOW", "BLUE"];
+
 export const PLAYER_IDENTITY: Record<Colour, PlayerIdentity> = {
   RED: { letter: "R", shape: "circle", token: "var(--p-red)" },
   GREEN: { letter: "G", shape: "triangle", token: "var(--p-green)" },

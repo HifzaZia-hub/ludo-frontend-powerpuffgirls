@@ -15,6 +15,7 @@ const HTTP_STATUS: Record<ErrorCode, number> = {
   ROOM_NOT_FOUND: 404,
   PIECE_NOT_FOUND: 404,
   NAME_TAKEN: 409,
+  COLOUR_TAKEN: 409,
   ROOM_FULL: 409,
   GAME_ALREADY_STARTED: 409,
   GAME_NOT_STARTED: 409,
@@ -59,8 +60,7 @@ export function restRouter(registry: RoomRegistry, clientCount: () => number): R
   );
   router.get(
     "/rooms/:code",
-    // The preview's field names are still an open question (contract §8), so this sends a
-    // RoomSnapshot: status, mode, host and free seats are all in it under agreed names.
+    // Contract §1: the preview is a RoomSnapshot, so the join form can offer the free colours.
     jsonRoute(200, (req) => registry.previewRoom(String(req.params.code))),
   );
   router.get(

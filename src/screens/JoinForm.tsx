@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
 import { useStore } from "zustand";
 import { Button } from "@/components/Button";
+import { ColourPicker } from "@/components/ColourPicker";
+import { FormRow } from "@/components/FormRow";
 import { TextField } from "@/components/TextField";
+import type { Colour } from "@/contract/types";
 import { INVALID_CODE_MESSAGE, INVALID_NAME_MESSAGE, JOIN_TEXT } from "@/feedback/copy";
 import { cleanRoomCode, isValidName, ROOM_CODE_LENGTH } from "@/interaction/formChecks";
 import type { GameStore } from "@/store/gameStore";
@@ -27,6 +30,16 @@ export function JoinForm({ store, codeFieldRef }: JoinFormProps) {
   const [codeError, setCodeError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  // FR-SYS-01, D2 FR-06: the room's free colours, as its server preview reported them.
+  const [freeColours, setFreeColours] = useState<Colour[]>([]);
+  const [colour, setColour] = useState<Colour | null>(null);
+  const [colourError, setColourError] = useState<string | null>(null);
+
+  // Keeps the player's pick if it is still free, and otherwise starts on the first free one.
+  function offerColours(free: Colour[]) {
+    setFreeColours(free);
+    setColour((picked) => (picked !== null && free.includes(picked) ? picked : (free[0] ?? null)));
+  }
   const [submitting, setSubmitting] = useState(false);
   const nameFieldRef = useRef<HTMLInputElement>(null);
 
@@ -42,6 +55,7 @@ export function JoinForm({ store, codeFieldRef }: JoinFormProps) {
       if (!latest) return;
       if (result.ok) {
         setLookup("found");
+        offerColours(result.freeColours);
       } else if (result.field === "roomCode") {
         setLookup("idle");
         setCodeError(result.message);
@@ -84,8 +98,10 @@ export function JoinForm({ store, codeFieldRef }: JoinFormProps) {
 
     setNameError(null);
     setFormError(null);
+    setColourError(null);
     setSubmitting(true);
-    const result = await joinRoom(code, name.trim());
+    // With no look-up, the server gives the first free seat.
+    const result = await joinRoom(code, name.trim(), colour ?? undefined);
     if (result.ok) {
       goToLobby();
       return;
@@ -93,7 +109,12 @@ export function JoinForm({ store, codeFieldRef }: JoinFormProps) {
 
     // FR-SYS-01 ALT-01-1: both fields stay as typed, and the Join button is the retry.
     setSubmitting(false);
-    if (result.field === "name") {
+    if (result.field === "colour") {
+      // Someone else got there first: say so, and offer what is free now.
+      setColourError(result.message);
+      const fresh = await previewRoom(code);
+      if (fresh.ok) offerColours(fresh.freeColours);
+    } else if (result.field === "name") {
       setNameError(result.message);
       nameFieldRef.current?.focus();
     } else if (result.field === "roomCode") {
@@ -140,6 +161,26 @@ export function JoinForm({ store, codeFieldRef }: JoinFormProps) {
           error={nameError}
           autoComplete="off"
         />
+      )}
+
+      {lookup === "found" && freeColours.length > 0 && (
+        <FormRow label={JOIN_TEXT.colour}>
+          <ColourPicker
+            label={JOIN_TEXT.colour}
+            colours={freeColours}
+            value={colour}
+            onChange={(picked) => {
+              setColour(picked);
+              setColourError(null);
+            }}
+            disabled={submitting}
+          />
+          {colourError && (
+            <p role="alert" className="text-[15px] text-danger">
+              {colourError}
+            </p>
+          )}
+        </FormRow>
       )}
 
       {/* Not a toast: a modal covers the toast corner and blocks its Dismiss button. */}

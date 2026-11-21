@@ -21,7 +21,7 @@ Each prompt in `prompts/` starts with the requirement IDs it implements. Update
 | P10 | Win screen, restart, leave, confirm dialogs, session score | FR-SYS-06, FR-SYS-08 | MVP | match ends cleanly; cancel leaves game unchanged |
 | P11 | Disconnect, reconnect, resync | NFR-SYS-03, NFR-SYS-04, FR-SYS-04 | MVP | F5 mid-game restores the board |
 | P12 | Requirements pass: accessibility, browsers, sizes, evidence | NFR-SYS-01…10 | MVP | every NFR row in traceability has proof |
-| P13 | Local multi-seat (same-device play) | D2 FR-03 | **TO CONFIRM** | only if the client and backend confirm |
+| P13 | Local multi-seat (same-device play) | D2 FR-03 | **Dropped** | the client said on 2026-11-21 it isn't needed (`00-requirements.md` §5) |
 | P14 | Polish: extra themes, 3D die/pieces, confetti, music | — | Polish | cut first if short on time |
 
 **Demo-safe point:** after P12, tag `v1.0-mvp`. If anything later breaks, you
@@ -70,3 +70,8 @@ One branch per task: `feat/p06-board`. Conventional commits with the
 requirement ID: `feat(board): status panel counts (FR-SYS-06)`. Open a PR for
 every task even if nobody reviews it. Keep `CHANGELOG.md` with one line per
 task. The PR history plus the traceability file is your process evidence.
+
+Every PR waits for a teammate's review before it is merged. GitHub runs the
+**Checks** workflow (`.github/workflows/checks.yml`) on every PR and on `main`:
+typecheck, lint, build, tests and the browser smoke test. Merge only when the
+checks are green **and** a teammate has approved.
