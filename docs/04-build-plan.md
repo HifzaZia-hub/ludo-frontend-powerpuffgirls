@@ -70,3 +70,8 @@ One branch per task: `feat/p06-board`. Conventional commits with the
 requirement ID: `feat(board): status panel counts (FR-SYS-06)`. Open a PR for
 every task even if nobody reviews it. Keep `CHANGELOG.md` with one line per
 task. The PR history plus the traceability file is your process evidence.
+
+Every PR waits for a teammate's review before it is merged. GitHub runs the
+**Checks** workflow (`.github/workflows/checks.yml`) on every PR and on `main`:
+typecheck, lint, build, tests and the browser smoke test. Merge only when the
+checks are green **and** a teammate has approved.
