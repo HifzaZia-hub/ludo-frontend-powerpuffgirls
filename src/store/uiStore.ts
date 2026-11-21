@@ -1,7 +1,7 @@
 // Which screen and modal are showing (docs/03-ui-spec.md §4). Nothing here is about the game.
 
 import { create } from "zustand";
-import type { Difficulty, GameMode } from "@/contract/types";
+import type { Colour, Difficulty, GameMode } from "@/contract/types";
 import { loadSavedSession } from "@/store/savedSession";
 
 export type Screen = "main" | "setup" | "lobby" | "game" | "win" | "stopped" | "rejoining";
@@ -13,6 +13,7 @@ export interface SetupChoices {
   mode: GameMode;
   difficulty: Difficulty;
   name: string;
+  colour: Colour;
 }
 
 interface UiState {
