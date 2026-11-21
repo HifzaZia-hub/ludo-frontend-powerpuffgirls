@@ -620,7 +620,7 @@ export class RoomRegistry {
         v: CONTRACT_VERSION,
         version: match.version,
         type,
-        data: {}, // the contract names no fields for any event yet (docs/01-contract.md §8)
+        data: {}, // the front end reads nothing from data (docs/01-contract.md §4, "Event data")
       });
     }
     if (room.skipNextState) room.skipNextState = false;
