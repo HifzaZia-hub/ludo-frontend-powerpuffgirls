@@ -1,9 +1,11 @@
 # 01 — Integration Contract (LGS v1.0.0)
 
-Source of truth: **D3 System Requirements, section 3.4**, written by The Assemblers.
-This file is the frontend-side mirror. If this file and the backend's published
-`@assemblers/ludo-contract` package disagree, **the package wins** — raise a
-GitHub issue on `ZohaibCodez/ludo-multiplayer-backend` and fix this file.
+Started from **D3 System Requirements, section 3.4**, written by The Assemblers.
+
+**Since 2026-11-21 this file is the spec.** The backend team asked us to build the front end
+first, and they will build the LGS to match it. So this file, with the mock server in
+`mock-server/` as its working example, says what the LGS must do. Where it decides something new,
+it says so. §8 lists every decision taken for this, and the one thing still open.
 
 All payloads are JSON (UTF-8). Every server message carries a contract version
 field `v` (currently `"1.0.0"`). REST paths are prefixed `/api/v1`.
@@ -13,6 +15,12 @@ field `v` (currently `"1.0.0"`). REST paths are prefixed `/api/v1`.
 ## 1. REST endpoints
 
 Used only before the realtime connection exists: create, join, preview, health.
+
+Every error response has the HTTP status from §6 and a body that is the `ServerError` itself plus
+`v`, not nested under another key:
+```ts
+{ v: string; code: ErrorCode; message: string; requestId?: string; details?: unknown }
+```
 
 ### POST /api/v1/rooms — create a room
 
@@ -24,33 +32,51 @@ Request body:
   seats: 2 | 3 | 4;
   aiDifficulty?: "EASY" | "NORMAL"; // default NORMAL
   rules?: Partial<RuleConfig>;      // see section 5
+  colour?: Colour;                  // the host's colour, default "RED" (FR-SYS-01, D2 FR-06)
 }
 ```
 Success `201`:
 ```ts
 { v: string; roomCode: string; playerId: string; sessionToken: string; room: RoomSnapshot }
 ```
-Errors: `400 INVALID_PAYLOAD`, `400 INVALID_NAME`, `400 INVALID_RULES`, `503 SERVER_BUSY`.
+Errors: `400 INVALID_PAYLOAD` (including a `colour` that isn't one of the four), `400 INVALID_NAME`,
+`400 INVALID_RULES`, `503 SERVER_BUSY`.
 
 Notes:
-- The creator is always the **host** and always takes **seat 1 (Red)**.
+- The creator is always the **host** and takes **seat 1, in the colour they chose** (Red if they
+  chose none).
+- **Decided 2026-11-21 (colour choice):** the room's colours go clockwise round the board from the
+  host's colour, and seat order is that clockwise order:
+  - 2 seats: the host's colour and the **opposite corner** (our rule R1), e.g. Green and Blue.
+  - 3 seats: the host's colour and the **next two clockwise**, e.g. Blue, Red, Green.
+  - 4 seats: all four, starting from the host's.
+  With no `colour` this gives Red and Yellow, Red to Yellow, or all four, as before.
 - In `HUMAN_VS_AI` the other seats are filled with AI players immediately.
 
 ### POST /api/v1/rooms/{roomCode}/join — join a room
 
-Request body: `{ displayName: string }`
+Request body:
+```ts
+{
+  displayName: string;
+  colour?: Colour; // one of the room's free seats' colours. Left out: the first free seat.
+}
+```
 Success `200`: `{ v, playerId, sessionToken, room }`
-Errors: `400 INVALID_CODE`, `404 ROOM_NOT_FOUND`, `409 ROOM_FULL`,
-`409 GAME_ALREADY_STARTED`, `409 NAME_TAKEN`, `429 RATE_LIMITED`.
+Errors: `400 INVALID_CODE`, `400 INVALID_PAYLOAD` (a `colour` that isn't one of the four),
+`404 ROOM_NOT_FOUND`, `409 ROOM_FULL`, `409 GAME_ALREADY_STARTED`, `409 NAME_TAKEN`,
+`409 COLOUR_TAKEN` (the colour isn't free in this room: taken, or not one of its colours),
+`429 RATE_LIMITED`.
 
 The server upper-cases the code. The client should also upper-case before
 sending and strip spaces.
 
 ### GET /api/v1/rooms/{roomCode} — preview before joining
 
-Success `200`: public summary — status, mode, host name, free seats.
+Success `200`: the room's `RoomSnapshot` (section 5), with its status, mode, rules, host and every
+seat with its colour and player. **Decided 2026-11-21:** this is how the join form knows which
+colours are still free (the seats whose `player` is `null`).
 Error: `404 ROOM_NOT_FOUND`.
-Use this to show "Room K7QX2M — 2/4 players, waiting" before the user commits a name.
 
 ### GET /api/v1/health
 
@@ -81,8 +107,18 @@ io(SERVER_URL, { auth: { sessionToken } })
 
 Every command gets a direct **acknowledgement** sent only to the sender:
 ```ts
-type Ack = { ok: true; version: number } | { ok: false; error: ServerError };
+type Ack =
+  | { v: string; ok: true; version: number; requestId?: string }
+  | { v: string; ok: false; error: ServerError; requestId?: string };
 ```
+
+- `requestId` is copied from the command, at the top level of the ack. A refused command has it in
+  `error.requestId` too.
+- `version` is the match's state version after the command. Before the room's first match starts
+  (status `LOBBY`), there is no match, and it is `0`.
+- When a command changes the game, the server sends that change's `game:event`s and `game:state`
+  (§4) **before** the ack. The client copes with either order, because it waits for the state whose
+  version the ack names, but the LGS should keep this one.
 
 | Command | Payload | Who may send | When |
 |---|---|---|---|
@@ -116,6 +152,30 @@ in flight; do not let an impatient user spam it.
 Ordering: for one change the server sends the `game:event` first, then the
 `game:state` with the same `version`. **Render from the snapshot. Use the event
 only to decide which animation or sound to play.**
+
+Versions and changes (decided 2026-11-21):
+- Every accepted change raises `version` by **exactly 1**. A restart begins a new `matchId` at
+  version 1. The client walks a piece square by square only between neighbouring versions; across a
+  bigger gap it asks for `state:sync` and the piece jumps.
+- One change can cause several events. For example, a move that captures two pieces and earns a
+  bonus sends `MOVED`, `CAPTURED`, `CAPTURED`, `BONUS_TURN`. They all carry that change's version,
+  come in the order they happened, and are followed by **one** `game:state` with the same version.
+
+### Event data (decided 2026-11-21)
+
+In contract 1.0.0 the front end reads nothing from `game:event.data`. Everything it shows comes
+from the snapshots, so the LGS may send `data: {}` (as the mock does) or the fields its D3 lists.
+Clients ignore fields they don't know, so a later version can add fields without breaking anyone.
+
+This works only because the LGS keeps these rules, which tell the client who an event is about:
+
+| Event | Rule |
+|---|---|
+| `CAPTURED` | Once **per captured piece**, in the same change as the `MOVED` that captured it. The client matches each one to a piece that went back to its yard between the two snapshots. |
+| `TURN_PASSED`, `TURN_FORFEITED` | About the player who was active in the **previous** snapshot. Each comes with `TURN_CHANGED` in the same change. |
+| `PLAYER_IDLE` | About the player who was active in the previous snapshot. Sent **every time a connected human's turn timer runs out** (one missed turn is enough), as the first event of the change in which the server plays for them. The server then plays the rest of that turn (D3 G-12); their next turn is theirs again. |
+| `PLAYER_DISCONNECTED`, `PLAYER_RECONNECTED`, `PLAYER_LEFT` | The snapshot's `connected` and `isAi` show who. |
+| `GAME_OVER` | The snapshot carries `winnerId`, `ranking` and `seed`. |
 
 ### Event types
 
@@ -151,9 +211,12 @@ What the UI should do with each (our mapping, not the server's concern):
 
 ## 5. Data shapes
 
-These are our TypeScript mirrors. Field names must match the backend exactly.
-**Confirm every optional/unsure field with the backend's Integration & QA Lead
-before building UI on it.**
+**These shapes are the spec (decided 2026-11-21).** The LGS sends exactly these keys, with this
+spelling and case: for example `isAi` (not `isAI`), colours in capitals (`"RED"`), `seats` as
+`{ seat, colour, player }` with `hostId`, `captures` as piece IDs, and the room under the key
+`room` in the create and join responses. The same types are in `src/contract/` (`types.ts`,
+`errors.ts`, `events.ts`). There is no npm package: the backend copies those files, and `v` says
+which version of them a message follows.
 
 ```ts
 export type Colour = "RED" | "GREEN" | "YELLOW" | "BLUE";
@@ -201,10 +264,12 @@ export interface LegalMove {
 export interface TurnState {
   activePlayerId: string;
   phase: TurnPhase;
-  lastRoll: number | null;       // 1-6
+  lastRoll: number | null;       // 1-6. null until the match's first roll, then kept until the
+                                 // next roll, also after the turn has passed
   sixesInRow: number;            // 0-2 (a third six ends the turn)
   legalMoves: LegalMove[];       // non-empty only in AWAITING_MOVE
-  deadline: string | null;       // ISO timestamp; null when turnTimerSeconds is 0
+  deadline: string | null;       // ISO 8601 in UTC, e.g. "2026-11-21T10:15:30.000Z". null when
+                                 // turnTimerSeconds is 0, and once the match is over
 }
 
 export interface GameStateSnapshot {
@@ -214,10 +279,10 @@ export interface GameStateSnapshot {
   version: number;
   status: RoomStatus;
   rules: RuleConfig;
-  players: Player[];
+  players: Player[];             // in seat order, which is turn order (see below)
   pieces: Piece[];
   turn: TurnState;
-  seedHash: string;
+  seedHash: string;              // SHA-256 of the seed's UTF-8 text, as 64 lower-case hex digits
   winnerId?: string;             // only once the match is over
   ranking?: string[];            // player IDs, best first
   seed?: string;                 // revealed only when the match is over
@@ -244,6 +309,17 @@ export interface ServerError {
   details?: unknown;
 }
 ```
+
+Rules about these fields (decided 2026-11-21):
+- **Turn order.** `players` is in seat order, clockwise round the board. Turns go through it in that
+  order and wrap round, starting from whoever `turn.activePlayerId` names. The status panel shows
+  the array as sent and never sorts it.
+- **A roll with no legal move.** The state stays in `AWAITING_MOVE` with an empty `legalMoves` for
+  about 1 second, so the player sees the roll. Then one change sends `TURN_PASSED` and
+  `TURN_CHANGED`. A `game:roll` during that pause gets `ALREADY_ROLLED`. The message
+  "<Name> can't move. Turn skipped." is built from that state.
+- **The dice check.** At the end the win screen checks that SHA-256 of `seed` equals `seedHash`. If
+  the LGS makes the hash any other way, the screen says "We couldn't check this game's dice".
 
 Note the server **never** sends session tokens, generator state, or the seed
 while a match is running. If you ever see one in a snapshot, that is a backend
@@ -275,6 +351,7 @@ What the player sees (FR-SYS-04, NFR-SYS-08):
 | `ROOM_NOT_FOUND` | 404 | inline error on the join form |
 | `PIECE_NOT_FOUND` | 404 | our bug; resync with `state:sync` |
 | `NAME_TAKEN` | 409 | inline error, let them retry with a new name |
+| `COLOUR_TAKEN` | 409 | inline error under the colours; look the room up again and offer what is free now (added 2026-11-21) |
 | `ROOM_FULL` | 409 | inline error on the join form |
 | `GAME_ALREADY_STARTED` | 409 | inline error on the join form |
 | `GAME_NOT_STARTED` | 409 | toast |
@@ -298,7 +375,10 @@ On any of these, automatically send `state:sync { knownVersion }`.
 
 1. REST create/join → we hold `{ playerId, sessionToken, roomCode }`.
 2. Save `sessionToken` to `sessionStorage`.
-3. Connect socket with `auth: { sessionToken }`.
+3. Connect socket with `auth: { sessionToken }`. If the token is unknown or has ended, the server
+   refuses the connection: socket.io's `connect_error` fires with `message: "UNAUTHORIZED"` and a
+   `ServerError` in `data` (`{ v, code: "UNAUTHORIZED", message }`). The client then clears the
+   session and goes back to the main screen (§6).
 4. On connect: we receive `room:updated` and, if a match is running, `game:state`.
 5. On `disconnect`: show a reconnecting banner. socket.io retries by itself —
    do **not** write a custom reconnect loop.
@@ -313,94 +393,75 @@ While we are away, an AI stand-in plays our turns after ~3 seconds per decision.
 
 ---
 
-## 8. Questions to confirm with the backend team
+## 8. Decisions, and what is still open
 
-Keep this list alive. Tick items off as they are answered in writing.
-
-Last checked on 2026-11-08 against the backend's D3 v1 and its unmerged
-`feature/phase-0-foundation` branch. The backend has no room or socket code yet,
-so a tick means "answered in writing", not "seen working".
+Until 2026-11-21 this was a list of questions for the backend team. Since then the backend builds
+the LGS to this contract, so we decided each one ourselves. Where the mock already behaved one
+definite way and the front end was built on it, that became the rule, so the mock is still a
+working example of the whole contract. Each decision is written into the section named.
 
 ### Still open
 
-- [ ] **Snapshot keys.** D3 REQ-G1 2.1 lists the fields in words only. Are the
-      JSON keys `matchId`, `seedHash`, `winnerId`, `activePlayerId`, `lastRoll`,
-      `sixesInRow`, `legalMoves`, `boardSquare`, `isHost` and `piecesHome`?
-- [ ] Is `Player.isAi` the real field name, or `isAI` / `type: "AI"`? D3 only
-      says "human or AI".
-- [ ] Are colours sent as `"RED"` or `"Red"`? D3 only uses them in prose.
-- [ ] Does `RoomSnapshot` carry `seats` as an array of
-      `{ seat, colour, player }`, or `players` plus a separate `seatCount`? Is
-      the host `hostId`?
-- [ ] Is the room snapshot under the key `room` in the create and join
-      responses? D3 only says "room snapshot".
-- [ ] `LegalMove` — D3 gives no shape. Is it
-      `{ pieceId, fromStep, toStep, captures }`, and are `captures` piece IDs or
-      full piece objects?
-- [ ] Is `deadline` an ISO string or epoch milliseconds?
-- [ ] Is the contract package published to npm, or do we vendor the types? It is
-      not on npm yet, and the backend's plan lists this as undecided for its
-      Phase 1.
-- [ ] When can we connect, and at what address? The backend's plan says its
-      Milestone 2. Its default port is 3000; our `.env.example` points at the
-      mock on 3001.
-- [ ] `GET /rooms/{roomCode}` preview — what are the exact field names for
-      status, mode, host name and free seats? `RoomPreview` stays out of
-      `src/contract/types.ts` until we know. The mock returns a `RoomSnapshot`.
-      Until this is answered the join form says "Game found!", not
-      "2 of 4 players · waiting".
-- [ ] `game:event.data` — what are the fields for each of the 16 event types?
-      D3 describes six, in words only: `GAME_STARTED` (turn order, seed hash),
-      `ROLLED` (player, value, legal moves), `TURN_CHANGED` (player, deadline),
-      `TURN_PASSED` (reason `NO_LEGAL_MOVE`), `TURN_FORFEITED` (reason
-      `THREE_SIXES`) and `GAME_OVER` (winner, ranking, seed). The mock sends
-      `data: {}`, so the UI must read the snapshot.
-- [ ] REST error body — is it a bare `ServerError`, or nested under `error`? D3
-      lists the error's fields but not where they sit. The mock sends a bare
-      `ServerError` plus `v`.
-- [ ] Acks — D3 confirms `{ ok, version }` / `{ ok, error }` and that `requestId`
-      is echoed. Is `requestId` at the top level of the ack, and does an ack
-      carry `v`? The mock includes both.
-- [ ] Acks in the lobby — what `version` comes back before a match exists? D3
-      says versions start at 1 for each match. The mock sends `0`. `LgsAdapter`
-      accepts a missing version on `room:addAi`, `room:leave` and `state:sync`.
-- [ ] Refused socket connection — how is `UNAUTHORIZED` reported? The mock puts a
-      `ServerError` in the `data` of socket.io's `connect_error`.
-- [ ] Is `GameStateSnapshot.players` always in turn order? No field names the
-      order. The status panel shows the array as sent and never sorts it (P6).
-- [ ] After a command, which reaches the client first, the ack or the
-      `game:state`? §4 only orders the event and the state. The mock sends the
-      state first. The die waits for the state whose version the ack names (P7).
-- [ ] Does `turn.lastRoll` clear between turns? The mock keeps it until the next
-      roll, so the die shows the previous roll until then (P7).
-- [ ] After a roll with no legal move, does the server stay in `AWAITING_MOVE`
-      with an empty `legalMoves` during its pause before `TURN_PASSED`? The mock
-      does. "<Name> can't move. Turn skipped." is built from that state, because
-      `TURN_PASSED` names no player (P8).
-- [ ] Does every accepted change raise `version` by exactly 1? The mock does. A
-      piece only walks between neighbouring versions, and jumps across a bigger
-      gap, because the contract names no fields for `MOVED` (P8).
-- [ ] Does `CAPTURED` come once per captured piece? The mock does. Each one is
-      matched to a piece that went backwards between the two snapshots, because
-      the event doesn't say which piece it was (P9).
-- [ ] `PLAYER_IDLE` — who is it about, and after how many automatic actions? Our
-      task says three, and the mock sends it after one timeout. The "Still there?"
-      dialog shows only if it was this player's turn when it came (P11).
-- [ ] How is `seedHash` made from `seed`? The mock uses SHA-256 of the seed's
-      text, written in hex, and the win screen's dice check assumes that. If the
-      server does it differently, the check says "We couldn't check this game's
-      dice" (P10).
+This one is a date, not part of the spec:
 
-From our own D3 (see `docs/00-requirements.md` §5):
+- [ ] **First connection to the real LGS.** The address is only a setting: `VITE_SERVER_URL` in
+      `.env` (our `.env.example` points at the mock on 3001; the backend's default port is 3000,
+      and its `CORS_ORIGINS` must allow `http://localhost:5173`). The date is to be agreed with the
+      backend team in the first half of Sprint 4 (our D4, risk R1).
 
-- [ ] **Colour choice (FR-06, FR-SYS-01).** D3 REQ-HOST 1.1 and 2.1 assign
-      colours by seat, so there is no choice today. Can one be added?
-- [ ] **Same-device play (FR-03).** May one browser create a room and then
-      join it again under other names, holding several session tokens at once?
-      D3 limits failed code look-ups per IP but says nothing about this.
+### Decided 2026-11-21
 
-### Answered
+Each of these was an open question to the backend team. The decision follows the mock unless it
+says otherwise.
 
+- [x] **Snapshot keys** (`matchId`, `seedHash`, `winnerId`, `activePlayerId`, `lastRoll`,
+      `sixesInRow`, `legalMoves`, `boardSquare`, `isHost`, `piecesHome`): exactly as in §5.
+- [x] **`Player.isAi`**: that spelling, a boolean (§5).
+- [x] **Colours**: in capitals, `"RED"`, `"GREEN"`, `"YELLOW"`, `"BLUE"` (§5).
+- [x] **`RoomSnapshot`**: `seats` as an array of `{ seat, colour, player }`, with `player: null` for
+      an empty seat; the host is `hostId` (§5).
+- [x] **Create and join responses**: the room snapshot is under the key `room` (§1).
+- [x] **`LegalMove`**: `{ pieceId, fromStep, toStep, captures }`, and `captures` are piece IDs (§5).
+- [x] **`deadline`**: an ISO 8601 string in UTC, `null` with no time limit and once the match is
+      over (§5).
+- [x] **Contract package**: no npm package. The backend copies the files in `src/contract/` (§5).
+- [x] **`game:event.data`**: the front end reads nothing from it, so `{}` is fine. The rules that
+      let the client tell who an event is about are in §4, "Event data".
+- [x] **REST error body**: the bare `ServerError` plus `v`, not nested under `error` (§1).
+- [x] **Acks**: `requestId` at the top level and `v` in every ack (§3).
+- [x] **Acks in the lobby**: `version` is `0` before the room's first match starts (§3).
+      `LgsAdapter` still accepts a missing version on `room:addAi`, `room:leave` and `state:sync`.
+- [x] **Refused socket connection**: a `ServerError` in the `data` of socket.io's `connect_error`
+      (§7).
+- [x] **`players` order**: seat order, which is turn order (§5).
+- [x] **Ack or state first**: the change's events and state, then the ack (§3).
+- [x] **`turn.lastRoll`**: kept until the next roll, also after the turn has passed (§5).
+- [x] **A roll with no legal move**: about 1 second in `AWAITING_MOVE` with an empty `legalMoves`,
+      then `TURN_PASSED` and `TURN_CHANGED` in one change (§5).
+- [x] **Versions**: every accepted change raises `version` by exactly 1, and a restart starts again
+      at 1 with a new `matchId` (§4).
+- [x] **`CAPTURED`**: once per captured piece (§4).
+- [x] **`PLAYER_IDLE`**: about the player whose turn timer ran out, sent each time it runs out for
+      a connected human (§4). Our P11 prompt had said after three automatic actions. We took the
+      mock's one: the player hears at once that the computer stepped in, the "Still there?" dialog
+      is one click to close, and the front end already follows whatever the server sends.
+- [x] **`seedHash`**: SHA-256 of the seed's UTF-8 text, as 64 lower-case hex digits (§5).
+
+### Answered before 2026-11-21
+
+Checked on 2026-11-08 against the backend's D3 v1 and its unmerged `feature/phase-0-foundation`
+branch, or decided with the client since. The backend has no room or socket code yet, so a tick
+means "answered in writing", not "seen working".
+
+
+- [x] **Colour choice (FR-06, FR-SYS-01).** Decided 2026-11-21: players choose. The client asked
+      for it, and the backend builds to this contract. The host sends `colour` on create, and a
+      joiner sends one of the free colours on join, or gets `COLOUR_TAKEN`. A room's colours go
+      clockwise from the host's (2 seats: opposite corner; 3: the next two; 4: all). See §1.
+- [x] **Room preview.** Decided 2026-11-21: `GET /rooms/{roomCode}` returns the `RoomSnapshot`.
+      See §1.
+- [x] **Same-device play (FR-03).** Decided 2026-11-21: not needed (the client), so task P13 was
+      dropped and the server needn't let one browser hold several sessions.
 - [x] `game:state` envelope — nested as `(version, snapshot)` (D3 REQ-G1 2.1,
       step 4).
 - [x] `ROLLED` carries the legal moves (D3 REQ-PLAYER 2.1, step 7). They are in
@@ -415,9 +476,11 @@ From our own D3 (see `docs/00-requirements.md` §5):
       first if the match was still running. The mock sends only `GAME_RESTARTED`.
 - [x] Rules G-1, G-2, G-3 and G-5 — the text is in D3 §2.3. G-2 differs from the
       mock: see "First player" below.
-- [x] **2-player colours (R1).** Red and Yellow (D3 G-1). The mock matches.
-- [x] **First player (FR-08).** Chosen at random by the server (D3 G-2). Our R2
-      and the mock both say seat 1.
+- [x] **2-player colours (R1).** Red and Yellow (D3 G-1) when the host picks no colour. Since the
+      colour choice, the host's colour and the opposite corner (§1).
+- [x] **First player (FR-08).** Chosen at random by the server (D3 G-2). Our R2 and the mock both
+      say seat 1; the mock keeps seat 1 so tests repeat. The front end never assumes it: it reads
+      `turn.activePlayerId`.
 - [x] **AI thinking signal (FR-SYS-07).** D3's event list has no such event, so
       we infer it from the active player being an AI.
 - [x] **AI difficulty (FR-31).** `EASY` and `NORMAL` (D3 §2.5, marked as a team
@@ -473,7 +536,9 @@ Implementations:
 |---|---|
 | `LgsAdapter` | the real backend **and** our mock server (same protocol, different URL) |
 | `FakeAdapter` | unit tests — in-memory, scriptable, no network. This is how we prove NFR-SYS-12. |
-| `LocalMultiSeatAdapter` | task P13 only (TO CONFIRM): wraps several `LgsAdapter`s, one per local seat |
+
+A `LocalMultiSeatAdapter` for same-device play (task P13) was planned, and dropped on 2026-11-21
+(§8).
 
 The store receives a `GameAdapter` when it is created. Nothing else in
 `src/` knows which implementation is in use.

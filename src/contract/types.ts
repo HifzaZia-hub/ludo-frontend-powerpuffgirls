@@ -98,6 +98,9 @@ export interface CreateRoomRequest {
   seats: 2 | 3 | 4;
   aiDifficulty?: Difficulty; // default NORMAL
   rules?: Partial<RuleConfig>;
+  // FR-SYS-01, D2 FR-06: the host's colour, default RED. The room's colours go clockwise from it:
+  // 2 seats take the opposite corner (R1), 3 seats the next two, 4 seats all four.
+  colour?: Colour;
 }
 
 export interface CreateRoomResponse {
@@ -111,6 +114,9 @@ export interface CreateRoomResponse {
 // POST /api/v1/rooms/{roomCode}/join
 export interface JoinRoomRequest {
   displayName: string;
+  // FR-SYS-01, D2 FR-06: one of the room's free colours. Left out, the first free seat is used.
+  // Not free gives COLOUR_TAKEN.
+  colour?: Colour;
 }
 
 export interface JoinRoomResponse {

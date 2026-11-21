@@ -17,6 +17,7 @@ const ERROR_COPY: Partial<Record<ErrorCode, string>> = {
   ALREADY_ROLLED: "You already rolled. Pick a piece to move.",
   INVALID_NAME: INVALID_NAME_MESSAGE,
   NAME_TAKEN: "Someone in this game already has that name. Try another.",
+  COLOUR_TAKEN: "Someone just took that colour. Pick another.",
   INVALID_CODE: INVALID_CODE_MESSAGE,
   ROOM_NOT_FOUND: "We couldn't find that game. Check the code.",
   ROOM_FULL: "That game is full.",
@@ -97,7 +98,7 @@ export const SETUP_TEXT = {
   difficulty: "Computer difficulty",
   easy: "Easy",
   normal: "Normal",
-  youWillBe: "You will be",
+  colour: "Your colour",
   start: "Start",
   back: "Back",
 } as const;
@@ -106,8 +107,9 @@ export const JOIN_TEXT = {
   title: "Join a game",
   code: "Game code",
   name: "Your name",
+  colour: "Your colour",
   checking: "Looking for that game…",
-  found: "Game found! Now type your name.",
+  found: "Game found! Now type your name and pick a colour.",
   join: "Join",
   badCharacter: "Codes don't use the letters I, L or O, or the numbers 0 or 1.",
 } as const;

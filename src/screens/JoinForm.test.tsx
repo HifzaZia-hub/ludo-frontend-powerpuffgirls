@@ -1,5 +1,5 @@
 import { createRef } from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FakeAdapter } from "@/adapter/FakeAdapter";
 import type { Result, RoomPreview } from "@/adapter/GameAdapter";
@@ -7,13 +7,14 @@ import type { JoinRoomResponse, ServerError } from "@/contract/types";
 import { JoinForm } from "@/screens/JoinForm";
 import { createGameStore } from "@/store/gameStore";
 import { useUiStore } from "@/store/uiStore";
-import { makeRoom } from "@/testRoom";
+import { makePlayer, makeRoom } from "@/testRoom";
 
 const JOINED: { ok: true; data: JoinRoomResponse } = {
   ok: true,
   data: { v: "1.0.0", playerId: "p2", sessionToken: "t", room: makeRoom() },
 };
-const FOUND: Result<RoomPreview> = { ok: true, data: {} };
+// Rida is in red, so green, yellow and blue are free.
+const FOUND: Result<RoomPreview> = { ok: true, data: makeRoom() };
 
 function failure(code: ServerError["code"]): { ok: false; error: ServerError } {
   return { ok: false, error: { code, message: "No." } };
@@ -75,7 +76,9 @@ describe("JoinForm", () => {
     await user.type(codeField(), "K7QX2M");
 
     expect(adapter.previewCodes).toEqual(["K7QX2M"]);
-    expect(await screen.findByText("Game found! Now type your name.")).toBeTruthy();
+    expect(
+      await screen.findByText("Game found! Now type your name and pick a colour."),
+    ).toBeTruthy();
     expect(queryNameField()).not.toBeNull();
   });
 
@@ -104,7 +107,7 @@ describe("JoinForm", () => {
     answer(FOUND);
     await Promise.resolve();
 
-    expect(screen.queryByText("Game found! Now type your name.")).toBeNull();
+    expect(screen.queryByText("Game found! Now type your name and pick a colour.")).toBeNull();
     expect(queryNameField()).toBeNull();
   });
 
@@ -138,8 +141,83 @@ describe("JoinForm", () => {
     await user.type(await screen.findByLabelText("Your name"), " Hamza ");
     await user.click(joinButton());
 
-    expect(adapter.joinRequests).toEqual([{ code: "K7QX2M", request: { displayName: "Hamza" } }]);
+    // Green is the first free colour, so it is chosen until the player picks another.
+    expect(adapter.joinRequests).toEqual([
+      { code: "K7QX2M", request: { displayName: "Hamza", colour: "GREEN" } },
+    ]);
     expect(useUiStore.getState().screen).toBe("lobby");
+  });
+
+  // FR-SYS-01, D2 FR-06
+  describe("choosing a colour", () => {
+    const colours = () => within(screen.getByRole("radiogroup", { name: "Your colour" }));
+
+    it("offers only the colours still free in that game", async () => {
+      const { user } = renderJoin();
+
+      await user.type(codeField(), "K7QX2M");
+
+      await screen.findByRole("radiogroup", { name: "Your colour" });
+      expect(
+        colours()
+          .getAllByRole("radio")
+          .map((radio) => radio.getAttribute("aria-label")),
+      ).toEqual(["Green", "Yellow", "Blue"]);
+      expect(colours().getByRole("radio", { name: "Green" }).getAttribute("aria-checked")).toBe(
+        "true",
+      );
+    });
+
+    it("joins in the colour picked", async () => {
+      const { adapter, user } = renderJoin();
+
+      await user.type(codeField(), "K7QX2M");
+      await user.type(await screen.findByLabelText("Your name"), "Hamza");
+      await user.click(colours().getByRole("radio", { name: "Blue" }));
+      await user.click(joinButton());
+
+      expect(adapter.joinRequests[0]?.request).toEqual({ displayName: "Hamza", colour: "BLUE" });
+    });
+
+    it("says so when someone else took the colour first, and offers what is free now", async () => {
+      const { adapter, user } = renderJoin();
+      await user.type(codeField(), "K7QX2M");
+      await user.type(await screen.findByLabelText("Your name"), "Hamza");
+      await user.click(colours().getByRole("radio", { name: "Blue" }));
+      adapter.joinRoomResult = failure("COLOUR_TAKEN");
+      const room = makeRoom();
+      adapter.previewRoomResult = {
+        ok: true,
+        data: {
+          ...room,
+          seats: room.seats.map((seat) =>
+            seat.colour === "BLUE" ? { ...seat, player: makePlayer("p3", "Maryam") } : seat,
+          ),
+        },
+      };
+
+      await user.click(joinButton());
+
+      expect(await screen.findByText("Someone just took that colour. Pick another.")).toBeTruthy();
+      await vi.waitFor(() => expect(colours().queryByRole("radio", { name: "Blue" })).toBeNull());
+      expect(colours().getByRole("radio", { name: "Green" }).getAttribute("aria-checked")).toBe(
+        "true",
+      );
+      expect(nameField().value).toBe("Hamza");
+    });
+
+    // The look-up failed, so the colours aren't known: the server picks the first free seat.
+    it("offers no colours when the look-up failed, and sends none", async () => {
+      const { adapter, user } = renderJoin();
+      adapter.previewRoomResult = failure("SERVER_BUSY");
+
+      await user.type(codeField(), "K7QX2M");
+      await user.type(await screen.findByLabelText("Your name"), "Hamza");
+      await user.click(joinButton());
+
+      expect(screen.queryByRole("radiogroup", { name: "Your colour" })).toBeNull();
+      expect(adapter.joinRequests[0]?.request).toEqual({ displayName: "Hamza" });
+    });
   });
 
   it("catches a bad name without asking the server", async () => {
@@ -190,7 +268,7 @@ describe("JoinForm", () => {
     expect(screen.getByText(message)).toBeTruthy();
     expect(codeField().getAttribute("aria-invalid")).toBe("true");
     expect(nameField().value).toBe("Hamza");
-    expect(screen.queryByText("Game found! Now type your name.")).toBeNull();
+    expect(screen.queryByText("Game found! Now type your name and pick a colour.")).toBeNull();
   });
 
   it.each([
