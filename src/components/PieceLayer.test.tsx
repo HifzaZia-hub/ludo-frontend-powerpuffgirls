@@ -309,6 +309,14 @@ describe("PieceLayer", () => {
 
       expect(container.querySelector('[data-effect="finish"]')).not.toBeNull();
     });
+
+    it("spins a captured piece on its way home, for as long as the return takes", () => {
+      const { container } = draw({ ...NO_EFFECTS, returningId: "G1", returnSeconds: 0.4 });
+      const bounce = pieceElement(container, "G1").querySelector<HTMLElement>("[data-bounce]");
+
+      expect(bounce?.className).toContain("piece-spin");
+      expect(bounce?.style.getPropertyValue("--spin")).toBe("0.4s");
+    });
   });
 
   describe("walking", () => {
@@ -356,6 +364,24 @@ describe("PieceLayer", () => {
       render(drawWalk({ pieceId: "R1", step: 8 }));
 
       expect(screen.getByRole("img", { name: "Red piece 1, on the track" })).toBeTruthy();
+    });
+
+    // Looks only: the hop is a class on a wrapper, and the square still comes from the walk.
+    it("hops on every square, with the same piece element throughout", () => {
+      const { container, rerender } = render(drawWalk({ pieceId: "R1", step: 8 }));
+      const bounce = () =>
+        pieceElement(container, "R1").querySelector<HTMLElement>("[data-bounce]");
+      const token = pieceElement(container, "R1").querySelector("[data-state]");
+
+      expect(bounce()?.className).toContain("piece-hop-a");
+      rerender(drawWalk({ pieceId: "R1", step: 9 }));
+      expect(bounce()?.className).toContain("piece-hop-b");
+      rerender(drawWalk({ pieceId: "R1", step: 10 }));
+      expect(bounce()?.className).toContain("piece-hop-a");
+      expect(pieceElement(container, "R1").querySelector("[data-state]")).toBe(token);
+
+      rerender(drawWalk(null));
+      expect(bounce()?.className).not.toContain("piece-hop");
     });
   });
 });

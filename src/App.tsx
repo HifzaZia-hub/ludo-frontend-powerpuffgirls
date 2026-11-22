@@ -1,3 +1,4 @@
+import { MotionConfig } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { useStore } from "zustand";
 import { useAdapterSubscription } from "@/adapter/useAdapterSubscription";
@@ -18,10 +19,23 @@ import { SetupScreen } from "@/screens/SetupScreen";
 import { StoppedScreen } from "@/screens/StoppedScreen";
 import { WinScreen } from "@/screens/WinScreen";
 import type { GameStore } from "@/store/gameStore";
+import { useSettingsStore } from "@/store/settingsStore";
 import { useUiStore } from "@/store/uiStore";
 
 interface AppProps {
   store: GameStore;
+}
+
+// Cards light up softly where the pointer is (theme.css .glow-panel). One listener for the whole
+// page: it tells whichever card is under the pointer where, in that card, the pointer is.
+function followPointerOverCards(event: PointerEvent) {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  const panel = target.closest<HTMLElement>(".glow-panel");
+  if (!panel) return;
+  const box = panel.getBoundingClientRect();
+  panel.style.setProperty("--mx", `${event.clientX - box.left}px`);
+  panel.style.setProperty("--my", `${event.clientY - box.top}px`);
 }
 
 export function App({ store }: AppProps) {
@@ -37,6 +51,12 @@ export function App({ store }: AppProps) {
   const connection = useStore(store, (state) => state.connection);
   const sessionReplaced = useStore(store, (state) => state.sessionReplaced);
   const reconnect = useStore(store, (state) => state.reconnect);
+  const animation = useSettingsStore((state) => state.animation);
+
+  useEffect(() => {
+    window.addEventListener("pointermove", followPointerOverCards, { passive: true });
+    return () => window.removeEventListener("pointermove", followPointerOverCards);
+  }, []);
 
   const screenRef = useRef<HTMLDivElement>(null);
   const showing = sessionReplaced ? "replaced" : screen;
@@ -61,7 +81,8 @@ export function App({ store }: AppProps) {
   const offline = connection === "reconnecting" || connection === "lost" ? connection : null;
 
   return (
-    <>
+    // Framer Motion follows the Animations setting too: with Off, its movement is skipped.
+    <MotionConfig reducedMotion={animation === "off" ? "always" : "user"}>
       <ConnectionBanner status={sessionReplaced ? null : offline} onRetry={reconnect} />
 
       <div ref={screenRef}>
@@ -71,13 +92,16 @@ export function App({ store }: AppProps) {
           // NFR-SYS-03: around every screen. Out here so it also catches a crash in the store
           // selectors a screen reads.
           <ErrorBoundary resetKey={snapshot ?? screen} onResync={() => void resync()}>
-            {screen === "main" && <MainScreen store={store} />}
-            {screen === "setup" && <SetupScreen store={store} />}
-            {screen === "lobby" && <LobbyScreen store={store} />}
-            {screen === "game" && <GameScreen store={store} />}
-            {screen === "win" && <WinScreen store={store} />}
-            {screen === "stopped" && <StoppedScreen store={store} />}
-            {screen === "rejoining" && <RejoiningScreen store={store} />}
+            {/* A new key for each screen, so each one eases in as it opens. */}
+            <div key={screen} className="screen-enter">
+              {screen === "main" && <MainScreen store={store} />}
+              {screen === "setup" && <SetupScreen store={store} />}
+              {screen === "lobby" && <LobbyScreen store={store} />}
+              {screen === "game" && <GameScreen store={store} />}
+              {screen === "win" && <WinScreen store={store} />}
+              {screen === "stopped" && <StoppedScreen store={store} />}
+              {screen === "rejoining" && <RejoiningScreen store={store} />}
+            </div>
           </ErrorBoundary>
         )}
       </div>
@@ -97,6 +121,6 @@ export function App({ store }: AppProps) {
       <SettingsModal />
       <RulesModal store={store} />
       <ToastRegion toasts={toasts} onDismiss={dismissToast} />
-    </>
+    </MotionConfig>
   );
 }

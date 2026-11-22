@@ -47,7 +47,10 @@ export function PlayerCard({
         className="absolute inset-y-0 left-0 w-1.5"
       />
       <div className="flex items-center gap-2">
-        <PlayerMark colour={colour} />
+        {/* The mark of the player whose turn it is bounces in when the turn comes round. */}
+        <span key={active ? "turn" : "waiting"} className={`flex ${active ? "pop-in" : ""}`}>
+          <PlayerMark colour={colour} />
+        </span>
         <div className="min-w-0">
           {/* A very long name still has to fit, so it can be cut short; the title shows it whole. */}
           <p className="truncate text-[15px] font-semibold text-high" title={name}>
@@ -72,9 +75,11 @@ export function PlayerCard({
         {columns.map(({ label, count }) => (
           <div key={label}>
             <dt className="text-xs font-semibold uppercase text-low">{label}</dt>
+            {/* A new key when the count changes, so the new number flips in. */}
             <dd
+              key={count}
               className={`text-xl font-semibold text-high ${
-                homeBump && label === LABELS.home ? "animate-bump" : ""
+                homeBump && label === LABELS.home ? "animate-bump" : "count-flip"
               }`}
             >
               {count}

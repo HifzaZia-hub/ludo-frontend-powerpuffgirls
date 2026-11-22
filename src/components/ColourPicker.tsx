@@ -55,18 +55,24 @@ export function ColourPicker({
             disabled={disabled}
             onClick={() => onChange(colour)}
             onKeyDown={(event) => handleKeyDown(event, index)}
-            className={`relative flex min-w-[4.5rem] flex-col items-center gap-1 rounded-2xl border-2 px-2 py-2 text-sm font-semibold transition-colors active:bg-raised disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS_RING} ${
+            className={`group relative flex min-w-[4.5rem] flex-col items-center gap-1 rounded-2xl border-2 px-2 py-2 text-sm font-semibold transition-[color,border-color,background-color,box-shadow,transform] duration-200 active:scale-95 active:bg-raised disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS_RING} ${
               selected
                 ? "border-accent bg-[color-mix(in_oklab,var(--accent)_12%,transparent)] text-high shadow-[0_0_14px_var(--glow)]"
-                : "border-transparent text-mid"
+                : "border-transparent text-mid hover:border-soft hover:text-high"
             }`}
           >
-            <PlayerMark colour={colour} />
+            {/* The mark lifts under the pointer, and bounces when chosen. */}
+            <span
+              key={selected ? "chosen" : "not-chosen"}
+              className={`transition-transform duration-200 group-hover:-translate-y-0.5 ${selected ? "pop-in" : ""}`}
+            >
+              <PlayerMark colour={colour} />
+            </span>
             <span>{COLOUR_NAMES[colour]}</span>
             {selected && (
               <span
                 aria-hidden="true"
-                className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-xs font-bold text-on-accent"
+                className="pop-in absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-xs font-bold text-on-accent"
               >
                 ✓
               </span>

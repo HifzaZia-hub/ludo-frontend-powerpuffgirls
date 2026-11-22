@@ -56,7 +56,7 @@ export const Dice = forwardRef<HTMLButtonElement, DiceProps>(function Dice(
       onPointerLeave={handlePointerLeave}
       aria-label={diceLabel(face, rolling)}
       aria-busy={rolling || undefined}
-      className={`flex flex-col items-center gap-2 rounded-2xl p-2 font-semibold text-high transition-transform duration-[80ms] active:scale-[0.97] aria-disabled:cursor-not-allowed aria-disabled:active:scale-100 ${FOCUS_RING}`}
+      className={`die-press flex flex-col items-center gap-2 rounded-2xl p-2 font-semibold text-high transition-transform duration-[80ms] active:scale-[0.97] aria-disabled:cursor-not-allowed aria-disabled:active:scale-100 ${FOCUS_RING}`}
     >
       {threeD ? (
         <FallbackBoundary fallback={flat}>

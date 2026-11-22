@@ -26,10 +26,14 @@ export function SeatRow({
   onAddComputer,
 }: SeatRowProps) {
   return (
-    <li className="flex min-h-[3rem] items-center gap-3 rounded-lg border border-soft bg-raised px-3 py-1">
+    <li className="flex min-h-[3rem] items-center gap-3 rounded-lg border border-soft bg-raised px-3 py-1 transition-[border-color,box-shadow] duration-200 hover:border-[var(--panel-edge)] hover:shadow-[0_0_14px_var(--glow)]">
       <PlayerMark colour={colour} />
       {player ? (
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2">
+        // A player taking the seat slides in. Keyed by player, so it plays for each new one.
+        <div
+          key={player.id}
+          className="slide-in flex min-w-0 flex-1 flex-wrap items-center gap-x-2"
+        >
           <span className="truncate text-[15px] font-semibold text-high">{player.name}</span>
           {isMe && <span className="text-xs text-mid">({PLAYER_TAGS.you})</span>}
           {player.isAi && <span className="text-xs text-mid">{PLAYER_TAGS.computer}</span>}

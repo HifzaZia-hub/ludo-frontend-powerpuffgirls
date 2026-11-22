@@ -1,4 +1,5 @@
 import { motion, type Transition } from "framer-motion";
+import type { CSSProperties } from "react";
 import { Piece as PieceToken, type PieceEffect, type PieceState } from "@/components/Piece";
 import { STACK_BADGE_MIN } from "@/config/board";
 import {
@@ -118,6 +119,18 @@ export function PieceLayer({
         let transition: Transition = { duration: tweenSeconds };
         if (walking) transition = { duration: walkSeconds, ease: "linear" };
         else if (returning) transition = { duration: effects?.returnSeconds ?? tweenSeconds };
+        // Each square of a walk is a small hop, and a captured piece spins on its way home. The two
+        // hop classes take turns, so the hop plays again on every square. Always the same span,
+        // so the piece inside is never re-created and keeps keyboard focus.
+        let bounce = "block h-full w-full";
+        let bounceStyle: CSSProperties | undefined;
+        if (walking) {
+          bounce = `${walk.step % 2 === 0 ? "piece-hop-a" : "piece-hop-b"} h-full w-full`;
+          bounceStyle = { "--hop": `${walkSeconds}s` } as CSSProperties;
+        } else if (returning) {
+          bounce = "piece-spin h-full w-full";
+          bounceStyle = { "--spin": `${effects?.returnSeconds ?? tweenSeconds}s` } as CSSProperties;
+        }
         const stack = piecesByCell.get(cellKey(point)) ?? [piece];
         const offset =
           stackOffsets(stack.length)[stack.findIndex(({ id }) => id === piece.id)] ?? ALONE;
@@ -148,16 +161,18 @@ export function PieceLayer({
             // FR-SYS-03: in a stack, a piece that can't move must never cover one that can.
             className={`absolute ${walking || flashing || returning ? "z-10" : move ? "z-[5]" : ""}`}
           >
-            <PieceToken
-              colour={piece.colour}
-              state={state}
-              effect={effect}
-              label={label}
-              disabled={choice?.locked}
-              onSelect={() => choice?.onPick(piece.id)}
-              onPreview={() => choice?.onPreview(piece.id)}
-              className="h-full w-full"
-            />
+            <span data-bounce="" style={bounceStyle} className={bounce}>
+              <PieceToken
+                colour={piece.colour}
+                state={state}
+                effect={effect}
+                label={label}
+                disabled={choice?.locked}
+                onSelect={() => choice?.onPick(piece.id)}
+                onPreview={() => choice?.onPreview(piece.id)}
+                className="h-full w-full"
+              />
+            </span>
           </motion.div>
         );
       })}
