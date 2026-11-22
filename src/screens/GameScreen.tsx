@@ -163,11 +163,13 @@ export function GameScreen({ store }: GameScreenProps) {
 
   // Until the die lands, the words mustn't give away what it rolled either.
   const shownKind: TurnKind | null = rolling && isMyTurn ? "myRoll" : turnKind;
+  // NFR-SYS-06: a picked piece waits for Move, so the words move on to that step.
+  const picked = shownKind === "myMove" && selection.selected !== null;
   const turn: TurnDisplay | null =
     shownKind && activePlayer
       ? {
           colour: activePlayer.colour,
-          text: turnText(shownKind, activePlayer.name),
+          text: picked ? TURN_TEXT.myConfirm : turnText(shownKind, activePlayer.name),
           thinking: shownKind === "computer",
         }
       : null;

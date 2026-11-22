@@ -767,6 +767,19 @@ describe("GameScreen", () => {
         expect(container.querySelector("[data-destination]")).toBeNull();
       });
 
+      // NFR-SYS-06: a first-timer who has picked a piece is told the next step.
+      it("says to press Move once a piece is picked, and goes back on Escape", async () => {
+        const { user } = renderLive();
+        const turnLine = () => within(screen.getByRole("banner"));
+        expect(turnLine().getByText("Your turn — pick a piece")).toBeTruthy();
+
+        await user.keyboard("2");
+        expect(turnLine().getByText("Your turn — now press Move")).toBeTruthy();
+
+        await user.keyboard("{Escape}");
+        expect(turnLine().getByText("Your turn — pick a piece")).toBeTruthy();
+      });
+
       it("puts the keyboard on the die when its piece stops being a button", async () => {
         const { adapter, user } = renderLive();
         adapter.queueAck(ACCEPTED);
