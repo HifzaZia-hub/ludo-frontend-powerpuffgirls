@@ -17,3 +17,4 @@
 - After P12: the contract is a finished spec. Its 22 open questions to the backend team are decided and written into the sections they belong to (acks, versions, event data, field formats, turn order). In each one the mock already behaved that way, so no code changed. Only the date of the first connection is still open.
 - After P12: GitHub runs our checks on every PR and on `main` (typecheck, lint, build, tests and the browser smoke test in Chrome), so a broken change shows up before it is merged (NFR-SYS-13).
 - After P12: "Your turn — now press Move" once a piece is picked, from an expert walkthrough of a first turn, plus the D3 v1.1 change list and a demo script (NFR-SYS-06).
+- P14: polish, not graded. Three more themes (Neon, Forest, Minimal), the final places revealed in turn with a Copy result button, and an optional 3D die that downloads only when turned on. 3D pieces and music were left out.

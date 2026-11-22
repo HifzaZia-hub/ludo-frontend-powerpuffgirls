@@ -1,14 +1,16 @@
 import confetti from "canvas-confetti";
-import { useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "zustand";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
+import { CopyButton } from "@/components/CopyButton";
 import { DiceFairnessCheck } from "@/components/DiceFairnessCheck";
 import { FOCUS_RING } from "@/components/focusRing";
 import { PlayerMark } from "@/components/PlayerMark";
 import { SHOW_SESSION_SCORE } from "@/config/app";
 import { MESSAGES, WIN_TEXT, winsLabel } from "@/feedback/copy";
+import { revealTimings } from "@/feedback/motion";
 import { selectHostName, selectIsHost, selectIsOffline, type GameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useUiStore } from "@/store/uiStore";
@@ -55,6 +57,15 @@ export function WinScreen({ store }: WinScreenProps) {
     return player && playerId !== snapshot.winnerId ? [{ player, place: index + 1 }] : [];
   });
   const busy = pending !== null || offline;
+  const reveal = revealTimings(animation, reducedMotion);
+
+  // P14: a line to share, built only from the server's winner and ranking (EXC-06-1).
+  const rankedNames = (snapshot.ranking ?? []).flatMap(
+    (playerId) => snapshot.players.find(({ id }) => id === playerId)?.name ?? [],
+  );
+  let resultLine: string | null = null;
+  if (rankedNames.length > 0) resultLine = WIN_TEXT.resultInOrder(rankedNames);
+  else if (winner) resultLine = WIN_TEXT.resultWinner(winner.name);
 
   async function handlePlayAgain() {
     setCoolingDown(true);
@@ -68,7 +79,19 @@ export function WinScreen({ store }: WinScreenProps) {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-4 p-4 pt-12">
-      <Card className="flex flex-col items-center gap-3 text-center">
+      <Card className="relative flex flex-col items-center gap-3 text-center">
+        {/* P14: in the card's empty corner, so it adds no height and Play again stays in view. */}
+        {resultLine && (
+          <div className="absolute right-2 top-2">
+            <CopyButton
+              text={resultLine}
+              label={WIN_TEXT.copyResult}
+              copiedLabel={WIN_TEXT.copiedResult}
+              failedMessage={WIN_TEXT.copyResultFailed}
+              compactFailedLabel={WIN_TEXT.copyResultFailedShort}
+            />
+          </div>
+        )}
         <span aria-hidden="true" className="text-5xl text-warning">
           {"♛︎"}
         </span>
@@ -81,11 +104,18 @@ export function WinScreen({ store }: WinScreenProps) {
           <section aria-label={WIN_TEXT.places} className="w-full">
             <h2 className="text-xs font-semibold uppercase text-low">{WIN_TEXT.places}</h2>
             <ul className="mt-1 flex flex-col gap-1 text-[15px] text-high">
-              {places.map(({ player, place }) => (
-                <li key={player.id} className="flex items-center justify-center gap-2">
+              {/* P14: one after another, or all at once with Animations Off or reduced motion. */}
+              {places.map(({ player, place }, index) => (
+                <motion.li
+                  key={player.id}
+                  className="flex items-center justify-center gap-2"
+                  initial={reveal.seconds > 0 ? { opacity: 0, y: 6 } : false}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: reveal.seconds, delay: index * reveal.staggerSeconds }}
+                >
                   <PlayerMark colour={player.colour} size="sm" />
                   {WIN_TEXT.place(place, player.name)}
-                </li>
+                </motion.li>
               ))}
             </ul>
           </section>

@@ -85,6 +85,9 @@ export function GameScreen({ store }: GameScreenProps) {
   const setSound = useSettingsStore((state) => state.setSound);
   const animation = useSettingsStore((state) => state.animation);
   const reducedMotion = useReducedMotion() === true;
+  // P14: the 3D die only moves, so with Animations Off or reduced motion the flat die stays.
+  const dice3d = useSettingsStore((state) => state.dice3d);
+  const threeD = dice3d && animation !== "off" && !reducedMotion;
 
   const dieRef = useRef<HTMLButtonElement>(null);
   const { rolling, roll, skip: skipTumble } = useDiceRoll(
@@ -271,6 +274,7 @@ export function GameScreen({ store }: GameScreenProps) {
             totalSeconds={snapshot.rules.turnTimerSeconds}
             showTimeUp={isMyTurn}
             dieRef={dieRef}
+            threeD={threeD}
             className="col-start-1 row-start-2 lg:col-start-3 lg:row-start-1"
           />
           <div className="col-span-2 row-start-3 flex flex-col gap-3 lg:col-span-1 lg:col-start-3 lg:row-start-2 lg:min-h-0">

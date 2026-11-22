@@ -10,6 +10,9 @@ import { createGameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useUiStore } from "@/store/uiStore";
 
+// P14: jsdom has no WebGL, so a stand-in takes the 3D die's place.
+vi.mock("@/components/Die3D", () => ({ Die3D: () => <span data-testid="die3d" /> }));
+
 function fixture(name: string): GameStateSnapshot {
   const snapshot = FIXTURES[name];
   if (!snapshot) throw new Error(`No fixture called ${name}`);
@@ -40,9 +43,26 @@ function countsOf(name: string): string[] {
 describe("GameScreen", () => {
   beforeEach(() => {
     useUiStore.setState({ screen: "game", modal: null });
-    useSettingsStore.setState({ theme: "dark", sound: true, animation: "on" });
+    useSettingsStore.setState({ theme: "dark", sound: true, animation: "on", dice3d: false });
   });
   afterEach(() => vi.restoreAllMocks());
+
+  // P14: drawn only with the setting on and Animations not Off, because it only moves.
+  describe("the 3D die", () => {
+    it("is drawn when the setting is on", async () => {
+      useSettingsStore.setState({ dice3d: true });
+      renderGame(fixture("spread"));
+
+      expect(await screen.findByTestId("die3d")).toBeTruthy();
+    });
+
+    it("stays flat with Animations Off, even with the setting on", () => {
+      useSettingsStore.setState({ dice3d: true, animation: "off" });
+      renderGame(fixture("spread"));
+
+      expect(screen.queryByTestId("die3d")).toBeNull();
+    });
+  });
 
   // Contract §4: GAME_STARTED arrives before the first game:state.
   it("waits politely for the first snapshot", () => {
