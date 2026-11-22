@@ -27,6 +27,11 @@ export function DiceFace({ face, rolling }: DiceFaceProps) {
           className={motion}
         />
       </span>
+      {/* When it lands, a ring of light bursts out round it. A new key each time, so it plays
+          again after every roll. */}
+      {!rolling && face !== null && (
+        <span key={`flash-${face}`} aria-hidden="true" className="die-flash" />
+      )}
     </span>
   );
 }

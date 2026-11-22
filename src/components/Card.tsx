@@ -8,9 +8,9 @@ export function Card({ active = false, className = "", children, ...rest }: Card
   return (
     <div
       {...rest}
-      className={`glow-panel rounded-2xl bg-panel p-4 ${
-        active ? "-translate-y-0.5 shadow-lg ring-2 ring-accent" : ""
-      } transition-transform duration-150 ${className}`}
+      className={`glow-panel relative rounded-2xl bg-panel p-4 ${
+        active ? "turn-pulse -translate-y-0.5 shadow-lg ring-2 ring-accent" : ""
+      } transition-[transform,--spot] duration-300 ${className}`}
     >
       {children}
     </div>

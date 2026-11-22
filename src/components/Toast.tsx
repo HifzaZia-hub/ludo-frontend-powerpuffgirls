@@ -26,7 +26,7 @@ export function Toast({ kind, message, onDismiss }: ToastProps) {
   const isError = kind === "error";
 
   return (
-    <li className="flex items-start gap-3 rounded-lg border border-soft bg-raised p-3 text-[15px] text-high shadow-lg">
+    <li className="toast-in flex items-start gap-3 rounded-lg border border-soft bg-raised p-3 text-[15px] text-high shadow-lg">
       {/* NFR-SYS-07: the symbol, not only its colour, says which kind of message this is. */}
       <span
         aria-hidden="true"

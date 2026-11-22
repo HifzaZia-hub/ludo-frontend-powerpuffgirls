@@ -42,6 +42,22 @@ describe("SegmentedControl (NFR-SYS-08)", () => {
     expect(radio("Two").getAttribute("aria-checked")).toBe("true");
   });
 
+  // The highlight is one element that moves to the new choice, so it can glide there.
+  it("draws one highlight, on the chosen option", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<Harness />);
+    const highlights = () => container.querySelectorAll("[data-highlight]");
+
+    expect(highlights()).toHaveLength(1);
+    expect(radio("Two").querySelector("[data-highlight]")).not.toBeNull();
+
+    await user.click(radio("Four"));
+
+    expect(highlights()).toHaveLength(1);
+    expect(radio("Four").querySelector("[data-highlight]")).not.toBeNull();
+    expect(highlights()[0]?.getAttribute("aria-hidden")).toBe("true");
+  });
+
   it("is a single Tab stop, on the chosen option", () => {
     render(<Harness />);
 

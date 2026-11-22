@@ -23,6 +23,28 @@ describe("Piece", () => {
     expect(container.querySelector(`[data-effect="${effect}"]`)).not.toBeNull();
   });
 
+  it.each([
+    ["capture", "capture-puff"],
+    ["finish", "finish-burst"],
+  ] as const)("bursts as it plays the %s effect", (effect, burst) => {
+    const { container } = render(<Piece colour="RED" effect={effect} label="Red piece 1" />);
+
+    expect(container.querySelector(`[data-effect="${effect}"]`)?.className).toContain(burst);
+  });
+
+  it.each([
+    ["movable", "pawn-bob"],
+    ["selected", "pawn-lift"],
+  ] as const)("moves its pawn when %s, and only then", (state, motion) => {
+    const { container, rerender } = render(
+      <Piece colour="RED" state={state} label="Red piece 1" />,
+    );
+    expect(container.querySelector("[data-pawn]")?.getAttribute("class")).toContain(motion);
+
+    rerender(<Piece colour="RED" state="idle" label="Red piece 1" />);
+    expect(container.querySelector("[data-pawn]")?.getAttribute("class")).not.toContain(motion);
+  });
+
   it("plays no effect unless asked", () => {
     const { container } = render(<Piece colour="RED" label="Red piece 1" />);
 

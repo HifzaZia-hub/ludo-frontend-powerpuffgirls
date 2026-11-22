@@ -55,13 +55,17 @@ export function DicePanel({
           className={`flex items-center gap-1.5 ${sixesFlash ? "animate-sixes-flash" : ""}`}
         >
           {/* NFR-SYS-07: filled against hollow, so the count doesn't rely on colour. */}
-          {SIXES_PIPS.map((pip) => (
-            <span
-              key={pip}
-              data-six={pip < sixesInRow ? "filled" : "empty"}
-              className={`h-3 w-3 rounded-full border-2 border-mid ${pip < sixesInRow ? "bg-mid" : ""}`}
-            />
-          ))}
+          {/* A dot that fills pops in, keyed by whether it is filled so it plays as it fills. */}
+          {SIXES_PIPS.map((pip) => {
+            const filled = pip < sixesInRow;
+            return (
+              <span
+                key={`${pip}-${filled ? "filled" : "empty"}`}
+                data-six={filled ? "filled" : "empty"}
+                className={`h-3 w-3 rounded-full border-2 border-mid ${filled ? "pop-in bg-mid" : ""}`}
+              />
+            );
+          })}
           <span className="text-xs text-mid">{GAME_TEXT.sixes}</span>
         </div>
       )}

@@ -48,7 +48,9 @@ export function CopyButton({
     return (
       <>
         <Button variant="ghost" size="sm" onClick={() => void copy()}>
-          {shown}
+          <span key={result ?? "none"} className="swap-in">
+            {shown}
+          </span>
         </Button>
         <span role="status" className="sr-only">
           {result === "copied" && copiedLabel}
@@ -61,7 +63,10 @@ export function CopyButton({
   return (
     <div className="flex flex-col items-center gap-1">
       <Button variant="outline" size="sm" onClick={() => void copy()}>
-        {result === "copied" ? copiedLabel : label}
+        {/* A new key when the label changes, so "Copied" slides in. */}
+        <span key={result === "copied" ? "copied" : "copy"} className="swap-in">
+          {result === "copied" ? copiedLabel : label}
+        </span>
       </Button>
       {/* The space is kept so a message doesn't push the page down. */}
       <p role="status" className="min-h-[1.5rem] text-[15px] text-mid">

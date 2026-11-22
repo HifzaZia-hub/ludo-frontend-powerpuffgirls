@@ -65,8 +65,13 @@ export function TopBar({
       {/* FR-SYS-02 POST-02-1: says whose turn it is in words, with a mark that isn't only a colour. */}
       {turn && (
         <p className="glow-panel flex min-w-0 items-center gap-2 rounded-full bg-raised px-4 py-1 text-[15px] font-semibold text-high">
-          <PlayerMark colour={turn.colour} size="sm" />
-          <span className="truncate">{turn.text}</span>
+          {/* A new turn: the mark bounces in and the words slide up. */}
+          <span key={turn.colour} className="pop-in inline-flex">
+            <PlayerMark colour={turn.colour} size="sm" />
+          </span>
+          <span key={turn.text} className="swap-in truncate">
+            {turn.text}
+          </span>
           {/* FR-SYS-07: the server runs the computer player, and this only shows it is busy. */}
           {turn.thinking && (
             <span aria-hidden="true" data-thinking="" className="flex items-center gap-1">

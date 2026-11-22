@@ -119,7 +119,7 @@ export function WinScreen({ store }: WinScreenProps) {
         )}
 
         <div aria-hidden="true" className="relative flex flex-col items-center">
-          <Crown className="h-7 w-10" />
+          <Crown className="crown-drop h-7 w-10" />
           {winner && (
             <Pawn colour={winner.colour} badge={false} className="win-pawn -mt-1 h-24 w-24" />
           )}
@@ -155,8 +155,14 @@ export function WinScreen({ store }: WinScreenProps) {
                   <span
                     aria-hidden="true"
                     data-place={place}
-                    style={{ height: STEP_HEIGHTS[index] ?? STEP_HEIGHTS.at(-1) }}
-                    className="podium-step w-full rounded-t-lg"
+                    // The steps rise out of the floor one after another, after the winner pops in.
+                    style={
+                      {
+                        height: STEP_HEIGHTS[index] ?? STEP_HEIGHTS.at(-1),
+                        "--d": index,
+                      } as CSSProperties
+                    }
+                    className="podium-step podium-rise w-full rounded-t-lg"
                   />
                 </motion.li>
               ))}
@@ -170,10 +176,11 @@ export function WinScreen({ store }: WinScreenProps) {
               {WIN_TEXT.sessionScore}
             </h2>
             <dl className="mt-2 flex flex-wrap justify-center gap-2 text-[14px] text-high">
-              {snapshot.players.map((player) => (
+              {snapshot.players.map((player, index) => (
                 <div
                   key={player.id}
-                  className="flex items-center gap-2 rounded-full border border-soft bg-raised px-3 py-1"
+                  style={{ "--d": 5 + index } as CSSProperties}
+                  className="pop-in flex items-center gap-2 rounded-full border border-soft bg-raised px-3 py-1"
                 >
                   <dt className="max-w-[9rem] truncate">{player.name}</dt>
                   <dd className="font-semibold">{winsLabel(sessionWins[player.id] ?? 0)}</dd>
