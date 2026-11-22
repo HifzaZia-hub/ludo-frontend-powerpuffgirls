@@ -1,0 +1,6 @@
+# Binary files: Git must never change their line endings or diff them as text.
+# Some PDFs look like text to Git, and core.autocrlf would then damage them on checkout.
+*.pdf binary
+*.docx binary
+*.png binary
+*.jpg binary
