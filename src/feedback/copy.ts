@@ -76,6 +76,14 @@ export const MAIN_TEXT = {
   newGame: "New Game",
   joinGame: "Join Game",
   howToPlay: "How to play",
+  spinDie: "Spin the die",
+  // Each one is true of this game: replies came in 35 ms at most (NFR-SYS-01), and the win screen
+  // can check the dice (FR-SYS-06).
+  features: [
+    { icon: "bolt", title: "Fast & Smooth", text: "Play without lag" },
+    { icon: "shield", title: "Fair Play", text: "Check the dice after every game" },
+    { icon: "trophy", title: "Compete", text: "Beat your friends" },
+  ],
 } as const;
 
 export const SETTINGS_TEXT = {

@@ -1,10 +1,13 @@
 import { useRef, type KeyboardEvent } from "react";
 import { FOCUS_RING } from "@/components/focusRing";
+import { Icon, type IconName } from "@/components/Icon";
 import { nextOptionIndex } from "@/interaction/arrowKeys";
 
 export interface SegmentedOption<T extends string> {
   value: T;
   label: string;
+  /** A small icon before the label. Decoration only. */
+  icon?: IconName;
 }
 
 export interface SegmentedControlProps<T extends string> {
@@ -34,11 +37,7 @@ export function SegmentedControl<T extends string>({
   }
 
   return (
-    <div
-      role="radiogroup"
-      aria-label={label}
-      className="inline-flex gap-1 rounded-full border border-soft bg-panel p-1"
-    >
+    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
       {options.map((option, index) => {
         const selected = option.value === value;
         return (
@@ -55,10 +54,20 @@ export function SegmentedControl<T extends string>({
             disabled={disabled}
             onClick={() => onChange(option.value)}
             onKeyDown={(event) => handleKeyDown(event, index)}
-            className={`rounded-full px-4 py-1 text-xs font-semibold active:bg-raised disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS_RING} ${
-              selected ? "bg-raised text-high ring-1 ring-mid" : "text-mid"
+            // NFR-SYS-07: the chosen one has a brighter border, a tint and brighter text, not only
+            // a different colour, and aria-checked says it.
+            className={`inline-flex min-w-[3rem] items-center justify-center gap-2 rounded-full border-2 px-4 py-1.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS_RING} ${
+              selected
+                ? "border-accent bg-[color-mix(in_oklab,var(--accent)_14%,transparent)] text-high shadow-[0_0_14px_var(--glow)]"
+                : "border-soft bg-raised text-mid active:bg-panel"
             }`}
           >
+            {option.icon && (
+              <Icon
+                name={option.icon}
+                className={`h-4 w-4 ${selected ? "text-[var(--title-accent)]" : ""}`}
+              />
+            )}
             {option.label}
           </button>
         );

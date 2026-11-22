@@ -1,5 +1,6 @@
 import { Card } from "@/components/Card";
 import { PlayerMark } from "@/components/PlayerMark";
+import { PLAYER_IDENTITY } from "@/config/players";
 import type { Colour } from "@/contract/types";
 import { LABELS, PLAYER_TAGS, winsLabel } from "@/feedback/copy";
 
@@ -37,7 +38,14 @@ export function PlayerCard({
   ];
 
   return (
-    <Card active={active} aria-current={active || undefined}>
+    <Card active={active} aria-current={active || undefined} className="relative overflow-hidden pl-5">
+      {/* A stripe in the player's colour down the left edge. The mark and name say whose card
+          it is, so this is decoration (NFR-SYS-07). */}
+      <span
+        aria-hidden="true"
+        style={{ backgroundColor: PLAYER_IDENTITY[colour].token }}
+        className="absolute inset-y-0 left-0 w-1.5"
+      />
       <div className="flex items-center gap-2">
         <PlayerMark colour={colour} />
         <div className="min-w-0">

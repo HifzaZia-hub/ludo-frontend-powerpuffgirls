@@ -24,14 +24,14 @@ attribute on `<html>` and zero component changes.
 
 ```css
 :root, html[data-theme="dark"] {
-  --bg-deep:     #060B18;
-  --bg-panel:    #0C1627;
-  --bg-raised:   #142238;
-  --border-soft: #1E3050;
+  --bg-deep:     #030F0C;
+  --bg-panel:    #081A15;
+  --bg-raised:   #0E261F;
+  --border-soft: #1A3B31;
   --focus-ring:  #5AA9FF;
   --text-high:   #F2F6FF;
-  --text-mid:    #9DB0CE;
-  --text-low:    #8496B5;
+  --text-mid:    #A3BDB4;
+  --text-low:    #8AA79C;
   --accent:      #2DD98A;
   --accent-press:#1FB874;
   --on-accent:   #04220F;
@@ -45,8 +45,9 @@ attribute on `<html>` and zero component changes.
   --p-green:  #2BBF5B;
   --p-yellow: #F4C026;
   --p-blue:   #2F7DF6;
-  --panel-edge: #2A4C86;
-  --glow:       rgb(64 140 255 / 0.30);
+  --panel-edge: #1E6B52;
+  --glow:       rgb(45 217 138 / 0.26);
+  --title-accent: #2DD98A;
 }
 
 html[data-theme="light"] {
@@ -73,11 +74,16 @@ html[data-theme="light"] {
   --p-blue:   #2367D8;
   --panel-edge: #C4D0E3;
   --glow:       rgb(29 95 209 / 0.10);
+  --title-accent: #0B7A48;
 }
 ```
 
 `--panel-edge` and `--glow` came with the visual refresh (glossy pawns, a 3D die, glowing
 panels). They are for edges and shadows only, never behind text, so they don't change contrast.
+
+The emerald look made Dark green-tinted, to match the team's mockups and the background picture
+(`src/assets/backdrop.webp`, shown in Dark only). `--title-accent` is the green of "DO" in the big
+LUDO and of the feature icons; each theme picks a shade that reads on its own background.
 
 Check both themes for text contrast (aim for 4.5:1 on body text) before
 calling P4 done.

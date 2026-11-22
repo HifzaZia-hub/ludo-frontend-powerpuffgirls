@@ -1,4 +1,4 @@
-import { forwardRef, lazy, Suspense } from "react";
+import { forwardRef, lazy, Suspense, type PointerEvent } from "react";
 import { DiceFace } from "@/components/DiceFace";
 import { FallbackBoundary } from "@/components/FallbackBoundary";
 import { FOCUS_RING } from "@/components/focusRing";
@@ -31,12 +31,29 @@ export const Dice = forwardRef<HTMLButtonElement, DiceProps>(function Dice(
     if (!unavailable) onRoll(); // FR-SYS-02 EXC-02-1
   }
 
+  // The die leans toward a mouse pointer over it. Looks only: it changes nothing in the game.
+  function handlePointerMove(event: PointerEvent<HTMLButtonElement>) {
+    if (event.pointerType !== "mouse") return;
+    const box = event.currentTarget.getBoundingClientRect();
+    const across = (event.clientX - box.left) / box.width - 0.5;
+    const down = (event.clientY - box.top) / box.height - 0.5;
+    event.currentTarget.style.setProperty("--hover-y", `${(across * 28).toFixed(1)}deg`);
+    event.currentTarget.style.setProperty("--hover-x", `${(-down * 28).toFixed(1)}deg`);
+  }
+
+  function handlePointerLeave(event: PointerEvent<HTMLButtonElement>) {
+    event.currentTarget.style.removeProperty("--hover-x");
+    event.currentTarget.style.removeProperty("--hover-y");
+  }
+
   return (
     <button
       ref={ref}
       type="button"
       aria-disabled={unavailable || undefined}
       onClick={handleClick}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
       aria-label={diceLabel(face, rolling)}
       aria-busy={rolling || undefined}
       className={`flex flex-col items-center gap-2 rounded-2xl p-2 font-semibold text-high transition-transform duration-[80ms] active:scale-[0.97] aria-disabled:cursor-not-allowed aria-disabled:active:scale-100 ${FOCUS_RING}`}

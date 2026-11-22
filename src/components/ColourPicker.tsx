@@ -38,7 +38,7 @@ export function ColourPicker({
   }
 
   return (
-    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
+    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-3">
       {colours.map((colour, index) => {
         const selected = colour === value;
         return (
@@ -55,13 +55,22 @@ export function ColourPicker({
             disabled={disabled}
             onClick={() => onChange(colour)}
             onKeyDown={(event) => handleKeyDown(event, index)}
-            className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-[15px] font-semibold active:bg-raised disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS_RING} ${
-              selected ? "bg-raised text-high ring-1 ring-mid" : "text-mid"
+            className={`relative flex min-w-[4.5rem] flex-col items-center gap-1 rounded-2xl border-2 px-2 py-2 text-sm font-semibold transition-colors active:bg-raised disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS_RING} ${
+              selected
+                ? "border-accent bg-[color-mix(in_oklab,var(--accent)_12%,transparent)] text-high shadow-[0_0_14px_var(--glow)]"
+                : "border-transparent text-mid"
             }`}
           >
-            <PlayerMark colour={colour} size="sm" />
+            <PlayerMark colour={colour} />
             <span>{COLOUR_NAMES[colour]}</span>
-            {selected && <span aria-hidden="true">✓</span>}
+            {selected && (
+              <span
+                aria-hidden="true"
+                className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-xs font-bold text-on-accent"
+              >
+                ✓
+              </span>
+            )}
           </button>
         );
       })}

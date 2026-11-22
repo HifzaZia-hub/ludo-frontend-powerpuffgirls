@@ -34,8 +34,8 @@ export default {
       keyframes: {
         // The 3D die turns over on two axes and ends in its resting pose (theme.css .die-cube).
         tumble: {
-          from: { transform: "translateZ(calc(var(--die) / -2)) rotateX(-18deg) rotateY(24deg)" },
-          to: { transform: "translateZ(calc(var(--die) / -2)) rotateX(342deg) rotateY(744deg)" },
+          from: { transform: "translateZ(calc(var(--die) / -2)) rotateX(-18deg) rotateY(-24deg)" },
+          to: { transform: "translateZ(calc(var(--die) / -2)) rotateX(342deg) rotateY(696deg)" },
         },
         thinking: { "0%, 80%, 100%": { opacity: "0.3" }, "40%": { opacity: "1" } },
         // Only opacity and transform, so these stay smooth while the board is busy.

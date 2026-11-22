@@ -1,3 +1,4 @@
+import { Icon } from "@/components/Icon";
 import { LABELS } from "@/feedback/copy";
 
 const MAX_PREVIOUS = 8;
@@ -19,8 +20,9 @@ export function MessageLog({ messages }: MessageLogProps) {
 
   return (
     <section aria-label={LABELS.messages} className="flex flex-col gap-2">
-      <p aria-live="polite" className="text-xl font-semibold text-high">
-        {latest ? latest.text : LABELS.noMessages}
+      <p aria-live="polite" className="flex items-start gap-2 text-xl font-semibold text-high">
+        {latest && <Icon name="rocket" className="mt-1 h-5 w-5 text-[var(--title-accent)]" />}
+        <span>{latest ? latest.text : LABELS.noMessages}</span>
       </p>
       <ol className="flex flex-col gap-1 text-[15px] text-mid">
         {previous.map((message) => (

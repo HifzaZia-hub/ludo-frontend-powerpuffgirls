@@ -1147,9 +1147,18 @@ async function die3d(browser) {
       await page.shot("NFR-SYS-05-die3d-rolling.png");
     }
     await page.waitUntil(`!${DIE}.hasAttribute('aria-busy')`, "the die to land", 15000);
-    await sleep(300);
+    // Read the face the moment it lands. With no move to make, the turn passes after a second and
+    // the computers, which wait only 30 ms here, roll at once: their roll would then be on the die.
+    // Reading it 300 ms later failed about one run in two, on main too.
     const face = await page.evaluate(FACE);
-    const line = await page.evaluate(LAST_ROLL_LINE);
+    // The log plays events in order, after any piece still walking, so the roll's line can come a
+    // moment after the die has landed. Wait up to 4 s for it rather than reading it at once.
+    let line = "";
+    for (let wait = 0; wait < 40; wait++) {
+      line = await page.evaluate(LAST_ROLL_LINE);
+      if (face !== null && line.includes(`rolled ${face}`)) break;
+      await sleep(100);
+    }
     if (face !== null && line.includes(`rolled ${face}`)) matched += 1;
     else console.log(`face ${face} vs log "${line}"`);
     if (i === 0) await page.shot("NFR-SYS-05-die3d-landed.png");
