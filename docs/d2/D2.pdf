@@ -1,37 +1,30 @@
-%PDF-1.7
+%PDF-1.3
 %‚„œ”
 1 0 obj
 <<
-/Producer (pypdf)
-/Title (SE Deliverable D2 \055 Ludo Game Platform \050Front End\051)
-/Author (Power Puff Girls)
+/Type /Catalog
+/Pages 2 0 R
 >>
 endobj
 2 0 obj
 <<
 /Type /Pages
 /Count 6
-/Kids [ 4 0 R 9 0 R 17 0 R 19 0 R 21 0 R 23 0 R ]
+/Kids [ 3 0 R 8 0 R 16 0 R 18 0 R 20 0 R 22 0 R ]
 >>
 endobj
 3 0 obj
 <<
-/Type /Catalog
-/Pages 2 0 R
->>
-endobj
-4 0 obj
-<<
-/Contents 5 0 R
+/Contents 4 0 R
 /CropBox [ 0.0 0.0 612 792 ]
 /MediaBox [ 0.0 0.0 612 792 ]
 /Resources <<
 /Font <<
-/F1 6 0 R
-/F2 7 0 R
+/F1 5 0 R
+/F2 6 0 R
 >>
 /XObject <<
-/Image1 8 0 R
+/Image1 7 0 R
 >>
 /ProcSet [ /ImageB /ImageC /ImageI /PDF /Text ]
 >>
@@ -41,7 +34,7 @@ endobj
 /Parent 2 0 R
 >>
 endobj
-5 0 obj
+4 0 obj
 <<
 /Length 268422
 >>
@@ -5980,7 +5973,7 @@ Q
 
 endstream
 endobj
-6 0 obj
+5 0 obj
 <<
 /BaseFont /Helvetica
 /Encoding /WinAnsiEncoding
@@ -5989,7 +5982,7 @@ endobj
 /Type /Font
 >>
 endobj
-7 0 obj
+6 0 obj
 <<
 /BaseFont /Times-Roman
 /Encoding /WinAnsiEncoding
@@ -5998,7 +5991,7 @@ endobj
 /Type /Font
 >>
 endobj
-8 0 obj
+7 0 obj
 <<
 /BitsPerComponent 8
 /ColorSpace /DeviceRGB
@@ -6227,12 +6220,12 @@ B29ÈKE fÍMµ‰EJ«Ωp˙ûÖw§LfÑñ^∏ÈUëG*ÌëCzM'∏”±ÁvÛúGpªqÎ[1Oo8 »	´z∑Ö°º…ákï∫—ÔÙ
 Âû=çcWπ∑uf∑åf≥?∞ú>s≈Wµ◊ÓQ∂MQZ—kH2Œ`„8Ëix≤KkU∑M†Trÿâ$›äó˚F◊˛zäcjñ 8êT{√–±läSòƒÉ.ÿ¨kø2!]«⁄®∆˙Ü™˚62ÉW2êú“5Ø5ò≠‘ààcÌY1%˛π>‹2.k{KqFYg}›k¨∂≤∑µ@±∆†é¯Æ∏QQ1î€1¥_√dÅ¶€ﬁ∑„Dåa;öZ‹Ã(¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä (¢ä N}iíGÉÅæ¢§¢Ä2/ÙKµ˘QP˝+ól§ÿ¸k∂ÊìüZ ·?·õ˛~?Zrx@~iˇ ZÓy£öV@sñÇÿÉ&∑b¥∂ÑJ1ÌSsÎKL˙R—E QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE QE ˇŸ
 endstream
 endobj
-9 0 obj
+8 0 obj
 <<
-/Contents 10 0 R
+/Contents 25 0 R
 /MediaBox [ 0 0 595.2756 841.8898 ]
 /Resources <<
-/Font 11 0 R
+/Font 10 0 R
 /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
 >>
 /Rotate 0
@@ -6242,7 +6235,7 @@ endobj
 /Parent 2 0 R
 >>
 endobj
-10 0 obj
+9 0 obj
 <<
 /Filter [ /ASCII85Decode /FlateDecode ]
 /Length 2425
@@ -6251,16 +6244,16 @@ stream
 GatU4gN)%<&q0LUoHTp$&DTkRc&!`b[[^O?jQ7V^QQ\%.`s+4S"s>/BIf,cY>R8E8aAPWA;o$WLjn.fd6[@bPa0Ydn3RKK1qYAD]c_o<J][-t!ondQfDn`o!=6@0"E8pT)'=lsDp?:aR\`Ep"CH[QGGi:;<$:;f+U00mbS0lE`\hE^mR8e8q+(V5YZ4uUudK^jI51QX0O!9p4T8@<XbFBV#GGQoA\h2?c[r6!RKiUEX&496"i:qjb)gf.4>=m]0`#hOK3thF-E3jNB+SZ+j^p<"G@iskS06V""OIY66AhJf(iTE:pr0X/a>Xl_Sk>&CO/[2r]iP/*.S7EG^c$6],msKY70FTX)HsssT0BOkgo]C3ZLjfU`mK3#sJA,q(7'6QL[K1iCheH06>S`TugIron&s^na.E'X5k<k3kZWCPu\NPc:$,ej9%-R4?`bPm#1HtP"XRUZLX)"&o7M[h3"^OVd*8&L*h)W8g"'b%bFVLZ?(gC!2=fPqhd$D-ODl7\)Z4'le*<2e!'_si%f1/ulID+=\7oa.*$\-=I!,XcAGjskfT;9nNCuTMa>%=`hU_TG&1>3:!Ze6N0.%5G5eYp8Dp^?,M1\9U^DLC%:^EdZFJlVea2oQipTAAW\,(C1k(Daj2O5OS(ZAt3nf'W@@gP.SlZ=V_Lq7UJ7\H<S:Z3g96cP8Ko[RH/fa4>S-=egL9SYI5N!?"5iKa9=#K@bHYC/?NioFb(>?,b?l`d_-?=Pil4n#dU9:>qI%rXu4BCKcQmI=!+>5BQm5%_dEQLKAh*$M86`kl#_urM;RQZP8",b4$kss&,?TK)S[-N.ZW?hj6:IbkE=RrmT3>+#1t'f_'W@C,e=e['U5/n@^o0m@O"\G+:L$j^PH)T=[N__I*[Gh1G%k_304a(;8(1:h,Rb6gO9'kCbStU0#R=Zf?/e3ODKP?BW._ZubkbqK2_S@!6Phi)7o2+R_.;-EE[mPj5&V:Sd;+_r*7Km3Ip90Zl*rmE:J0PHm_NDsWCg_t;EuHQH>&^;X!:_.;G?8T_\uKloC0ZYsb@WBA61(o4NfUl#?CLJde"dYTEDlaM^9Qp$QRhGRP3M7VL&UB2pIn$?L_d<0.KWT#aZ*Vum)N7(frpge5:.Q\O,-104f)$$nrmS,IUq/T/Z>aJYl."_s775rS&53O6g2?3bVgq9u^c$;?DE%u&"Ok50/n\C8@"uT)N8P6CF$XoKh4`1M9&<'q>eE<SHdgm0XQE$rqd2hZ2RS&o=%W)>bUPZ]:)5k([`>2J/3g]X]bhS-S%A2[!O).0\@,')mJbf#lKS4(qPEHqoi,i&h_2"fD6j9E%Med&sH(@sXSgeBU7@E"s,&&ILf)#i>laW&r\G-8LUkqmG?V&Er1IXIO*[!@+PTj+d&WF&qS$h1;>MI`1+]BaM`g@^\Tj'q;R\ChZ)TfJdN:ojjdW>N"ehO''\eoUTlN7fURG*``57nFM.4`#68jOKN'ZU?6@)ZI!Be>IA[#;M)R+dK=!lfZ]/Ja3$mF7lBX)gBF9`#3td(eNtY:EaN#nGn[CSgd<!F7#8.+bgYob$8rL*LU*8rdl$_R\ib(:D[``'BT?6=@_k5Cu%KM%OEB#QE0""Wd*8iIR+k]l1L,Q>tX0`bnFL,-b18"[A$j"]noALI(J^JJRl,DJI2L4(TY@#Ec!m;2CtB*HdXEnV0pXW![iSb$r`'[_/F1<\_l6X/n*8_3PuE9t<=f?&;s_<Ff,s1iJhRRb8TG0<<$_Z]FR)li$Hj%R8")!en[i!^/"4hP2B*&c;`u['$HQ/%`^S0dsq)mOX8$UZi,?q!i.60qP#S^-ho@B^$8WrP_3OHI#7:#qPH?C53^+osb5[!/,.o=CN<s_UL+AS_,XeZ@^"7:7UDQD,b5LRnDf5eAeRAIEBuX5-1I,7i!7&RM-fF47.]Dd#Q;_eGBZ%ghC^?K#?]Wmn95&a]4UHYPd6:JhQC>'j1+jD5BAk$rYO`rAk)EEYP,6>qB+uSh1gAS0EqA;d8b(ejXoV-q-^M_1.h,Wd9?fegXOaQ9ZhJ-t]/'PcS8q6RB!3AfI9'IY(%0:Ddome5m\".L41G_+$4jf4ZjNb$&P')A99/]RRmWOO]I.U8@8lo`6Pq,>0`6H7&?f$L`1Pg*Sj/duiqon=oWt>%k*N7oesC;;@!:%idZVT$5JIqj3'j[RQRacu3;21HIg@C^SDsAmmA/gYQ;7i=)TaZ;+RHqd#]jG%c_K>$Zm7Xl-l;rG$4)7d#pnS&&t]rW[S4,4-=pJk3#rY`dtV$/N=I\+>[f1Onp6iA42G.@Ma8e2GE`go^@7d)`b3WmHPIURG`;V09W[>-"cr/PM;,'lP/$l[qMq5a?3&:n]2[M(s/^.Fc/?f^KFah::%j3*uk8>*t5Knm&%!QV:6;\Dn1MbRE%K<]&F?V^Tr^rrYS?$-3~>
 endstream
 endobj
-11 0 obj
+10 0 obj
 <<
-/F1 12 0 R
-/F2 13 0 R
-/F3 14 0 R
-/F4 15 0 R
-/F5 16 0 R
+/F1 11 0 R
+/F2 12 0 R
+/F3 13 0 R
+/F4 14 0 R
+/F5 15 0 R
 >>
 endobj
-12 0 obj
+11 0 obj
 <<
 /BaseFont /Helvetica
 /Encoding /WinAnsiEncoding
@@ -6269,7 +6262,7 @@ endobj
 /Type /Font
 >>
 endobj
-13 0 obj
+12 0 obj
 <<
 /BaseFont /Times-Bold
 /Encoding /WinAnsiEncoding
@@ -6278,7 +6271,7 @@ endobj
 /Type /Font
 >>
 endobj
-14 0 obj
+13 0 obj
 <<
 /BaseFont /Times-Roman
 /Encoding /WinAnsiEncoding
@@ -6287,7 +6280,7 @@ endobj
 /Type /Font
 >>
 endobj
-15 0 obj
+14 0 obj
 <<
 /BaseFont /Helvetica-Bold
 /Encoding /WinAnsiEncoding
@@ -6296,7 +6289,7 @@ endobj
 /Type /Font
 >>
 endobj
-16 0 obj
+15 0 obj
 <<
 /BaseFont /Times-Italic
 /Encoding /WinAnsiEncoding
@@ -6305,12 +6298,12 @@ endobj
 /Type /Font
 >>
 endobj
-17 0 obj
+16 0 obj
 <<
-/Contents 18 0 R
+/Contents 17 0 R
 /MediaBox [ 0 0 595.2756 841.8898 ]
 /Resources <<
-/Font 11 0 R
+/Font 10 0 R
 /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
 >>
 /Rotate 0
@@ -6320,7 +6313,7 @@ endobj
 /Parent 2 0 R
 >>
 endobj
-18 0 obj
+17 0 obj
 <<
 /Filter [ /ASCII85Decode /FlateDecode ]
 /Length 2506
@@ -6329,12 +6322,12 @@ stream
 GauHLgQL;L&q-CUkjjq-da5X_Uu^7`Wbh$YS]Yh1Z1@#n%LJ!]OFRC_,:d,nDLeN272N,nUo*Jr&jU[$FSETP"7Yh.YlElD^jh[>l61[#K]NPmR5]c[cgZ+'p\S5X18f\WQaH4pfFJ`h!6;k)RMH%.of2K)7CWUGRX'>nV_K`<R!a8h+-c]IEWc(*L/n/>WU-m!n0Z'i5<":L+1%EPLFP)1WG;2bGu.BUGUnYI042Te1G$;9+GQJ>a9s4W4nS@i>;HNi.t5;DF\@n%%5(?V%te43&30%Po-D9I?BFsHHj3o!C1f_4&$I$@#U52[S<0.l?3p#*qMu&/nq4#&b]&43K2%WuQo^&aA1YhH)8tOhiFC3?Kl\8#&6RPhF`#r0+e28XCWJcaQ.]c,6,B-q,r\N6[ZnSGB=ZKaNQMZ6mpM,Oj)e/68oZ28C'T##\.g!sF2?lD7X;#F4\Q9n$Xq62'6!uLA:RS](MdZei_MPM86j:'W&EiPj9i2mC(\:M#&UHB9]YOtP]@.S-?cWP/B>^\bKJb9>6/;I(R;:<;io9XDC0jRS)AnaOqflo7"C+Pr+qpDToGU<)f,r:_Vd>^e8W\!CA)4kAZ:$CgsD9HHc"^/d%%,CQHpE$mg[U8Wgu'mV6ek*PX`"N.ID_mOfP@"Qp)_H!kT[i"m(p1"qsL2TNMHE=Z^>_EFlC??j[@.'Pj5Yl\r,BGnP.Q)4PgH\G&-N:$3*HqA(D]!h.kU_K8OiUJajZp]dMq^#^Roa_QlTYH4dR^1*IMAaDPV7g=Q^D96o#6FNUV$kr#4f,.q&Ne',[^1$b*nD?q,Z5VKlJLbU*WQI_TDk()$hD;-SDPtRk?2Nc\PSN3/'F_O5>*g^G:`$]n$ClghbMZ60Wj&FJn.G8GlRS8Ml9oH'=^qpVaK!m2J[-8L_87DpW2-+)<'?at:34WP_0%@LKa_/#isqGSQpp@dNGl2q,8_q9=`T'b>\1)'edX8Lq0\0!F"E?[RIa)lV&2:.MK>/jr31f*7q+_5.&JniD4-eXeK^E?W/!@B[G;CY+B\D<&_eo]8.TN*1o3jEbS2n;2qS+7W=%o/A<I9cEd[W*Fd#g%o!\C3Y8R&Q34&lqO\tDF7CTZl=EIKnkT%2DqqEj'm25Ck1lAT]NC-5YFf3&,',UCBNaT"/3X)u=[[Q;1b-@&*k;X_s\OFBJ%dbg<hp?+0heEI+*JV#Z,7f7P=EKED&L^[iNU,mB7#Q:$_4_g;;jYUSB"RuYA4^o#E/&>j^@Ch^Lf&fcgp"Y<M`i45:0lJgrGdJ)$j7V61a4=0`&o+Y_qOGX'i"X_<XX0Ip"g5KLtYaR;S%MqpT$(cr\p@,fgVD,an6]U(tK9SUheE8dIMVpQIIj8b&8"RFP>]jL4IfD@M.hlA0rIRh=T]Rig,'s',)ZB(\QkHmai00gN)R+XCZb8mjI%M@&P[3)37Iq'fQA]?M"8IRU"Q$L']N!?$5Ir<.X4X00[)Ai4WR,`e.>)"P2G1LUbSXR`0$fV-%_;[t8RknHnKO%2M0"KD)Z'pUP#0C7/$>fJ*IH:KP9iUH0MidVj<]6seenY%FQaf_VOX_(KgqjJD)b`f6kC\0qK^RkJ0(@AcC(_gU`q0kLGehk=3Ll"25_*&ot)>K#K0L(\tJV.#=3(5MTro.fsVoN(i;lEAs7-O8e/BUnTP3Z$=tFYn<Zp@)n'QRC[&2sd_CIGuqj+^2>=l4"i,8?P?mGf>Q2(!l,rpM[39jmCWKl^2.*h@"@=Gk!KTcI-4_QI&)hJ"q;4A58Qc]LB^0=D7Du?K21hAX-^um!7q\aV$]Df%aOFM!hH^HgKgdKDYpQ_@`a%m,/:),U\^n;-l_fa(O33C_&rf1m$(TXP5F#C+"ARGX]LL+sKRm\)J!Z^uIoUVpNNC?%]U[Gh27(`4O&96#6<iUD(]YN_:KGr3*&Vfl\!H[XSI8+1_jM=X6h?$Tp0TOKc<+<,n`5c)AQ*,_+OAEaUe]4aZaCjoun#ZLCPsORb[$<:FO,OJpb^,F,2(:C$Wm57@mtMA:KN9#B%_#.f(M?SD$m;'X]:K%\>:2Rmi)VAm5PFHkVjF>?2^gh-Kn`f)O0`73W)B#EjX:4&nmUImK%SJ9:7VcYS'K"fjdh,g>/XH\*$6`)*27$ijV"aCfHeaY#A+Zt7f-Gn0TE,Zue\GN4Kqs%r"hZ!%Y`"hp(NP9b5_c+YTK`=6nH"e,6W%a9^s8(arDID3LbBbh#kco`#G/ta8p]n#$_8O0S1PVDP*=gd>r@j,Ti?1>X6WS1:#ORFu(hMfJ&0JM-X!J!\p:2-LMK(=`T=[CRL4^XsEWc8QE8"q(cu&B@ZU`k're?aKPbj@Sabd_B?GC*r.FM`JO1Js$;bFWrTYEc^he7>+LAi)4RZHU)Dfl!+\,)Z8.l\,0J_/q6faj249=e]:'=-"8Df*6K=1cYR)NiD4St&Ee/fCZ?3_i89Y4rgGoh1"'2=gM]:KeS3fC@>JeS0X3bF0)DpO?%+DpWJ)h#.Q?n0Hl~>
 endstream
 endobj
-19 0 obj
+18 0 obj
 <<
-/Contents 20 0 R
+/Contents 19 0 R
 /MediaBox [ 0 0 595.2756 841.8898 ]
 /Resources <<
-/Font 11 0 R
+/Font 10 0 R
 /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
 >>
 /Rotate 0
@@ -6344,7 +6337,7 @@ endobj
 /Parent 2 0 R
 >>
 endobj
-20 0 obj
+19 0 obj
 <<
 /Filter [ /ASCII85Decode /FlateDecode ]
 /Length 2471
@@ -6353,12 +6346,12 @@ stream
 Gb!#^gMYb*&:Ml+bhK^e7+GSoj"B%"=`f4$Z>Y#^-/)BEM69D$n_`dDF\cgV;/Dm2&k=-++qKGbkDX5.M*I=*)eB#!ho#=q$S37bQXI@Y$hp:Pj8INSX/]`+%AD`^pC5HU6JmCXT>cZl=I"$T2uM#4/T=t4[(O2,q[@)o5JiaRr8<]h)u.4tj;0K%,3A=1`Z(PZZ%,V$j7"@+C+5#K*bMm8a;'*Hj+hjIi;Nu:s%/F<507gRgG+?[PJ479#H'B;.k[bAi]BU@KUr:[ko2VX&:qW/_jpT^N]/NH%-B/Z::%6r`WZj^IUE;En%k!#)BKS4Q@GW3qPege2E%r@*2i(5KUs3qLf`dC[YIWbqpqmR2t!(30UuP+pC@_ufl`fP>tg5[\[C-a9^O-Lj!,#/\8WO&XFY0rGI@gM5TB=oecf6U[R-UY@<VC=[nj].Z7@l&DZ)fA$]mspqr:HQbOJ6ch$(PIm^t6&qsDB38'Kh5lId8.JE7[*Z"Nt\J\`[EHX9sp*UFW7#IQ.(#ti!f8I7tK4dO2'O$OI7/pEY\25iA;(+D@UeS'b:cAH]SE\2J12+W:HQpR8nh6FYpf.hWr`=@',T$nA"KJA.MktFOk1.NHGdJQ;W";E%S2)'"_nId12Es*hH*YCJ1Ct%C,m5<1N8GKa7%RVqomGSKq`5+Ko6XWZ2T,SH=@VFM@A9UOOWSo88gnl!e"^\Dq()c&f`bj^'lCi2*&WL'n`(#]O/1G]@4!4d.f4=.OUW6eu!o"ob6RI9P+Z/$E%;=Ind<'ugqEY[.@ibI>/.Md'5]1h2YdAMULDcsAi(koY?tR<rjQYVDTt6tnLo]]7WaMZ=@E3sE]TP<n&rsT./.d!C[5j4EYsKc4$<Y-t!U/-/@XK\nii>6+;=AG:HKMPh)*U%nq(fd.\m$Q0\st'`<-cTP92*E,HL3802L+Te2scWIHAC9s7a(WNQ_#cNPKa;!-/0o30pP-X7H`7\mLI(O4j!s+@VHHj5CJB5)^dZ'T\lYVLYHkUXafj7a-@7hR(bn3rqYppOt#$@j<A@q0O:RF]u)8(W`+>t/FVf2nm4Df)K<JqF3EpXGH@21-M,25%ZY;f?JVZqd9VUk3*d3o7bs$QVUL9$FT^'Y:'4hQ%8IEja*BifZT"([^0cqHSJTMjn\LeY<k`5lMpSUdf8f&3%fD7aPAppAGhQ>fP/mO9Au:S)Nb>5tjc3cHTeh[rqW92<C:WKc?E[nRL\^2iT/:i>))_/tZemIH,l=-KI2r+nK#t:Q*AMou4YuuS5cg0G/-@\*MNk;d*2iC."o<AI>,V.r.+g0f-h]j:YKM;jETTTQ@:+j<ZL:24HuN:R8o.HNOD\]Xaj]?Z<ceT<ef^(2#TtL`5=1*E25J0+i^#:kUR*B2m.JNmD72^^#dc5M_d:8OORpSI8Br>'VkhW]./k*kea$VZ<Qi'T4O`"3`S?I\!WB#3]iuV"Yn6G3qqhIsfqTTpCf;r>-(0A6J;!'Q:E+QdnPcOl+QH?tEJ6Vc^Eb0sfWFo#>l"r0;2nTMPS$1.=pUk5Ghgl_BMR81.53<##-jVh`l\ZAJeaHjU1Nu/"Sm45a(rLg)K5bR,37f<I?I`b'r.@V97be>V8pM:Ns>,pVMF^SKoCl>#GA*V\98oUFrLcOqNI`W?&J\LD%f&r7qa@Dg"auG2+'^&oCu48`?%mTE6kL3lS&BD8`lDOOp[+YP,$<]\O8m--nV.J7&c#O>cYH+o2o(F.'&W5',)P8d8%X?`g-DKB2CCEe:lqJ%[#9OBrB,fb+k1^D9'O<VJE-+\m;#'D`#_-d<;#PNMbCrX!?49X'dbUmBl0E]$Yj_-a,V.="0P`WCM)ij&fsD0eV7D$W8PgrGBC$Nh]W-?$:mcZ0&5=Z6'_lIAq3[17V/Ca$`>Api4Dp_YW"U6q_)D+X/7;+"&80ZPn0Y!OQDqB*tm\iRgV:$XJo/RuPKDd/G2hS;g[-1,ahlo_Cm`qVgN^Z")!JA0=`KH$`S_CP$AhqhT(+<E4"`p<DXY=^pjSWKKE=B%g.Zo5&pk).rf=>Js7ePrZ:SlC[Ip[,pJ0'p&7rX[K3M6JCI`kCn%>UU!B(3mZ!J(8PEg\?';nr"D)9KkCq0D'!3b<b3G!:OZ$j?&h=4W"`Ki6qPXte5"Lu'+_I9H)u!N,Z+h8oVdgt!K0q@ru2#nr%^uq'E0i(:'UMmg[RfHpp["Yoo+pZ*6UEV\^mPE-EJm>a\m-BTMC7ea[tTc-9==bgn/qgLs@e+EfB6&IWL!Q,#W':$a>_LVFOLF\%FW+8(?FNA+c'9Am9#u/m#a<-a2P]>#ur)Pgl;XM`ff^'W/oubL0.n@%43s8lr%0MZred7Coh>c=98Re.tni3D]=W)/u;$V-%VD]*<TGN3M[7^e^(VWIfVl[Y_XagT$-`hM1='?Uo'Z;eYhm#sf\8@H).?I5%smEP-AYE$0Wbk!2NucPs:S8S*R0X8`3C`][`~>
 endstream
 endobj
-21 0 obj
+20 0 obj
 <<
-/Contents 22 0 R
+/Contents 21 0 R
 /MediaBox [ 0 0 595.2756 841.8898 ]
 /Resources <<
-/Font 11 0 R
+/Font 10 0 R
 /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
 >>
 /Rotate 0
@@ -6368,7 +6361,7 @@ endobj
 /Parent 2 0 R
 >>
 endobj
-22 0 obj
+21 0 obj
 <<
 /Filter [ /ASCII85Decode /FlateDecode ]
 /Length 2305
@@ -6377,12 +6370,12 @@ stream
 Gb!;egN)%,&:O:Sm.@,H`b'InfXJ;G;g0u7a)U#7!gB:2La3Z7ZDrA%(Z7`XFea*$[,](?D@>H3H-Yj#!?6M.o/eB$I_1AZf+'bmgh5R?Q4N_^i5>N4pPX?.X9W2bXS]-8G2gl"Q[cu<?Js>aK?ss82g3"./_^T+!:C43IJj/TJq'PPJh)(AF7r92H-@_MGHp2W4QZ'p'GPG+U,">.GSj]o?7P_HV@RV%_#64%J#aZc]9D8XY%L9'SSlO_"i%D'$Qc6L&pdRm`IS8&JEMg-(kKJ2b8uEkY.'qJNlF7b?@/tUYB+/'!'cFDa9_sYEc#V"$JAW?XFKM\ESQuCH1_k%%c#],\7.+3"5G0i)%XVZMgBQOGJb-LS>cSIgnS`Sd;<g,4Z!XoeNmEG*>m2<#4C<T&,M[5LAq&V7Q9d_3;/GUlYA]6p0WsiOG\tXp,ufbB,g0me#ljJeuW69?+JA^LQCe-et'S`[VbN7"9Pp"/?-.4)d![D<AgHmQVu34'Sho&mI%Q,_9*Bd9BM*J7'VF+q%=GV=os-ST!bGEQ7uf*Tb?g],SRl$3Q*>B;R$k$oC<MbR=^su"b$HO5:;%\m$A^DOD7i_jZHV[,d=#9.3j`0[Rj5NY]aFBa%'N$hN,2`<Rs)qh&,J1Dk:E"jr)%!K-99?Ptr;nh9#2RW+SbO+-4noL6uT\7lpBr#c0@d.8@W@rk%KhfmNEG;S9\pKU3Pi786=DB,p:?e-V091u8bAIo7BN+=Y9Y`(DHU/1!=sqA2ZQ8`rDbN%dekbS?:#3Z36c18/aMHT*W1d5)RPNl\Z]U"cDi0e9YO.Mt3,?I]^p^>+CuTD8H@Kb_-nJ2I5qn(gKu,?T'O\QEi^eWIc$L6[[?<mtcP4rgR`g8/EP7RM$jh4;qsYl"BBJ,Ap7X\>2R[afk"e:u7PCc);C!hB@.]eF2FD:X&_g#bMmk7#hVSn$;WjauM1V]$M@nh=8BSJSWCC1"^B%buk[i7jPR</elV+>)G$X*_5KBVB;8j:"(rT]n`tHOT"_p2J/=%7LjSTUppQdRkjV958RR+B)!BcQm/Ui(-a:?qd7"bXL3]W<C1=>A-$SjLh;OU2nQt9][Xb`YK;kFU_q"@\bQu=G!fo&p!hBo7#>b)&[0eLLLR1atQ@HV(`CWG4W"`R*N)5&8jr(SXGt8]4^Cc7,+0c9!n\+iZP*;7(#mW1ElNcn9dIHqMmX"l&#@)4<+*c-gb?r^`-h_GX<IDO,sl.4c#2PkQmc"pHSPkp:'N"VAb>JMEd97&/;`6O1]#XC)0_<c4"6m>jOSbGH;Xpp>jb\#aBF.1$=.fM.oP]0OK0iFhWFLU,02PS@kL!P:<=a@i-Sc9mcd[T135&7H>/(Wf.=a"i=fR30NNB!],F@PH]n`IrpUM3DR_jj9fp,Z;tpVJj83<$'._%M9apLFe$qu^?\8Rr_TTYbhS@,FA3oeG)!6O$lDV'%%6ft!IqH5<ZUbNrWtsk1#/#WiYb=f!3G_grJKZF\hc>:a50+ViV<*IZ+jd=HOFinENsS4s*SCl")SR343.#Si3m%/dlYhmMBlBm*]XgH7J\MA'9jWc.m]>tGp.L142%XDnl;;\Q6>#VF6+"f;KHOf)c^=CY)6<QC&ZMfP2?_mbEN?=M2U(QSnN+ib"8#f9Pe28L^OKD#>:sF[,sd9d1V)Q_anPOrL4M-SAJ'OYj<G5(_Z#15/%%P+Z%@AYXp>2IsQ?<<s*S.WeJ,O8^ZE;kSr;"5m9Wp=m3#;FYRIl/oZl/jp"ei:E@^E4;eZjmK>AiBS*4ip,S(?Z><J=X>0W:B2n+rZFQKLK%TK+[H/(@G#L<Ja-QLH-PLoSoHdPOKlTQ//ES5sP)pR5PdR?o`H5`D%:@eS*CSj')iO+Q<3SJ_[@mAs%*7,N7%)Yd5YAso,I<sD(lq75JZl.!O1Fd%?'1d@CM8`=RuNED]&K58"8e4W@M;(M/%h`h:mfk*\iJ(%)q/4dGL0\7e?MJe#b+%44Bt&3f(dUKSJ0R'@ee0jX)))\[ang9:o"JM^/:m26"4ZQe)TA&AW*6*,*)$!lu!81s4:h?]@E1;6g6cZU"Md?Uqr`>dT]CAF9mSOcn?olQ4s3+/7t&$Y+m<RoU1R_b]VFh"rBkVP3JeL-n\4[)1r/7nKDm4(^Oksg/K/B-M\X6`+-PGFT#]'*Dd/JD6RpPFca>=b?*oY7;,tX2q@[A3k'i=m_TGD_ec7=m07Al"mI`,G;NsnOl]7gf,RTlQ\ci*dX9#;C0Yg97:UW*d`-'<(gD*&X*,Y+Fp>2$%(ItOfNegIT[F$Lr!Tn'^Bs~>
 endstream
 endobj
-23 0 obj
+22 0 obj
 <<
-/Contents 24 0 R
+/Contents 26 0 R
 /MediaBox [ 0 0 595.2756 841.8898 ]
 /Resources <<
-/Font 11 0 R
+/Font 10 0 R
 /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
 >>
 /Rotate 0
@@ -6392,7 +6385,7 @@ endobj
 /Parent 2 0 R
 >>
 endobj
-24 0 obj
+23 0 obj
 <<
 /Filter [ /ASCII85Decode /FlateDecode ]
 /Length 2116
@@ -6401,39 +6394,1130 @@ stream
 GatU4gN)%,&:O:Sm%]`K)1kqrO0.eC3bcWSe3<\^+s@7I0+(6R<kl?Ri'jHD$dFW#QA>\[^qn^19/&-ka7TB[-2N$bTC*ONMrmZANoA@_/)AK(IU4jsCLmb[YA#q#P6E#&fACVF#-c+ZlPX#:"cR9<0U_7=1f%iZrKck_re!]e?-s*W`&!b=,2mWRU#Bc%kO^c.3Sc&k\]eVWO0^p9B-lAGn`,B82#fl5O(o:*R@%hn[cn<8\dql4gtmj*fMFZJZOPe&>al_f2R)rV5eq3'f:I]d#4kOgg*+B%G*ZR,m<I]:^>UloV(9_G>`tVC+5p9![Cn+-L4);@DL*1OCBY4;$>eU?0hX4iD?\VME<GZq)bfj@GpBu.^`N.5mI?-bk1_,b@IB7@T(C6ZA*Y'.%tY,54mspS[XG*4WS(8"?:U*V,KT00VkY2%Tf/Q8eiE.q(c*SgI_'Skp![6spK*f3\J]@2^ga>RZ,tiEps2Q'T(8sF4q61W'-R5o^[Z3Vnc&:=_j0JV?b[>#mJ7@>^f3iFRH+Au&hZQrb2$u8XuWVKJ/%<'8SB,V0uQLkcXA#,9(Q\%&DF)*pr`jk`+'WC<CpClY&et<Gp0JYp(LG(!Z17-h8?<B_ibrdYd/Xp3`bYSX?:hj<d17!))$jcW)uG>:fY>_$Xd+nYQ-'a+QY%`<P%+O<]l".Qasc),0/'7,S&ei&J0k@TIgKPOl0p)!L8HgT'T2rjk/%EnjXa5Rk7MC!GWYKk%Ig_Z[[jm;^#_"9:I3^!K%eu"jg.MX3:TIbU$?l;CP:NPr'0W0Um`^kXeEu*`Q/qlZe.[+lYYgei_WIIen0L[`b(%c;G]!Q..TYGm6cQP6QB7St/9;RF>%,c_J\cIl\Zu.$sk.]VLPF;1maM%qSE<BI2'Si@]BmC[CXd"("rr9eKEg(Qmc@.kVe5PJ!(UE?3E2-qZmP-"'Sf(-C&Z"+QJsE5<1p$ek/>J(J"%_974U3kX&hi19)HL[:Uq.7,+f;:,dJ@L_f<ej>La[^h=tcH-O-B=.O-Q@fcRSifB4:;]I"ihuk.-a#d4gRn8D-<]fU<I:/:R?JK?dl!_b,7q*Gl,qPBc>PCu<Mk?pk/C8eDij^8#P@-i-cgQVnuSL38Umff7/`;::`1hU(JUITGf<nWl=*=q&AA8g0_1<M/S)RIi-;hZ0lqZ$?u,toXoGkJhZ5L"V)5l?)=k-`eW+.E>]O+9C^%-/(.%X9@da:lH['59k3se85qlFh<`tc&nN2lF[XKAnR<9Q3s(#FrV>@YS-$3=tTrKQQ(TE"Q8tZR)qDI@>-s>_eb;LdL88)&6jDB@]'?W<IK&q9@'TX?m$NCd[Z%2HbkuB#eCGCif6Ms;=&(9dm'NrQ>1.5snjY>YZ4DK]eTqkWpMAOeo02WT0nUrkH7$UkcV[gWOIcWi]&T7[t1W;Ec7"MSlDr"ZhLB\CA9Nl!O;Fkp3W_Y7h=!FBIr_ZZk"oR)#WJ$R:X#5V."O*2Vdrfj:F0DMNUGYK=6ZnuULC!j?Qap:,XN/8,UOHh:l.V=!8s3X.?<Net=T9+Fj7j$<Pp4pG;\c.1,#jJX>'2!fhTo/Te)7%u!EbAfOG>:5\dFWf+kNFC.nb$Ic_3fi''1:`rl"!?L#H7W]E,_FIe\;AV/NsbOECLPX<&&OhRiJPRndh$=gr'Kh6nE\$om1ICGH.gSelH]1>aYCi2HUF<7@ml8[VoHI1aqL;)`T/I07qWl\<]d03\3ah9_VV)j[)+DWo<Y4YYm#1V']T<B##3p1d`Q6Yd0`^(!l?_&JoCf/q?q8o4A^L?8KN%cqV!jU!RIUTW;TU#aaDA0I[I(g6]UA`agX;Nq_[I)ZGee!p/Pa?"1N18_ss%bCFo$!>\W@Jphje4D,;ku[(2W`3pq)MW?084Q2[?)#\TM%$4u)cTfKdRNe?JJ&W]=Ejdj6He)`8fKl2I9#O9&[u>_rF!*Ygh^-=`2fecCF"sYh"QbCcXY8m)/bP;Nk/lm&*3ZQmV<#ub4q/Ud.?e5[=`"YB?RYE]RO1kj6rNZ.ar#)P)3'O@F%HiG'pFnKmWZKV_cJ&VjadGi>g9eUZpXeBsX!rhe[74A%RM6/45U*8X[2G`a%gO?2P5b!]0H~>
 endstream
 endobj
+24 0 obj
+<<
+/Producer (pypdf)
+/Title (SE Deliverable D2 \055 Ludo Game Platform \050Front End\051)
+/Author (Power Puff Girls)
+>>
+endobj
+25 0 obj
+<<
+/Length 5859
+>>
+stream
+1 0 0 1 0 0 cm
+BT
+/F1 12 Tf
+14.4 TL
+ET
+q
+BT
+/F1 8 Tf
+9.6 TL
+ET
+0.501961 0.501961 0.501961 rg
+BT
+1 0 0 1 56.69291 34.01575 Tm
+(SE Project \055 Deliverable D2 \055 Ludo Game Platform \050Front End\051) Tj
+T*
+ET
+BT
+1 0 0 1 513.2307 34.01575 Tm
+(Page 1) Tj
+T*
+ET
+Q
+q
+1 0 0 1 62.69291 749.1969 cm
+q
+0.086275 0.160784 0.301961 rg
+BT
+1 0 0 1 0 4 Tm
+/F2 26 Tf
+30 TL
+108.5979 0 Td
+(Project Deliverable D2) Tj
+T*
+-108.5979 0 Td
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 723.1969 cm
+q
+0.662745 0.509804 0.188235 rg
+BT
+1 0 0 1 0 6 Tm
+/F2 16 Tf
+22 TL
+149.3929 0 Td
+(Requirements Elicitation) Tj
+T*
+-149.3929 0 Td
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 687.1969 cm
+q
+0.086275 0.160784 0.301961 rg
+BT
+1 0 0 1 0 10 Tm
+/F2 20 Tf
+30 TL
+89.39488 0 Td
+(Ludo Game Platform \050Front End\051) Tj
+T*
+-89.39488 0 Td
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 668.1969 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 12 Tf
+15 TL
+2.708882 0 Td
+(Software Engineering \050SE\051\054 Fall 2026 \174 Team\072 Power Puff Girls \174 Version v1\0560 \174 18 October 2026) Tj
+T*
+-7.208882 0 Td
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 653.1969 cm
+Q
+q
+1 0 0 1 63.77953 571.1969 cm
+q
+0.086275 0.160784 0.301961 rg
+n
+0 82 467.7165 -20.5 re
+f*
+1 1 1 rg
+n
+0 61.5 467.7165 -20.5 re
+f*
+0.952941 0.937255 0.901961 rg
+n
+0 41 467.7165 -20.5 re
+f*
+1 1 1 rg
+n
+0 20.5 467.7165 -20.5 re
+f*
+0 0 0 rg
+BT
+/F1 10 Tf
+12 TL
+ET
+q
+1 0 0 1 6 65.5 cm
+q
+1 1 1 rg
+BT
+1 0 0 1 0 3 Tm
+/F4 9.5 Tf
+12.5 TL
+(Roll number) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 147.7323 65.5 cm
+q
+1 1 1 rg
+BT
+1 0 0 1 0 3 Tm
+/F4 9.5 Tf
+12.5 TL
+(Team member) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 6 45 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(BSDSF24M004) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 147.7323 45 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(Zainab Tariq) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 6 24.5 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(BSDSF24M022) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 147.7323 24.5 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(Saneela Aziz) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 6 4 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(BSDSF24M034) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 147.7323 4 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(Hifza Zia) Tj
+T*
+ET
+Q
+Q
+q
+1 J
+1 j
+0.721569 0.721569 0.721569 RG
+0.5 w
+n
+0 82 m
+467.7165 82 l
+S
+n
+0 0 m
+467.7165 0 l
+S
+n
+0 0 m
+0 82 l
+S
+n
+467.7165 0 m
+467.7165 82 l
+S
+n
+0 61.5 m
+467.7165 61.5 l
+S
+n
+0 41 m
+467.7165 41 l
+S
+n
+0 20.5 m
+467.7165 20.5 l
+S
+n
+141.7323 0 m
+141.7323 82 l
+S
+Q
+Q
+Q
+q
+1 0 0 1 62.69291 535.1969 cm
+q
+0.086275 0.160784 0.301961 rg
+BT
+1 0 0 1 0 6 Tm
+/F2 16 Tf
+22 TL
+(1\056 Scope statement) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 437.1969 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 79 Tm
+/F3 11 Tf
+15 TL
+(This document outlines the requirements for the front end of the Ludo Game Platform \050LGP\051\054 the game) Tj
+T*
+(platform component of the Ludo project developed by team Power Puff Girls \050Zainab Tariq\054 Saneela Aziz) Tj
+T*
+(and Hifza Zia\051 during Sprint 1 of the Software Engineering course in Fall 2026\056 It presents the user) Tj
+T*
+(requirements elicited from the client and is organised into the following sections\072 the scope statement) Tj
+T*
+(\050Section 1\051\054 the user classes described as user personas \050Section 2\051\054 and the requirements written as user) Tj
+T*
+(stories \050Section 3\051\054 followed by the changelog\056) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 370.1969 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 49 Tm
+/F3 11 Tf
+15 TL
+(The client for this project \050played by our teacher and TA\051 wants a digital multiplayer board\055race game for) Tj
+T*
+-0.050308 Tw
+(2 to 4 players\054 inspired by traditional race\055based board games such as Ludo\056 Each player has several pieces) Tj
+T*
+0 Tw
+(and wins by moving all of them from the starting area to the final destination before the other players\056 The) Tj
+T*
+(game can be played human vs human or human vs computer\054 on desktop or in a web browser\056) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 303.1969 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 49 Tm
+/F3 11 Tf
+15 TL
+-0.048124 Tw
+(The front end provides everything the players see and use\072 game setup\054 the board\054 pieces and dice\054 turn and) Tj
+T*
+0 Tw
+(progress information\054 messages for valid and invalid moves\054 the winner screen and the restart options\056 The) Tj
+T*
+(game rules\054 move validation and the computer opponent are handled by the game logic and game AI) Tj
+T*
+(components\054 which the front end is expected to use but which are outside the scope of this document\056) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 267.1969 cm
+q
+0.086275 0.160784 0.301961 rg
+BT
+1 0 0 1 0 6 Tm
+/F2 16 Tf
+22 TL
+(2\056 User classes) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 229.1969 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 19 Tm
+/F3 11 Tf
+15 TL
+(The front end has three types of end users\072 casual players\054 competitive players and first\055time players\056 Each) Tj
+T*
+(is described below as a user persona representative of the people who will use the product\056) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 201.1969 cm
+q
+0.086275 0.160784 0.301961 rg
+BT
+1 0 0 1 0 5 Tm
+/F2 13 Tf
+18 TL
+(2\0561 Rida \055 Casual player) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 121.1969 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 64 Tm
+/F3 11 Tf
+15 TL
+(Rida\054 20\054 is a second\055year university student\056 She does not consider herself a gamer\054 but she likes simple) Tj
+T*
+(board games she can play in short breaks between classes\054 usually on her laptop or phone\056 She grew up) Tj
+T*
+(playing Ludo with her cousins and wants a digital version she can start in a few clicks without reading) Tj
+T*
+(long instructions\056 Most of the time she plays against the computer\054 and sometimes she plays with friends) Tj
+T*
+(on the same device\056) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 84.19685 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 19 Tm
+/F3 11 Tf
+15 TL
+(Rida dislikes cluttered screens\056 She expects a clear board\054 a big dice button and an obvious sign of whose) Tj
+T*
+(turn it is\054 and she wants the game to tell her immediately when a move is not allowed\056) Tj
+T*
+ET
+Q
+Q
+
+endstream
+endobj
+26 0 obj
+<<
+/Length 6712
+>>
+stream
+1 0 0 1 0 0 cm
+BT
+/F1 12 Tf
+14.4 TL
+ET
+q
+BT
+/F1 8 Tf
+9.6 TL
+ET
+0.501961 0.501961 0.501961 rg
+BT
+1 0 0 1 56.69291 34.01575 Tm
+(SE Project \055 Deliverable D2 \055 Ludo Game Platform \050Front End\051) Tj
+T*
+ET
+BT
+1 0 0 1 513.2307 34.01575 Tm
+(Page 5) Tj
+T*
+ET
+Q
+q
+1 0 0 1 63.77953 433.1969 cm
+q
+0.086275 0.160784 0.301961 rg
+n
+0 346 467.7165 -20.5 re
+f*
+1 1 1 rg
+n
+0 325.5 467.7165 -33 re
+f*
+0.952941 0.937255 0.901961 rg
+n
+0 292.5 467.7165 -33 re
+f*
+1 1 1 rg
+n
+0 259.5 467.7165 -33 re
+f*
+0.952941 0.937255 0.901961 rg
+n
+0 226.5 467.7165 -33 re
+f*
+1 1 1 rg
+n
+0 193.5 467.7165 -20.5 re
+f*
+0.952941 0.937255 0.901961 rg
+n
+0 173 467.7165 -20.5 re
+f*
+1 1 1 rg
+n
+0 152.5 467.7165 -33 re
+f*
+0.952941 0.937255 0.901961 rg
+n
+0 119.5 467.7165 -20.5 re
+f*
+1 1 1 rg
+n
+0 99 467.7165 -33 re
+f*
+0.952941 0.937255 0.901961 rg
+n
+0 66 467.7165 -33 re
+f*
+1 1 1 rg
+n
+0 33 467.7165 -33 re
+f*
+0 0 0 rg
+BT
+/F1 10 Tf
+12 TL
+ET
+q
+1 0 0 1 6 329.5 cm
+q
+1 1 1 rg
+BT
+1 0 0 1 0 3 Tm
+/F4 9.5 Tf
+12.5 TL
+(ID) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 329.5 cm
+q
+1 1 1 rg
+BT
+1 0 0 1 0 3 Tm
+/F4 9.5 Tf
+12.5 TL
+(Requirement) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 6 309 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(NFR\05504) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 296.5 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 15.5 Tm
+/F3 9.5 Tf
+12.5 TL
+(Reliability\072 the game shall handle invalid moves and unexpected input without losing the current game) Tj
+T*
+(state\056) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 6 276 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(NFR\05505) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 263.5 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 15.5 Tm
+/F3 9.5 Tf
+12.5 TL
+(Fairness\072 the dice shall use an unbiased random number generator\054 so that every outcome is equally) Tj
+T*
+(likely\056) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 6 243 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(NFR\05506) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 230.5 cm
+q
+BT
+1 0 0 1 0 15.5 Tm
+12.5 TL
+/F3 9.5 Tf
+0 0 0 rg
+(Usability\072 a new player shall be able to understand the rules and complete a first turn without outside) Tj
+T*
+(help ) Tj
+/F5 9.5 Tf
+(\050measure to confirm\051) Tj
+/F3 9.5 Tf
+(\056) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 6 210 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(NFR\05507) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 197.5 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 15.5 Tm
+/F3 9.5 Tf
+12.5 TL
+(Usability\072 text\054 pieces and board squares shall be readable on the supported screens\054 and colours shall be) Tj
+T*
+(distinguishable by shape or label as well as colour\056) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 6 177 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(NFR\05508) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 177 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(Usability\072 rules and messages shall use short\054 simple wording\056) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 6 156.5 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(NFR\05509) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 156.5 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(Usability\072 the game shall be playable with the keyboard as well as the mouse\056) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 6 136 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(NFR\05510) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 123.5 cm
+q
+BT
+1 0 0 1 0 15.5 Tm
+12.5 TL
+/F3 9.5 Tf
+0 0 0 rg
+(Platform\072 the game shall run on desktop in the latest versions of Chrome\054 Firefox and Edge without) Tj
+T*
+(installation ) Tj
+/F5 9.5 Tf
+(\050browsers to confirm\051) Tj
+/F3 9.5 Tf
+(\056) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 6 103 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(NFR\05511) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 103 cm
+q
+BT
+1 0 0 1 0 3 Tm
+12.5 TL
+/F3 9.5 Tf
+0 0 0 rg
+(Platform\072 the layout shall adapt to different window sizes ) Tj
+/F5 9.5 Tf
+(\050to confirm whether mobile is required\051) Tj
+/F3 9.5 Tf
+(\056) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 6 82.5 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(NFR\05512) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 70 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 15.5 Tm
+/F3 9.5 Tf
+12.5 TL
+(Extensibility\072 game rules and settings \050number of pieces\054 board size\054 safe squares\054 special rolls\051 shall be) Tj
+T*
+(kept in configuration\054 separate from the interface code\054 so that rule changes do not need a redesign\056) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 6 49.5 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(NFR\05513) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 37 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 15.5 Tm
+/F3 9.5 Tf
+12.5 TL
+(Extensibility\072 the front end shall communicate with the game logic and the computer player through a) Tj
+T*
+(defined interface\054 so that each can be replaced or extended independently\056) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 6 16.5 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(NFR\05514) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 4 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 15.5 Tm
+/F3 9.5 Tf
+12.5 TL
+(Maintainability\072 the code shall be structured and commented so that all three team members can) Tj
+T*
+(understand and modify it\056) Tj
+T*
+ET
+Q
+Q
+q
+1 J
+1 j
+0.721569 0.721569 0.721569 RG
+0.5 w
+n
+0 346 m
+467.7165 346 l
+S
+n
+0 325.5 m
+0 346 l
+S
+n
+0 0 m
+0 325.5 l
+S
+n
+467.7165 325.5 m
+467.7165 346 l
+S
+n
+467.7165 0 m
+467.7165 325.5 l
+S
+n
+0 0 m
+467.7165 0 l
+S
+n
+0 325.5 m
+467.7165 325.5 l
+S
+n
+56.69291 325.5 m
+56.69291 346 l
+S
+n
+0 292.5 m
+467.7165 292.5 l
+S
+n
+0 259.5 m
+467.7165 259.5 l
+S
+n
+0 226.5 m
+467.7165 226.5 l
+S
+n
+0 193.5 m
+467.7165 193.5 l
+S
+n
+0 173 m
+467.7165 173 l
+S
+n
+0 152.5 m
+467.7165 152.5 l
+S
+n
+0 119.5 m
+467.7165 119.5 l
+S
+n
+0 99 m
+467.7165 99 l
+S
+n
+0 66 m
+467.7165 66 l
+S
+n
+0 33 m
+467.7165 33 l
+S
+n
+56.69291 0 m
+56.69291 325.5 l
+S
+Q
+Q
+Q
+q
+1 0 0 1 62.69291 397.1969 cm
+q
+0.086275 0.160784 0.301961 rg
+BT
+1 0 0 1 0 6 Tm
+/F2 16 Tf
+22 TL
+(4\056 Changelog) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 62.69291 374.1969 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 4 Tm
+/F3 11 Tf
+15 TL
+(This is the first version of the document\054 so there are no changes with respect to a previous deliverable\056) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 63.77953 326.1969 cm
+q
+0.086275 0.160784 0.301961 rg
+n
+0 41 467.7165 -20.5 re
+f*
+1 1 1 rg
+n
+0 20.5 467.7165 -20.5 re
+f*
+0 0 0 rg
+BT
+/F1 10 Tf
+12 TL
+ET
+q
+1 0 0 1 6 24.5 cm
+q
+1 1 1 rg
+BT
+1 0 0 1 0 3 Tm
+/F4 9.5 Tf
+12.5 TL
+(Version) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 76.86614 24.5 cm
+q
+1 1 1 rg
+BT
+1 0 0 1 0 3 Tm
+/F4 9.5 Tf
+12.5 TL
+(Date) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 176.0787 24.5 cm
+q
+1 1 1 rg
+BT
+1 0 0 1 0 3 Tm
+/F4 9.5 Tf
+12.5 TL
+(Change) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 6 4 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(v1\0560) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 76.86614 4 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(2026\05510\05518) Tj
+T*
+ET
+Q
+Q
+q
+1 0 0 1 176.0787 4 cm
+q
+0 0 0 rg
+BT
+1 0 0 1 0 3 Tm
+/F3 9.5 Tf
+12.5 TL
+(Initial version) Tj
+T*
+ET
+Q
+Q
+q
+1 J
+1 j
+0.721569 0.721569 0.721569 RG
+0.5 w
+n
+0 41 m
+467.7165 41 l
+S
+n
+0 0 m
+467.7165 0 l
+S
+n
+0 0 m
+0 41 l
+S
+n
+467.7165 0 m
+467.7165 41 l
+S
+n
+0 20.5 m
+467.7165 20.5 l
+S
+n
+70.86614 0 m
+70.86614 41 l
+S
+n
+170.0787 0 m
+170.0787 41 l
+S
+Q
+Q
+Q
+
+endstream
+endobj
 xref
-0 25
+0 27
 0000000000 65535 f 
 0000000015 00000 n 
-0000000150 00000 n 
-0000000243 00000 n 
-0000000292 00000 n 
-0000000562 00000 n 
-0000269038 00000 n 
-0000269145 00000 n 
-0000269254 00000 n 
-0000297637 00000 n 
-0000297838 00000 n 
-0000300356 00000 n 
-0000300433 00000 n 
-0000300541 00000 n 
-0000300650 00000 n 
-0000300760 00000 n 
-0000300873 00000 n 
-0000300984 00000 n 
-0000301186 00000 n 
-0000303785 00000 n 
-0000303987 00000 n 
-0000306551 00000 n 
-0000306753 00000 n 
-0000309151 00000 n 
-0000309353 00000 n 
+0000000064 00000 n 
+0000000157 00000 n 
+0000000427 00000 n 
+0000268903 00000 n 
+0000269010 00000 n 
+0000269119 00000 n 
+0000297502 00000 n 
+0000297703 00000 n 
+0000300220 00000 n 
+0000300297 00000 n 
+0000300405 00000 n 
+0000300514 00000 n 
+0000300624 00000 n 
+0000300737 00000 n 
+0000300848 00000 n 
+0000301050 00000 n 
+0000303649 00000 n 
+0000303851 00000 n 
+0000306415 00000 n 
+0000306617 00000 n 
+0000309015 00000 n 
+0000309217 00000 n 
+0000311426 00000 n 
+0000311562 00000 n 
+0000317474 00000 n 
 trailer
 <<
-/Size 25
-/Root 3 0 R
-/Info 1 0 R
+/Size 27
+/Root 1 0 R
+/Info 24 0 R
 >>
 startxref
-311562
+324239
 %%EOF

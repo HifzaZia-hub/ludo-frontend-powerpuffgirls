@@ -1,7 +1,7 @@
-# 00 — Our Requirements (D2 v1 + D3 v1.0)
+# 00 — Our Requirements (D2 v1.0 + D3 v1.0)
 
 **This is what we are graded against.** Source: our own deliverables —
-*D2 Requirements Elicitation v1 (18 Oct 2026)* (`docs/d2/D2.pdf`) and *D3 System
+*D2 Requirements Elicitation v1.0 (18 Oct 2026)* (`docs/d2/D2.pdf`) and *D3 System
 Requirements Specification v1.0 (4 Nov 2026)* (`docs/d3/D3.pdf`), team Power Puff
 Girls. D3 v1.1 (`docs/d3/D3_v1.1.pdf`) writes the decisions in §5 into the D3.
 
