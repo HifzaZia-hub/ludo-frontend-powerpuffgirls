@@ -1,8 +1,9 @@
-# 00 — Our Requirements (D2 v1 + D3 v1.1)
+# 00 — Our Requirements (D2 v1 + D3 v1.0)
 
 **This is what we are graded against.** Source: our own deliverables —
-*D2 Requirements Elicitation v1 (18 Oct 2026)* and *D3 System Requirements
-Specification v1.1 (4 Nov 2026)*, team Power Puff Girls.
+*D2 Requirements Elicitation v1 (18 Oct 2026)* (`docs/d2/D2.pdf`) and *D3 System
+Requirements Specification v1.0 (4 Nov 2026)* (`docs/d3/D3.pdf`), team Power Puff
+Girls. D3 v1.1 (`docs/d3/D3_v1.1.pdf`) writes the decisions in §5 into the D3.
 
 The backend contract (`01-contract.md`) says **how** we talk to the server.
 This file says **what** the front end must do. When code is written, it should
@@ -97,7 +98,7 @@ the default.
 
 | Topic | Our D3 says | Backend LGS does | Kit does |
 |---|---|---|---|
-| **Networking** | §1.1 excludes remote multiplayer; §3.2 says client-server is not needed, but the adapter "can later be … a network API". | Socket.IO server with rooms and join codes. | Treat the LGS socket as **one implementation of our adapter**. This matches D3 §3.2. Lobby/room codes go beyond D2 — note it in a D3 v1.2 changelog. **Decided 2026-11-21:** the backend team builds the LGS to our contract (`01-contract.md`), so the front end comes first. |
+| **Networking** | §1.1 excludes remote multiplayer; §3.2 says client-server is not needed, but the adapter "can later be … a network API". | Socket.IO server with rooms and join codes. | Treat the LGS socket as **one implementation of our adapter**. This matches D3 §3.2. Lobby/room codes go beyond D2 — note it in the D3 v1.1 changelog. **Decided 2026-11-21:** the backend team builds the LGS to our contract (`01-contract.md`), so the front end comes first. |
 | **Same-device play** (Rida; FR-03) | HvH, friends on one device. | One session per player; each human joins separately. | **Decided 2026-11-21: not needed** (the client). Each player uses their own browser, and task P13 was dropped. |
 | **Pick a colour** (FR-06, FR-SYS-01) | Each seat picks a colour. | Seat 1 is always red; colours follow seats. No colour field in create/join. | **Decided 2026-11-21: players choose** (the client). The host picks any colour, and the room's colours go clockwise from it: 2 seats take the opposite corner (R1), 3 seats the next two, 4 seats all four. A joiner picks from the free ones. The contract has `colour` on create and join (`01-contract.md` §1). |
 | **Who runs the AI** (FR-SYS-07) | Front end passes state to game AI, then submits the choice. | Server runs AI itself. | Allowed by D3 §3.3 ("or the agreed orchestration layer"). We show "Computer is thinking…" and render the result. |
@@ -111,7 +112,7 @@ the default.
 Also from D3 §6.3 open decisions: first-player rule, no-move message, exact
 roll, capture/safe squares, session score, AI difficulty, browser versions.
 Most are already answered by the backend's rules — **write those answers into
-D3 v1.2** so the documents agree.
+D3 v1.1** so the documents agree.
 
-Small fix for your D3: §6.3 still says "Add the group contact e-mail in
-Section 1.3", but §1.3 already has it. Tick it off.
+Still open in the D3: §1.3 has a blank for the group contact e-mail, and §6.3
+lists it. Fill it in before the next version.

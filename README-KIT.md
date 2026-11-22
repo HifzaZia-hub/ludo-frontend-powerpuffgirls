@@ -1,7 +1,7 @@
 # Ludo Front-End Kit — Power Puff Girls
 
 Claude Code setup for the Ludo front end. Built from:
-- our **D2 v1** and **D3 v1.1** (what we must build — graded),
+- our **D2 v1** and **D3 v1.0** (what we must build — graded; D3 v1.1 brings it up to date),
 - the backend team's **LGS D3** (how we talk to the server),
 - the mockup sheets and the agreed tech stack.
 
