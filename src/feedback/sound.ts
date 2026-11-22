@@ -1,14 +1,15 @@
 import { Howl } from "howler";
 
-// Placeholder tones, generated for P9. Each entry is [start, length] in milliseconds, and every
-// length stays under the 400 ms budget. Swapping in real sounds only means replacing the file.
+// Six sounds in one file, made by scripts/make-sounds.py: a dice rattle, a wooden tap, a swoosh and
+// thud, a bell chime, a short fanfare and a soft "no". Each entry is [start, length] in
+// milliseconds, every length stays under the 400 ms budget, and the script must agree with it.
 export const SOUND_SPRITE = {
-  roll: [0, 300],
-  move: [500, 100],
-  capture: [1000, 300],
-  finish: [1500, 350],
-  win: [2000, 390],
-  error: [2500, 200],
+  roll: [0, 380],
+  move: [500, 140],
+  capture: [1000, 360],
+  finish: [1500, 390],
+  win: [2000, 395],
+  error: [2500, 220],
 } satisfies Record<string, [number, number]>;
 
 export type SoundName = keyof typeof SOUND_SPRITE;
