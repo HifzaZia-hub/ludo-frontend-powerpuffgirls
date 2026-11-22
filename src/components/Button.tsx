@@ -5,7 +5,8 @@ type ButtonVariant = "primary" | "outline" | "ghost" | "danger";
 type ButtonSize = "sm" | "md" | "lg";
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: "bg-accent text-on-accent active:bg-accent-press",
+  primary:
+    "bg-accent text-on-accent shadow-[0_0_18px_color-mix(in_oklab,var(--accent)_45%,transparent)] active:bg-accent-press",
   outline: "border border-soft text-high active:bg-raised",
   ghost: "text-mid active:bg-raised",
   danger: "bg-danger text-on-danger",

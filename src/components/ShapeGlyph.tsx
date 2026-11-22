@@ -7,6 +7,11 @@ const SHAPE_ELEMENTS: Record<PlayerShape, JSX.Element> = {
   diamond: <polygon points="12,2 22,12 12,22 2,12" />,
 };
 
+/** The shape on a 24-unit grid, for drawing inside another SVG (the pawn's badge). */
+export function shapeElement(shape: PlayerShape): JSX.Element {
+  return SHAPE_ELEMENTS[shape];
+}
+
 export interface ShapeGlyphProps {
   shape: PlayerShape;
   className?: string;
