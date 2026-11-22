@@ -114,5 +114,4 @@ roll, capture/safe squares, session score, AI difficulty, browser versions.
 Most are already answered by the backend's rules — **write those answers into
 D3 v1.1** so the documents agree.
 
-Still open in the D3: §1.3 has a blank for the group contact e-mail, and §6.3
-lists it. Fill it in before the next version.
+D3 v1.0 left the group contact e-mail in §1.3 blank; v1.1 fills it in.
