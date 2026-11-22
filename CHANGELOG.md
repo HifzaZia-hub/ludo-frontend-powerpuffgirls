@@ -18,3 +18,4 @@
 - After P12: GitHub runs our checks on every PR and on `main` (typecheck, lint, build, tests and the browser smoke test in Chrome), so a broken change shows up before it is merged (NFR-SYS-13).
 - After P12: "Your turn — now press Move" once a piece is picked, from an expert walkthrough of a first turn, plus the D3 v1.1 change list and a demo script (NFR-SYS-06).
 - P14: polish, not graded. Three more themes (Neon, Forest, Minimal), the final places revealed in turn with a Copy result button, and an optional 3D die that downloads only when turned on. 3D pieces and music were left out.
+- After P14: a visual refresh. Glossy pawns whose white badge keeps each player's shape, a 3D-looking die drawn in CSS that shows only the server's value, yards with starting spots, gold safe stars and a home badge, glowing panels on a deep backdrop, and a redesigned win screen with the winner's pawn and a podium (FR-SYS-06, FR-SYS-10, NFR-SYS-05, NFR-SYS-07).

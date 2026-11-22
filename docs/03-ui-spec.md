@@ -45,6 +45,8 @@ attribute on `<html>` and zero component changes.
   --p-green:  #2BBF5B;
   --p-yellow: #F4C026;
   --p-blue:   #2F7DF6;
+  --panel-edge: #2A4C86;
+  --glow:       rgb(64 140 255 / 0.30);
 }
 
 html[data-theme="light"] {
@@ -69,8 +71,13 @@ html[data-theme="light"] {
   --p-green:  #1E9E48;
   --p-yellow: #B88A00;
   --p-blue:   #2367D8;
+  --panel-edge: #C4D0E3;
+  --glow:       rgb(29 95 209 / 0.10);
 }
 ```
+
+`--panel-edge` and `--glow` came with the visual refresh (glossy pawns, a 3D die, glowing
+panels). They are for edges and shadows only, never behind text, so they don't change contrast.
 
 Check both themes for text contrast (aim for 4.5:1 on body text) before
 calling P4 done.
