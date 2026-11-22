@@ -1,4 +1,5 @@
 import { Button } from "@/components/Button";
+import { DieIcon } from "@/components/DieIcon";
 import { FOCUS_RING } from "@/components/focusRing";
 import { GameMenu } from "@/components/GameMenu";
 import { PlayerMark } from "@/components/PlayerMark";
@@ -38,10 +39,14 @@ export function TopBar({
   onLeave,
 }: TopBarProps) {
   return (
-    <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-soft bg-panel px-3 py-2">
+    <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-[var(--panel-edge)] bg-panel px-3 py-2 shadow-[0_6px_18px_-10px_var(--glow)]">
       <div className="flex items-center gap-2">
         {/* App moves focus here when the game opens (NFR-SYS-08). */}
-        <h1 tabIndex={-1} className={`text-xl font-bold text-high ${FOCUS_RING}`}>
+        <h1
+          tabIndex={-1}
+          className={`wordmark flex items-center gap-1.5 text-xl font-extrabold text-high ${FOCUS_RING}`}
+        >
+          <DieIcon className="h-6 w-6" />
           {MAIN_TEXT.wordmark}
         </h1>
         <GameMenu

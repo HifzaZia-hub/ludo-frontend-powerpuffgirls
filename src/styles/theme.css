@@ -26,6 +26,8 @@
   --p-green:  #2BBF5B;
   --p-yellow: #F4C026;
   --p-blue:   #2F7DF6;
+  --panel-edge: #2A4C86;
+  --glow:       rgb(64 140 255 / 0.30);
 }
 
 html[data-theme="light"] {
@@ -51,6 +53,8 @@ html[data-theme="light"] {
   --p-green:  #1E9E48;
   --p-yellow: #B88A00;
   --p-blue:   #2367D8;
+  --panel-edge: #C4D0E3;
+  --glow:       rgb(29 95 209 / 0.10);
 }
 
 /* P14: extra themes. Not in the UI spec, so these blocks are their source. Each defines every token
@@ -79,6 +83,8 @@ html[data-theme="neon"] {
   --p-green:  #22D96B;
   --p-yellow: #FFD23F;
   --p-blue:   #3D8BFF;
+  --panel-edge: #4A3A93;
+  --glow:       rgb(255 79 216 / 0.28);
 }
 
 html[data-theme="forest"] {
@@ -104,6 +110,8 @@ html[data-theme="forest"] {
   --p-green:  #2F9E57;
   --p-yellow: #C79A00;
   --p-blue:   #2C6BC9;
+  --panel-edge: #B3C7AC;
+  --glow:       rgb(31 111 67 / 0.10);
 }
 
 html[data-theme="minimal"] {
@@ -129,6 +137,174 @@ html[data-theme="minimal"] {
   --p-green:  #23994E;
   --p-yellow: #C59600;
   --p-blue:   #2563D9;
+  --panel-edge: #D4D4D4;
+  --glow:       rgb(0 0 0 / 0.06);
+}
+
+/* Visual refresh (glossy pieces, glowing panels, a 3D die). Decoration only: every colour comes
+   from the tokens above, and no text is drawn on a glow, so the contrast checks are unchanged. */
+@layer components {
+  .app-backdrop {
+    background:
+      radial-gradient(60rem 40rem at 12% -12%, color-mix(in oklab, var(--p-blue) 14%, transparent), transparent 70%),
+      radial-gradient(50rem 36rem at 108% 112%, color-mix(in oklab, var(--p-red) 9%, transparent), transparent 70%),
+      var(--bg-deep);
+    background-attachment: fixed;
+  }
+
+  /* Layered shadows: a thin edge, a soft glow, and a drop shadow for depth. */
+  .glow-panel {
+    border: 1px solid var(--panel-edge);
+    box-shadow:
+      0 0 0 1px color-mix(in oklab, var(--panel-edge) 35%, transparent),
+      0 0 18px var(--glow),
+      0 12px 24px -14px color-mix(in oklab, var(--piece-edge) 70%, transparent);
+  }
+
+  .wordmark {
+    letter-spacing: 0.12em;
+    text-shadow: 0 0 18px var(--glow), 0 0 4px var(--glow);
+  }
+
+  /* drop-shadow follows the pawn's outline, where box-shadow would draw a square. */
+  .pawn {
+    overflow: visible;
+    filter: drop-shadow(0 1.5px 1.2px color-mix(in oklab, var(--piece-edge) 55%, transparent));
+  }
+
+  .board-frame {
+    box-shadow:
+      0 0 0 4px var(--bg-panel),
+      0 0 0 5px var(--panel-edge),
+      0 0 32px var(--glow),
+      0 20px 40px -18px color-mix(in oklab, var(--piece-edge) 80%, transparent);
+  }
+
+  /* The die: a cube seen from slightly above and to the right. Only the front face carries
+     pips, and it shows exactly the server's value (NFR-SYS-05); the other faces are plain. */
+  .die-scene {
+    --die: 4.75rem;
+    position: relative;
+    width: var(--die);
+    height: var(--die);
+    margin-block: 0.35rem 0.6rem;
+    perspective: 26rem;
+  }
+
+  /* Seen from above and to the left, so the top and right faces show, lit from the top left. */
+  .die-cube {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    transform: translateZ(calc(var(--die) / -2)) rotateX(-18deg) rotateY(24deg);
+  }
+
+  .die-face {
+    position: absolute;
+    inset: 0;
+    border-radius: 18%;
+    backface-visibility: hidden;
+    background: color-mix(in oklab, var(--board-cell) 82%, var(--piece-edge));
+  }
+
+  .die-face--front {
+    transform: translateZ(calc(var(--die) / 2));
+    background: radial-gradient(
+      circle at 30% 25%,
+      var(--board-cell),
+      color-mix(in oklab, var(--board-cell) 92%, var(--piece-edge)) 65%,
+      color-mix(in oklab, var(--board-cell) 84%, var(--piece-edge))
+    );
+    box-shadow:
+      inset 0 0 0 1px color-mix(in oklab, var(--piece-edge) 16%, transparent),
+      inset -0.3rem -0.4rem 0.7rem color-mix(in oklab, var(--piece-edge) 14%, transparent);
+  }
+
+  .die-face--back { transform: rotateY(180deg) translateZ(calc(var(--die) / 2)); }
+  .die-face--left { transform: rotateY(-90deg) translateZ(calc(var(--die) / 2)); }
+  .die-face--bottom { transform: rotateX(-90deg) translateZ(calc(var(--die) / 2)); }
+
+  .die-face--right {
+    transform: rotateY(90deg) translateZ(calc(var(--die) / 2));
+    background: linear-gradient(
+      to right,
+      color-mix(in oklab, var(--board-cell) 84%, var(--piece-edge)),
+      color-mix(in oklab, var(--board-cell) 72%, var(--piece-edge))
+    );
+  }
+
+  .die-face--top {
+    transform: rotateX(90deg) translateZ(calc(var(--die) / 2));
+    background: linear-gradient(
+      to bottom,
+      var(--board-cell),
+      color-mix(in oklab, var(--board-cell) 90%, var(--piece-edge))
+    );
+  }
+
+  .die-pip {
+    background: radial-gradient(
+      circle at 35% 30%,
+      color-mix(in oklab, var(--piece-edge) 55%, var(--board-cell)),
+      var(--piece-edge) 70%
+    );
+  }
+
+  .die-shadow {
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    bottom: -16%;
+    height: 20%;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, color-mix(in oklab, var(--piece-edge) 55%, transparent), transparent);
+  }
+
+  /* Win screen: a spotlight in the winner's colour, and a pawn that pops in once. */
+  .win-spotlight {
+    position: absolute;
+    inset: -30% 10% auto;
+    height: 22rem;
+    background: radial-gradient(closest-side, color-mix(in oklab, var(--winner) 34%, transparent), transparent);
+    pointer-events: none;
+  }
+
+  .win-title {
+    text-shadow: 0 0 22px color-mix(in oklab, var(--winner) 55%, transparent);
+  }
+
+  .win-pawn {
+    filter:
+      drop-shadow(0 6px 6px color-mix(in oklab, var(--piece-edge) 60%, transparent))
+      drop-shadow(0 0 18px color-mix(in oklab, var(--winner) 60%, transparent));
+  }
+
+  /* Motion is opt-in, and runs once: it never needs a pause control. */
+  @media (prefers-reduced-motion: no-preference) {
+    .win-pawn {
+      animation: win-pop 700ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+  }
+
+  .podium-step {
+    background: linear-gradient(to bottom, var(--bg-raised), color-mix(in oklab, var(--bg-raised) 70%, var(--panel-edge)));
+    border: 1px solid var(--panel-edge);
+    border-bottom: none;
+  }
+
+  .podium-step::after {
+    content: attr(data-place);
+    display: block;
+    padding-top: 0.35rem;
+    font-weight: 800;
+    font-size: 1.25rem;
+    color: var(--text-mid);
+  }
+}
+
+@keyframes win-pop {
+  from { opacity: 0; scale: 0.6; translate: 0 1rem; }
+  to { opacity: 1; scale: 1; translate: 0 0; }
 }
 
 /* POST-10-2: the Animations setting and the device's reduced-motion preference only change how

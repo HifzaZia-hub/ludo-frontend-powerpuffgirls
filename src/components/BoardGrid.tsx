@@ -38,6 +38,14 @@ function tinted(token: string): string {
   return `color-mix(in srgb, ${token} 55%, var(--board-cell))`;
 }
 
+// Visual refresh: a yard lit from the top left, like a glossy tile.
+function yardBackground(token: string): string {
+  return `linear-gradient(145deg, color-mix(in oklab, ${token} 82%, var(--board-cell)), ${token} 55%, color-mix(in oklab, ${token} 82%, var(--piece-edge)))`;
+}
+
+// A house, on a 24-unit grid, for the centre's home badge.
+const HOUSE = "M4 11.5 12 4.5l8 7V20h-5.5v-5.5h-5V20H4z";
+
 export interface BoardGridProps {
   safeSquares: readonly number[]; // NFR-SYS-11: always snapshot.rules.safeSquares
 }
@@ -60,9 +68,18 @@ export const BoardGrid = memo(function BoardGrid({ safeSquares }: BoardGridProps
           <div
             key={colour}
             data-yard={colour}
-            style={{ ...placeOnGrid(YARD_ORIGIN[colour], YARD_SIZE), backgroundColor: token }}
+            style={{
+              ...placeOnGrid(YARD_ORIGIN[colour], YARD_SIZE),
+              backgroundColor: token,
+              backgroundImage: yardBackground(token),
+            }}
             className="relative"
           >
+            {/* The inner panel the four starting spots sit on. The spots keep their positions. */}
+            <span
+              aria-hidden="true"
+              className="absolute inset-[7%] rounded-[14%] bg-board-cell shadow-[inset_0_2px_6px_color-mix(in_oklab,var(--piece-edge)_22%,transparent)]"
+            />
             {YARD_SLOTS.map(([col, row]) => (
               <span
                 key={`${col}:${row}`}
@@ -72,8 +89,9 @@ export const BoardGrid = memo(function BoardGrid({ safeSquares }: BoardGridProps
                   top: yardPercent(row - YARD_SLOT_SIZE / 2),
                   width: yardPercent(YARD_SLOT_SIZE),
                   height: yardPercent(YARD_SLOT_SIZE),
+                  backgroundColor: `color-mix(in oklab, ${token} 30%, var(--board-cell))`,
                 }}
-                className="absolute flex items-center justify-center rounded-full bg-board-cell text-piece-edge"
+                className="absolute flex items-center justify-center rounded-full text-piece-edge shadow-[inset_0_2px_4px_color-mix(in_oklab,var(--piece-edge)_28%,transparent)]"
               >
                 {/* NFR-SYS-07: an empty yard still says whose it is without relying on colour. */}
                 <ShapeGlyph shape={shape} className="h-2/5 w-2/5 opacity-30" />
@@ -98,12 +116,17 @@ export const BoardGrid = memo(function BoardGrid({ safeSquares }: BoardGridProps
             {isSafeSquare(square, safeSquares) && (
               <svg
                 viewBox="0 0 24 24"
-                fill="currentColor"
                 role="img"
                 aria-label={GAME_TEXT.safeSquare}
-                className="h-3/5 w-3/5 opacity-70"
+                className="h-3/5 w-3/5"
               >
-                <polygon points={STAR_POINTS} />
+                {/* A gold star with a dark edge, so it still reads in grayscale (NFR-SYS-07). */}
+                <polygon
+                  points={STAR_POINTS}
+                  strokeWidth="1.2"
+                  strokeLinejoin="round"
+                  style={{ fill: "var(--warning)", stroke: "var(--piece-edge)" }}
+                />
               </svg>
             )}
           </div>
@@ -161,9 +184,19 @@ export const BoardGrid = memo(function BoardGrid({ safeSquares }: BoardGridProps
           <polygon
             key={colour}
             points={CENTRE_TRIANGLES[colour]}
-            style={{ fill: PLAYER_IDENTITY[colour].token }}
+            strokeWidth="0.03"
+            style={{ fill: PLAYER_IDENTITY[colour].token, stroke: "var(--board-cell)" }}
           />
         ))}
+        {/* Home, where every path ends. */}
+        <circle
+          cx="1.5"
+          cy="1.5"
+          r="0.42"
+          strokeWidth="0.04"
+          style={{ fill: "var(--board-cell)", stroke: "var(--piece-edge)" }}
+        />
+        <path d={HOUSE} transform="translate(1.17 1.15) scale(0.0275)" style={{ fill: "var(--piece-edge)" }} />
       </svg>
     </div>
   );

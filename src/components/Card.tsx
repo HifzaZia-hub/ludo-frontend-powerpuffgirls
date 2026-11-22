@@ -8,7 +8,7 @@ export function Card({ active = false, className = "", children, ...rest }: Card
   return (
     <div
       {...rest}
-      className={`rounded-2xl border border-soft bg-panel p-4 ${
+      className={`glow-panel rounded-2xl bg-panel p-4 ${
         active ? "-translate-y-0.5 shadow-lg ring-2 ring-accent" : ""
       } transition-transform duration-150 ${className}`}
     >

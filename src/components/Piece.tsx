@@ -1,6 +1,5 @@
 import { FOCUS_RING } from "@/components/focusRing";
-import { ShapeGlyph } from "@/components/ShapeGlyph";
-import { PLAYER_IDENTITY } from "@/config/players";
+import { Pawn } from "@/components/Pawn";
 import type { Colour } from "@/contract/types";
 
 export type PieceState = "idle" | "movable" | "selected" | "dimmed" | "target";
@@ -43,20 +42,11 @@ export function Piece({
   onPreview,
   className = "",
 }: PieceProps) {
-  const { shape, token } = PLAYER_IDENTITY[colour];
   const effectClasses = effect ? EFFECT_CLASSES[effect] : "";
   const stateClasses = `block rounded-full transition-transform duration-150 ${STATE_CLASSES[state]} ${effectClasses} ${className}`;
 
-  const face = (
-    <span
-      style={{ backgroundColor: token }}
-      className="flex h-full w-full items-center justify-center rounded-full border-2 border-piece-edge"
-    >
-      <span className="flex h-3/5 w-3/5 items-center justify-center rounded-full bg-board-cell text-piece-edge">
-        <ShapeGlyph shape={shape} className="h-3/5 w-3/5" />
-      </span>
-    </span>
-  );
+  // NFR-SYS-07: the pawn's badge carries the player's shape, and the label says whose it is.
+  const face = <Pawn colour={colour} className="block h-full w-full" />;
 
   // FR-SYS-03 POST-03-1: only a piece the server listed can be pressed.
   if (state === "movable" || state === "selected") {

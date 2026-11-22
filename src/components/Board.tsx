@@ -14,7 +14,7 @@ export function Board({ children, className = "" }: BoardProps) {
       aria-label={GAME_TEXT.board}
       className={`flex items-center justify-center [container-type:size] ${className}`}
     >
-      <div className="relative aspect-square w-[min(100cqi,100cqb)] overflow-hidden rounded-2xl border-2 border-board-line bg-board-cell">
+      <div className="board-frame relative aspect-square w-[min(calc(100cqi-12px),calc(100cqb-12px))] overflow-hidden rounded-2xl border-2 border-board-line bg-board-cell">
         {children}
       </div>
     </section>
