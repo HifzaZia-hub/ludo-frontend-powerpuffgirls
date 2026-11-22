@@ -5,14 +5,14 @@
 /* Tokens copied exactly from docs/03-ui-spec.md section 2. Change them there first. */
 :root, html[data-theme="dark"] {
   color-scheme: dark; /* so the browser draws scrollbars to match */
-  --bg-deep:     #060B18;
-  --bg-panel:    #0C1627;
-  --bg-raised:   #142238;
-  --border-soft: #1E3050;
+  --bg-deep:     #030F0C;
+  --bg-panel:    #081A15;
+  --bg-raised:   #0E261F;
+  --border-soft: #1A3B31;
   --focus-ring:  #5AA9FF;
   --text-high:   #F2F6FF;
-  --text-mid:    #9DB0CE;
-  --text-low:    #8496B5;
+  --text-mid:    #A3BDB4;
+  --text-low:    #8AA79C;
   --accent:      #2DD98A;
   --accent-press:#1FB874;
   --on-accent:   #04220F;
@@ -26,8 +26,9 @@
   --p-green:  #2BBF5B;
   --p-yellow: #F4C026;
   --p-blue:   #2F7DF6;
-  --panel-edge: #2A4C86;
-  --glow:       rgb(64 140 255 / 0.30);
+  --panel-edge: #1E6B52;
+  --glow:       rgb(45 217 138 / 0.26);
+  --title-accent: #2DD98A;
 }
 
 html[data-theme="light"] {
@@ -55,6 +56,7 @@ html[data-theme="light"] {
   --p-blue:   #2367D8;
   --panel-edge: #C4D0E3;
   --glow:       rgb(29 95 209 / 0.10);
+  --title-accent: #0B7A48;
 }
 
 /* P14: extra themes. Not in the UI spec, so these blocks are their source. Each defines every token
@@ -85,6 +87,7 @@ html[data-theme="neon"] {
   --p-blue:   #3D8BFF;
   --panel-edge: #4A3A93;
   --glow:       rgb(255 79 216 / 0.28);
+  --title-accent: #2BFFB0;
 }
 
 html[data-theme="forest"] {
@@ -112,6 +115,7 @@ html[data-theme="forest"] {
   --p-blue:   #2C6BC9;
   --panel-edge: #B3C7AC;
   --glow:       rgb(31 111 67 / 0.10);
+  --title-accent: #1F6F43;
 }
 
 html[data-theme="minimal"] {
@@ -139,6 +143,7 @@ html[data-theme="minimal"] {
   --p-blue:   #2563D9;
   --panel-edge: #D4D4D4;
   --glow:       rgb(0 0 0 / 0.06);
+  --title-accent: #0B6B40;
 }
 
 /* Visual refresh (glossy pieces, glowing panels, a 3D die). Decoration only: every colour comes
@@ -148,6 +153,21 @@ html[data-theme="minimal"] {
     background:
       radial-gradient(60rem 40rem at 12% -12%, color-mix(in oklab, var(--p-blue) 14%, transparent), transparent 70%),
       radial-gradient(50rem 36rem at 108% 112%, color-mix(in oklab, var(--p-red) 9%, transparent), transparent 70%),
+      var(--bg-deep);
+    background-attachment: fixed;
+  }
+
+  /* The Dark theme (the default) shows the background picture, darkened toward the bottom so the
+     text on it stays readable. The other themes keep the plain backdrop above. */
+  :root:not([data-theme]) .app-backdrop,
+  html[data-theme="dark"] .app-backdrop {
+    background:
+      linear-gradient(
+        to bottom,
+        color-mix(in oklab, var(--bg-deep) 25%, transparent),
+        color-mix(in oklab, var(--bg-deep) 55%, transparent)
+      ),
+      url("../assets/backdrop.webp") center / cover no-repeat,
       var(--bg-deep);
     background-attachment: fixed;
   }
@@ -180,74 +200,115 @@ html[data-theme="minimal"] {
       0 20px 40px -18px color-mix(in oklab, var(--piece-edge) 80%, transparent);
   }
 
-  /* The die: a cube seen from slightly above and to the right. Only the front face carries
-     pips, and it shows exactly the server's value (NFR-SYS-05); the other faces are plain. */
+  /* The die: a cube with pips on every face, laid out like a real die (opposite faces add up to
+     7). It turns so the server's value faces the player (NFR-SYS-05), and every face is blank
+     while it tumbles. Seen from above and to the left, lit from the top left. */
   .die-scene {
     --die: 4.75rem;
     position: relative;
     width: var(--die);
     height: var(--die);
-    margin-block: 0.35rem 0.6rem;
+    margin-block: 0.75rem 1rem;
     perspective: 26rem;
   }
 
-  /* Seen from above and to the left, so the top and right faces show, lit from the top left. */
+  /* Leans a little toward the pointer, as if picking the die up. */
+  .die-tilt {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    transform: rotateX(var(--hover-x, 0deg)) rotateY(var(--hover-y, 0deg));
+    transition: transform 200ms ease-out;
+  }
+
   .die-cube {
     position: absolute;
     inset: 0;
     transform-style: preserve-3d;
-    transform: translateZ(calc(var(--die) / -2)) rotateX(-18deg) rotateY(24deg);
+    transform: translateZ(calc(var(--die) / -2)) rotateX(-18deg) rotateY(-24deg)
+      var(--face-turn, rotateY(0deg));
+  }
+
+  /* After a roll: one last turn that settles on the server's value. */
+  .die-land {
+    animation: die-land 500ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
   }
 
   .die-face {
     position: absolute;
     inset: 0;
+    display: grid;
+    grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+    place-items: center;
+    padding: 14%;
     border-radius: 18%;
     backface-visibility: hidden;
-    background: color-mix(in oklab, var(--board-cell) 82%, var(--piece-edge));
-  }
-
-  .die-face--front {
-    transform: translateZ(calc(var(--die) / 2));
     background: radial-gradient(
       circle at 30% 25%,
       var(--board-cell),
-      color-mix(in oklab, var(--board-cell) 92%, var(--piece-edge)) 65%,
-      color-mix(in oklab, var(--board-cell) 84%, var(--piece-edge))
+      color-mix(in oklab, var(--board-cell) 91%, var(--piece-edge)) 70%,
+      color-mix(in oklab, var(--board-cell) 83%, var(--piece-edge))
     );
     box-shadow:
       inset 0 0 0 1px color-mix(in oklab, var(--piece-edge) 16%, transparent),
-      inset -0.3rem -0.4rem 0.7rem color-mix(in oklab, var(--piece-edge) 14%, transparent);
+      inset -0.25rem -0.35rem 0.6rem color-mix(in oklab, var(--piece-edge) 14%, transparent);
   }
 
+  .die-face--front { transform: translateZ(calc(var(--die) / 2)); }
   .die-face--back { transform: rotateY(180deg) translateZ(calc(var(--die) / 2)); }
+  .die-face--right { transform: rotateY(90deg) translateZ(calc(var(--die) / 2)); }
   .die-face--left { transform: rotateY(-90deg) translateZ(calc(var(--die) / 2)); }
+  .die-face--top { transform: rotateX(90deg) translateZ(calc(var(--die) / 2)); }
   .die-face--bottom { transform: rotateX(-90deg) translateZ(calc(var(--die) / 2)); }
 
-  .die-face--right {
-    transform: rotateY(90deg) translateZ(calc(var(--die) / 2));
-    background: linear-gradient(
-      to right,
-      color-mix(in oklab, var(--board-cell) 84%, var(--piece-edge)),
-      color-mix(in oklab, var(--board-cell) 72%, var(--piece-edge))
-    );
-  }
-
-  .die-face--top {
-    transform: rotateX(90deg) translateZ(calc(var(--die) / 2));
-    background: linear-gradient(
-      to bottom,
-      var(--board-cell),
-      color-mix(in oklab, var(--board-cell) 90%, var(--piece-edge))
-    );
-  }
+  /* Whichever face ends up on the right is in shade; the top one catches the light. */
+  .die-face.is-right { filter: brightness(0.8); }
+  .die-face.is-top { filter: brightness(1.05); }
 
   .die-pip {
+    width: calc(var(--die) * 0.16);
+    height: calc(var(--die) * 0.16);
+    border-radius: 50%;
     background: radial-gradient(
       circle at 35% 30%,
-      color-mix(in oklab, var(--piece-edge) 55%, var(--board-cell)),
+      color-mix(in oklab, var(--piece-edge) 50%, var(--board-cell)),
       var(--piece-edge) 70%
     );
+  }
+
+  /* A glowing ring round the die, centred on the cube so it passes behind and in front of it. */
+  .die-orbit {
+    position: absolute;
+    inset: -30%;
+    border-radius: 50%;
+    border: 2px solid color-mix(in oklab, var(--accent) 28%, transparent);
+    border-top-color: var(--accent);
+    box-shadow: 0 0 14px var(--glow), inset 0 0 14px var(--glow);
+    transform: translateZ(calc(var(--die) / -2)) rotateX(74deg);
+    pointer-events: none;
+  }
+
+  /* The front page's die: bigger, turns slowly by itself, and can be dragged or spun. */
+  .hero-die {
+    --die: 7rem;
+    margin-block: 1.5rem 1.25rem;
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .hero-die.is-held {
+    cursor: grabbing;
+  }
+
+  .hero-die-idle {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    transform-origin: 50% 50% calc(var(--die) / -2);
+  }
+
+  .hero-die-cube.is-spinning {
+    transition: transform 1.4s cubic-bezier(0.15, 0.85, 0.25, 1);
   }
 
   .die-shadow {
@@ -299,6 +360,41 @@ html[data-theme="minimal"] {
     font-weight: 800;
     font-size: 1.25rem;
     color: var(--text-mid);
+  }
+}
+
+/* Endless motion only with no reduced-motion preference. Settings > Animations Off stops it too
+   (the rule near the end of this file), which is the pause control WCAG 2.2.2 asks for. */
+@media (prefers-reduced-motion: no-preference) {
+  .die-orbit {
+    animation: orbit-spin 6s linear infinite;
+  }
+
+  .hero-die-idle {
+    animation: hero-idle 18s linear infinite;
+  }
+
+  .hero-die.is-held .hero-die-idle {
+    animation-play-state: paused;
+  }
+}
+
+@keyframes orbit-spin {
+  to { transform: translateZ(calc(var(--die) / -2)) rotateX(74deg) rotateZ(360deg); }
+}
+
+@keyframes hero-idle {
+  to { rotate: y 360deg; }
+}
+
+@keyframes die-land {
+  from {
+    transform: translateZ(calc(var(--die) / -2)) rotateX(-18deg) rotateY(-24deg)
+      var(--face-turn, rotateY(0deg)) rotateX(300deg) rotateY(240deg);
+  }
+  to {
+    transform: translateZ(calc(var(--die) / -2)) rotateX(-18deg) rotateY(-24deg)
+      var(--face-turn, rotateY(0deg));
   }
 }
 

@@ -2,6 +2,7 @@ import { Button } from "@/components/Button";
 import { DieIcon } from "@/components/DieIcon";
 import { FOCUS_RING } from "@/components/focusRing";
 import { GameMenu } from "@/components/GameMenu";
+import { Icon } from "@/components/Icon";
 import { PlayerMark } from "@/components/PlayerMark";
 import { Toggle } from "@/components/Toggle";
 import type { Colour } from "@/contract/types";
@@ -63,7 +64,7 @@ export function TopBar({
 
       {/* FR-SYS-02 POST-02-1: says whose turn it is in words, with a mark that isn't only a colour. */}
       {turn && (
-        <p className="flex min-w-0 items-center gap-2 text-[15px] font-semibold text-high">
+        <p className="glow-panel flex min-w-0 items-center gap-2 rounded-full bg-raised px-4 py-1 text-[15px] font-semibold text-high">
           <PlayerMark colour={turn.colour} size="sm" />
           <span className="truncate">{turn.text}</span>
           {/* FR-SYS-07: the server runs the computer player, and this only shows it is busy. */}
@@ -86,7 +87,10 @@ export function TopBar({
           <span aria-hidden="true">{"⚙︎"}</span>
           {SETTINGS_TEXT.title}
         </Button>
-        <Toggle label={GAME_TEXT.sound} checked={sound} onChange={onSoundChange} />
+        <span className="flex items-center gap-1.5 text-mid">
+          <Icon name="speaker" className="h-4 w-4" />
+          <Toggle label={GAME_TEXT.sound} checked={sound} onChange={onSoundChange} />
+        </span>
       </div>
     </header>
   );

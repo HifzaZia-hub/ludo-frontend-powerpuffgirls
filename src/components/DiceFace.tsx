@@ -1,4 +1,4 @@
-import { NINE_SPOTS, PIP_SPOTS } from "@/config/diceFaces";
+import { DieCube } from "@/components/DieCube";
 
 export interface DiceFaceProps {
   /** The server's value, or null while rolling. */
@@ -6,29 +6,26 @@ export interface DiceFaceProps {
   rolling: boolean;
 }
 
-const PLAIN_FACES = ["back", "left", "right", "top", "bottom"];
-
-// The die, drawn as a cube in CSS (theme.css .die-*), so it needs no 3D library.
-// NFR-SYS-05: blank while it tumbles, then exactly the server's value on the front face.
-// The other faces carry no pips, so the die never shows a number the server didn't send.
+// The game's die: a 3D cube with a glowing ring round it.
+// NFR-SYS-05: blank while it tumbles, then it settles with exactly the server's value facing the
+// player. Only that face's pips carry data-pip, so the value shown can be counted.
 export function DiceFace({ face, rolling }: DiceFaceProps) {
-  const pips = face === null ? [] : (PIP_SPOTS[face] ?? []);
+  let motion = "";
+  if (rolling) motion = "animate-tumble";
+  else if (face !== null) motion = "die-land";
+
   return (
     <span className="die-scene block">
       <span aria-hidden="true" className="die-shadow" />
-      <span className={`die-cube block ${rolling ? "animate-tumble" : ""}`}>
-        {PLAIN_FACES.map((side) => (
-          <span key={side} className={`die-face die-face--${side}`} />
-        ))}
-        <span className="die-face die-face--front grid grid-cols-3 grid-rows-3 place-items-center p-2.5">
-          {NINE_SPOTS.map((spot) =>
-            pips.includes(spot) ? (
-              <span key={spot} data-pip="" className="die-pip h-3.5 w-3.5 rounded-full" />
-            ) : (
-              <span key={spot} />
-            ),
-          )}
-        </span>
+      <span className="die-tilt">
+        <span aria-hidden="true" className="die-orbit" />
+        {/* A new key for each value, so the settling turn plays again after every roll. */}
+        <DieCube
+          key={rolling ? "rolling" : `face-${face ?? "none"}`}
+          value={rolling ? null : face}
+          markValue
+          className={motion}
+        />
       </span>
     </span>
   );

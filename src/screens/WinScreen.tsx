@@ -5,6 +5,7 @@ import { useStore } from "zustand";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { CopyButton } from "@/components/CopyButton";
+import { Crown } from "@/components/Crown";
 import { DiceFairnessCheck } from "@/components/DiceFairnessCheck";
 import { Pawn } from "@/components/Pawn";
 import { PlayerMark } from "@/components/PlayerMark";
@@ -24,23 +25,6 @@ const PLAYER_TOKENS = ["--p-red", "--p-green", "--p-yellow", "--p-blue"];
 // How tall each podium step is, by its position in the server's ranking after the winner.
 const STEP_HEIGHTS = ["3.6rem", "2.9rem", "2.3rem"];
 
-function Crown({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 32 22" aria-hidden="true" className={className}>
-      <path
-        d="M2 6l7 6 7-10 7 10 7-6-3 14H5z"
-        strokeWidth="1.2"
-        strokeLinejoin="round"
-        style={{ fill: "var(--warning)", stroke: "var(--piece-edge)" }}
-      />
-      <g style={{ fill: "var(--board-cell)" }}>
-        <circle cx="2" cy="6" r="1.6" />
-        <circle cx="16" cy="2" r="1.6" />
-        <circle cx="30" cy="6" r="1.6" />
-      </g>
-    </svg>
-  );
-}
 
 export interface WinScreenProps {
   store: GameStore;

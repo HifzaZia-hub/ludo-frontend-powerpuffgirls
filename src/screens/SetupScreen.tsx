@@ -3,8 +3,10 @@ import { useStore } from "zustand";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { ColourPicker } from "@/components/ColourPicker";
+import { DieCube } from "@/components/DieCube";
 import { FOCUS_RING } from "@/components/focusRing";
 import { FormRow } from "@/components/FormRow";
+import { Icon } from "@/components/Icon";
 import { SegmentedControl, type SegmentedOption } from "@/components/SegmentedControl";
 import { TextField } from "@/components/TextField";
 import { COLOURS, HOST_COLOUR } from "@/config/players";
@@ -24,8 +26,8 @@ const SEAT_OPTIONS: readonly SegmentedOption<SeatChoice>[] = [
 ];
 
 const MODE_OPTIONS: readonly SegmentedOption<GameMode>[] = [
-  { value: "HUMAN_VS_HUMAN", label: SETUP_TEXT.friends },
-  { value: "HUMAN_VS_AI", label: SETUP_TEXT.computer },
+  { value: "HUMAN_VS_HUMAN", label: SETUP_TEXT.friends, icon: "users" },
+  { value: "HUMAN_VS_AI", label: SETUP_TEXT.computer, icon: "monitor" },
 ];
 
 const DIFFICULTY_OPTIONS: readonly SegmentedOption<Difficulty>[] = [
@@ -90,18 +92,26 @@ export function SetupScreen({ store }: SetupScreenProps) {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-4 p-4 pt-12">
-      <h1 tabIndex={-1} className={`self-start text-xl font-semibold ${FOCUS_RING}`}>
-        {SETUP_TEXT.title}
-      </h1>
+    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center gap-4 p-4 pt-14">
+      <Card className="relative !px-7 pb-5 pt-9">
+        {/* The die sits on the card's top edge, like a badge. Decoration only. */}
+        <span aria-hidden="true" className="absolute -top-8 left-1/2 -translate-x-1/2">
+          <span className="die-scene block !my-0 [--die:3.5rem]">
+            <DieCube value={5} shaded />
+          </span>
+        </span>
 
-      <Card>
+        <h1 tabIndex={-1} className={`text-3xl font-bold text-high ${FOCUS_RING}`}>
+          {SETUP_TEXT.title}
+        </h1>
+        <span aria-hidden="true" className="mt-2 block h-1 w-14 rounded-full bg-accent" />
+
         <form
           noValidate
           onSubmit={(event) => void handleSubmit(event)}
-          className="flex flex-col gap-4"
+          className="mt-5 flex flex-col gap-4"
         >
-          <FormRow label={SETUP_TEXT.players}>
+          <FormRow label={SETUP_TEXT.players} icon="users">
             <SegmentedControl
               label={SETUP_TEXT.players}
               options={SEAT_OPTIONS}
@@ -110,7 +120,7 @@ export function SetupScreen({ store }: SetupScreenProps) {
             />
           </FormRow>
 
-          <FormRow label={SETUP_TEXT.gameType}>
+          <FormRow label={SETUP_TEXT.gameType} icon="gamepad">
             <SegmentedControl
               label={SETUP_TEXT.gameType}
               options={MODE_OPTIONS}
@@ -120,7 +130,7 @@ export function SetupScreen({ store }: SetupScreenProps) {
           </FormRow>
 
           {mode === "HUMAN_VS_AI" && (
-            <FormRow label={SETUP_TEXT.difficulty}>
+            <FormRow label={SETUP_TEXT.difficulty} icon="bars">
               <SegmentedControl
                 label={SETUP_TEXT.difficulty}
                 options={DIFFICULTY_OPTIONS}
@@ -133,6 +143,7 @@ export function SetupScreen({ store }: SetupScreenProps) {
           <TextField
             ref={nameFieldRef}
             label={SETUP_TEXT.name}
+            icon="user"
             value={name}
             onChange={(typed) => {
               setName(typed);
@@ -142,7 +153,7 @@ export function SetupScreen({ store }: SetupScreenProps) {
             autoComplete="off"
           />
 
-          <FormRow label={SETUP_TEXT.colour}>
+          <FormRow label={SETUP_TEXT.colour} icon="palette">
             <ColourPicker
               label={SETUP_TEXT.colour}
               colours={COLOURS}
@@ -152,12 +163,14 @@ export function SetupScreen({ store }: SetupScreenProps) {
             />
           </FormRow>
 
-          <div className="flex items-center justify-between gap-2">
+          <div className="mt-1 flex items-center justify-between gap-2 border-t border-soft pt-4">
             {/* Off while a request is out, so a room can't be created behind the player's back. */}
             <Button variant="ghost" disabled={submitting} onClick={() => goTo("main")}>
+              <Icon name="chevronLeft" className="h-4 w-4" />
               {SETUP_TEXT.back}
             </Button>
             <Button type="submit" size="lg" pending={submitting}>
+              {!submitting && <Icon name="play" className="h-4 w-4" />}
               {SETUP_TEXT.start}
             </Button>
           </div>
