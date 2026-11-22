@@ -4,7 +4,7 @@
 //
 //   npm run e2e -- <mode> [--browser chrome|edge|firefox] [--count 5] [--fast] [--build] [--save] [--headed]
 //
-// Every mode runs in all three browsers except grayscale and perf, which need Chrome or Edge.
+// Every mode runs in all three browsers except grayscale, perf and motion, which need Chrome or Edge.
 //
 // Modes
 //   keyboard   a whole game with no mouse: setup, lobby, roll, choose, move, restart, leave (NFR-SYS-08)
@@ -15,6 +15,7 @@
 //   themes     the game screen in every theme, and the Settings window's theme choice
 //   die3d      the 3D die loads, lands on the server's value and still rolls from the keyboard
 //   colours    a host and a friend each choose a colour, and play in them (FR-SYS-01)
+//   motion     the entrances and game motion play, settle, and stop with Off or reduced motion (FR-SYS-10)
 //   perf       time from pressing Roll or Move to the next frame drawn (NFR-SYS-01)
 //   invalid    fast repeated presses, and presses for moves that aren't on offer (NFR-SYS-04)
 //   boundary   the dev-only broken fixture shows the error screen (NFR-SYS-03)
@@ -106,8 +107,9 @@ const BROWSERS = {
   ],
 };
 const FIREFOX = browserName === "firefox";
-// These modes use DevTools features that Firefox doesn't have: vision emulation and tracing.
-const CHROMIUM_ONLY = new Set(["grayscale", "perf"]);
+// These modes use DevTools features that Firefox doesn't have: vision emulation, tracing and
+// the reduced-motion preference.
+const CHROMIUM_ONLY = new Set(["grayscale", "perf", "motion"]);
 
 // ---------------------------------------------------------------------------------------------
 // Small helpers
@@ -342,8 +344,20 @@ function addHelpers(page) {
     writeFileSync(file, Buffer.from(data, "base64"));
     return file;
   };
+  // Waits for the element and everything around it to stop moving first, as a person would: a
+  // screen easing in or a button lifting under the pointer would otherwise be measured mid-move
+  // and the click would land beside it. The endless loops (sparkles, the turn pulse) never end,
+  // so they don't count, and it gives up waiting after a second.
   page.centreOf = (expression) =>
-    page.evaluate(`(() => {
+    page.evaluate(`(async () => {
+      const moving = document.getAnimations().filter((a) => {
+        const end = a.effect?.getComputedTiming().endTime;
+        return a.playState === 'running' && Number.isFinite(end);
+      });
+      await Promise.race([
+        Promise.allSettled(moving.map((a) => a.finished)),
+        new Promise((resolve) => setTimeout(resolve, 1000)),
+      ]);
       const el = ${expression};
       if (!el) return null;
       el.scrollIntoView({ block: 'center', inline: 'center' });
@@ -1486,10 +1500,207 @@ async function smoke(browser) {
   await page.close();
 }
 
+// FR-SYS-10, POST-10-2: the micro-interactions and entrances. They must play with Animations On,
+// end with everything visible and in place, glide the choice highlight, and stop completely with
+// Animations Off or the device's reduced-motion preference, including the endless loops.
+const ENTRANCES = ".screen-enter, .enter-up, .enter-drop, .letter, .pop-in, .swap-in, .slide-in, .count-flip, .podium-rise, .crown-drop, .toast-in";
+const MOTION = `(() => {
+  const running = document.getAnimations().filter((a) => a.playState === 'running');
+  const endless = running.filter((a) => !Number.isFinite(a.effect?.getComputedTiming().endTime));
+  const left = [...document.querySelectorAll('${ENTRANCES}')].filter((el) => {
+    const s = getComputedStyle(el);
+    return s.opacity !== '1' || (s.translate !== 'none' && s.translate !== '0px') || (s.scale !== 'none' && s.scale !== '1');
+  });
+  return {
+    running: running.length,
+    names: [...new Set(running.map((a) => a.animationName ?? a.transitionProperty ?? 'script'))],
+    endless: [...new Set(endless.map((a) => a.animationName ?? 'script'))],
+    finite: running.filter((a) => !endless.includes(a)).map((a) => a.animationName ?? a.transitionProperty ?? 'script'),
+    notSettled: left.map((el) => el.className.toString().slice(0, 40)),
+  };
+})()`;
+// Opens a new screen by pressing a button, then reads the motion two frames later.
+const OPEN_AND_READ = (name) => `(async () => {
+  const button = [...document.querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') || b.textContent).trim() === ${JSON.stringify(name)});
+  button.click();
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  return ${MOTION};
+})()`;
+const PARALLAX = `document.documentElement.style.getPropertyValue('--px')`;
+
+async function setAnimations(page, label) {
+  await page.clickButton("Settings");
+  await page.waitUntil(DIALOG_OPEN, "the settings");
+  await page.evaluate(`[...document.querySelectorAll('dialog[open] [role="radiogroup"][aria-label="Animations"] [role="radio"]')].find((b) => b.textContent.trim() === '${label}').click()`);
+  await page.press("Escape");
+  await sleep(400);
+  return page.evaluate(`document.documentElement.dataset.animation ?? ''`);
+}
+
+async function motion(browser) {
+  const page = await browser.page();
+
+  // On: the front page comes in piece by piece, then settles.
+  await page.navigate(APP);
+  await page.waitUntil(`document.querySelector('.letter') !== null`, "the title");
+  await sleep(250);
+  const entering = await page.evaluate(MOTION);
+  await page.shot("FR-SYS-10-motion-entrance.png");
+  check("On: the front page eases in", entering.running > 5 && entering.names.includes("letter-rise"), entering.names.join(", "));
+  await sleep(2500);
+  const settled = await page.evaluate(MOTION);
+  check("On: every entrance ends visible and in place", settled.notSettled.length === 0, settled.notSettled.join(" | "));
+  check("On: only the idle loops keep going", settled.endless.includes("twinkle") && settled.finite.length === 0, `loops: ${settled.endless.join(", ")}; still moving: ${settled.finite.join(", ") || "nothing"}`);
+
+  // The background and die lean away from the pointer.
+  await page.call("Input.dispatchMouseEvent", { type: "mouseMoved", x: 60, y: 60 });
+  await sleep(150);
+  const leftLean = Number(await page.evaluate(PARALLAX));
+  await page.call("Input.dispatchMouseEvent", { type: "mouseMoved", x: 1220, y: 660 });
+  await sleep(150);
+  const rightLean = Number(await page.evaluate(PARALLAX));
+  check("On: the page leans with the pointer", leftLean < -0.5 && rightLean > 0.5, `${leftLean} then ${rightLean}`);
+
+  // A card lights up where the pointer is.
+  const strip = await page.centreOf(`document.querySelector('ul.glow-panel')`);
+  await page.call("Input.dispatchMouseEvent", { type: "mouseMoved", x: strip.x, y: strip.y });
+  await sleep(450);
+  const spot = await page.evaluate(`(() => { const el = document.querySelector('ul.glow-panel'); return { spot: getComputedStyle(el).getPropertyValue('--spot').trim(), mx: el.style.getPropertyValue('--mx') }; })()`);
+  check("On: a card lights up under the pointer", spot.spot === "1" && spot.mx !== "", JSON.stringify(spot));
+
+  // The choice highlight glides from the old option to the new one.
+  await page.clickButton("New Game");
+  await page.waitUntil(`document.querySelector('[data-highlight]') !== null`, "the setup screen");
+  await sleep(800);
+  const glide = await page.evaluate(`(async () => {
+    const group = document.querySelector('[role="radiogroup"][aria-label="Players"]');
+    const radios = [...group.querySelectorAll('[role="radio"]')];
+    const from = group.querySelector('[data-highlight]').getBoundingClientRect().x;
+    const target = radios.find((r) => r.getAttribute('aria-checked') !== 'true' && r !== radios[1]) ?? radios[0];
+    const to = target.getBoundingClientRect().x;
+    target.click();
+    const seen = [];
+    const until = performance.now() + 700;
+    while (performance.now() < until) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const h = group.querySelector('[data-highlight]');
+      if (h) seen.push(h.getBoundingClientRect().x);
+    }
+    const between = seen.filter((x) => Math.abs(x - from) > 2 && Math.abs(x - to) > 2 && (x - from) * (x - to) < 0);
+    return { from: Math.round(from), to: Math.round(to), frames: seen.length, between: between.length, end: Math.round(seen.at(-1) ?? NaN) };
+  })()`);
+  check("On: the choice highlight glides to the new option", glide.between >= 2 && Math.abs(glide.end - glide.to) <= 3, JSON.stringify(glide));
+
+  // A screen easing in must never make the page taller than the settled screen is, or a
+  // scrollbar flickers on every screen change. At 1366x768, where the front page fits.
+  await page.size(1366, 768);
+  await sleep(300);
+  const flicker = await page.evaluate(`(async () => {
+    const de = document.documentElement;
+    [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Back').click();
+    let scrolledWhileEasing = 0;
+    let frames = 0;
+    const start = performance.now();
+    while (performance.now() < start + 1050) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      frames++;
+      if (de.scrollHeight > de.clientHeight || de.scrollWidth > de.clientWidth) scrolledWhileEasing++;
+    }
+    // ludo-ui: nothing but the endless loops runs longer than a second.
+    const stillMoving = document.getAnimations()
+      .filter((a) => a.playState === 'running' && Number.isFinite(a.effect?.getComputedTiming().endTime))
+      .map((a) => a.animationName ?? a.transitionProperty);
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    return { frames, scrolledWhileEasing, scrollsWhenSettled: de.scrollHeight > de.clientHeight, stillMoving };
+  })()`);
+  check("On: no scrollbar flickers while a screen eases in", !flicker.scrollsWhenSettled && flicker.scrolledWhileEasing === 0, JSON.stringify(flicker));
+  check("On: the front page's entrance is over within a second", flicker.stillMoving.length === 0, flicker.stillMoving.join(", ") || "nothing moving at 1050 ms");
+  await page.size(1280, 720);
+  await page.waitUntil(ON_MAIN, "the main screen");
+
+  // Off: nothing moves, not even the loops, and nothing is left hidden.
+  check("Off: the setting is applied", (await setAnimations(page, "Off")) === "off");
+  const offSetup = await page.evaluate(OPEN_AND_READ("New Game"));
+  check("Off: a new screen appears at once", offSetup.running === 0 && offSetup.notSettled.length === 0, JSON.stringify(offSetup));
+  await page.waitUntil(`document.querySelector('[data-highlight]') !== null`, "the setup screen");
+  const offMain = await page.evaluate(OPEN_AND_READ("Back"));
+  check("Off: the front page appears at once, with no loops", offMain.running === 0 && offMain.notSettled.length === 0, JSON.stringify(offMain));
+  await page.call("Input.dispatchMouseEvent", { type: "mouseMoved", x: 60, y: 60 });
+  await sleep(150);
+  check("Off: the page doesn't lean", (await page.evaluate(PARALLAX)) === "");
+
+  // On, with the device asking for reduced motion: the same as Off.
+  check("Reduced motion: Animations back On", (await setAnimations(page, "On")) === "on");
+  await page.call("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+  await sleep(200);
+  const reducedSetup = await page.evaluate(OPEN_AND_READ("New Game"));
+  await page.waitUntil(`document.querySelector('[data-highlight]') !== null`, "the setup screen");
+  const reducedMain = await page.evaluate(OPEN_AND_READ("Back"));
+  check("Reduced motion: screens appear at once, with no loops", reducedSetup.running === 0 && reducedMain.running === 0 && reducedMain.notSettled.length === 0, JSON.stringify(reducedMain));
+  await page.call("Input.dispatchMouseEvent", { type: "mouseMoved", x: 1220, y: 660 });
+  await sleep(150);
+  check("Reduced motion: the page doesn't lean", (await page.evaluate(PARALLAX)) === "");
+  await page.call("Emulation.setEmulatedMedia", { features: [] });
+
+  // The game, On: the turn glows, movable pieces bob, the die flashes, and pieces hop as they walk.
+  const code = await computerGame(page, FAST_RULES);
+  for (;;) {
+    await page.waitUntil(`${CAN_ROLL} || ${OPTIONS_OPEN}`, "my turn", 60000);
+    if (await page.evaluate(OPTIONS_OPEN)) break;
+    await page.press("r");
+    await sleep(800);
+  }
+  await sleep(600);
+  const choosing = await page.evaluate(`(() => ({
+    pulse: !!document.querySelector('[aria-current] .turn-pulse, .turn-pulse[aria-current]'),
+    bobbing: document.querySelectorAll('[data-piece] button .pawn-bob').length,
+    flash: !!document.querySelector('.die-flash'),
+    loops: document.getAnimations().filter((a) => a.playState === 'running').map((a) => a.animationName).filter(Boolean),
+  }))()`);
+  check("Game: the player whose turn it is glows", choosing.pulse && choosing.loops.includes("turn-pulse"));
+  check("Game: the pieces that can move bob", choosing.bobbing > 0 && choosing.loops.includes("pawn-bob"), `${choosing.bobbing} bobbing`);
+  check("Game: the die flashed as it landed", choosing.flash);
+  await page.shot("FR-SYS-10-motion-choosing.png");
+  await page.evaluate(`(() => {
+    window.__hops = new Set();
+    const observer = new MutationObserver(() => {
+      for (const el of document.querySelectorAll('[data-bounce]')) for (const c of el.classList) if (c.startsWith('piece-')) window.__hops.add(c);
+    });
+    observer.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+  })()`);
+  const { options } = await page.evaluate(STATE);
+  await page.press(pieceNumber(options[0]));
+  await page.press("Enter");
+  await sleep(2500);
+  const hops = await page.evaluate(`[...window.__hops]`);
+  check("Game: a walking piece hops on each square", hops.some((c) => c.startsWith("piece-hop")), hops.join(", ") || "no hops seen");
+
+  // The win screen: the crown drops on and the podium rises, then everything settles.
+  await page.waitUntil(CAN_ROLL, "my roll", 60000);
+  await debugPost("scenario", { roomCode: code, name: "near-win" });
+  await sleep(300);
+  await page.press("r");
+  await page.waitUntil(OPTIONS_OPEN, "the winning move");
+  const last = await page.evaluate(STATE);
+  await page.press(pieceNumber(last.options[0]));
+  await page.press("Enter");
+  await page.waitUntil(`document.querySelector('.crown-drop') !== null`, "the win screen", 30000);
+  await sleep(1050);
+  const winLate = await page.evaluate(`document.getAnimations().filter((a) => a.playState === 'running' && Number.isFinite(a.effect?.getComputedTiming().endTime) && a.animationName).map((a) => a.animationName)`);
+  check("Win: the crown and podium are done within a second", !winLate.some((n) => ["crown-drop", "rise", "pop-in"].includes(n)), winLate.join(", ") || "nothing moving at 1050 ms");
+  await sleep(1500);
+  const win = await page.evaluate(MOTION);
+  const winParts = await page.evaluate(`({ crown: !!document.querySelector('.crown-drop'), podium: document.querySelectorAll('.podium-rise').length })`);
+  check("Win: the crown and podium animate, then settle", winParts.crown && win.notSettled.length === 0, `${JSON.stringify(winParts)} ${win.notSettled.join(" | ")}`);
+
+  reportErrors(page, "motion");
+  await page.close();
+}
+
 // ---------------------------------------------------------------------------------------------
 // Main
 
-const MODES = { keyboard, games, sizes, grayscale, contrast, themes, die3d, colours, perf, invalid, boundary, smoke };
+const MODES = { keyboard, games, sizes, grayscale, contrast, themes, die3d, colours, motion, perf, invalid, boundary, smoke };
 if (!MODES[mode]) {
   console.error(`Unknown mode "${mode}". Use one of: ${Object.keys(MODES).join(", ")}.`);
   process.exit(2);
