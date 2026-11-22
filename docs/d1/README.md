@@ -1,1 +1,1 @@
-D1 Group Agreement PDF goes here
+D1 Group Agreement: `D1.pdf`.
