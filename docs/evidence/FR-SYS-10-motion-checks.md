@@ -92,27 +92,43 @@ measured while a screen eased in could land beside a small button.
 
 ## Sounds
 
-The placeholder tones are replaced by sounds made by `scripts/make-sounds.py` (numpy and scipy,
-seeded, so the same file comes out every time). One 3-second sprite at 32 kHz mono, 192 kB.
+The placeholder tones were first replaced by simple synthesised sounds. On 2026-11-23 the team
+asked for better, so `scripts/make-sounds.py` was rewritten to model real things rather than beeps:
+
+- a hit is modal: the object rings at a few frequencies of its own, each dying away at its own
+  rate, plus a short click of contact. The die is a resin cube landing on a wooden board, with
+  bounces that come faster and softer, as a thrown die's do;
+- tones are built from their harmonics (a brass "ta-da") or from a frequency-modulated pair (bells);
+- a small room's reverb ties each one together;
+- every sound is set to a loudness (RMS), so none jumps out, and peaks are rounded off softly.
+
+The Fish Audio account connected here was checked first: its free library has no die or game-piece
+sounds, and generating one costs 5,000 credits, more than the account holds.
+
+One 3-second sprite at 44.1 kHz mono, 265 kB, seeded so the same file comes out every time.
 
 | Sound | Plays for | Length | Peak | Loudness (RMS) |
 |---|---|---|---|---|
-| roll | the die rolling: a rattle of clicks and knocks | 380 ms | 0.95 | 0.114 |
-| move | a piece stepping: a wooden tap | 140 ms | 0.70 | 0.128 |
-| capture | a swoosh and a thud | 360 ms | 0.80 | 0.162 |
-| finish | a piece home: three bells, C E G | 390 ms | 0.80 | 0.155 |
-| win | a short fanfare, G C E G | 395 ms | 0.80 | 0.228 |
-| error | two soft falling notes | 220 ms | 0.60 | 0.215 |
+| roll | a die thrown onto a wooden board, bouncing and settling | 380 ms | 0.92 | 0.120 |
+| move | a wooden pawn set down | 200 ms | 0.88 | 0.130 |
+| capture | a clack, a whoosh, and a tone falling as the piece goes home | 380 ms | 0.84 | 0.140 |
+| finish | four bells climbing, C E G C, with a little sparkle | 390 ms | 0.40 | 0.120 |
+| win | a brass pick-up and a C major chord, with a cymbal | 395 ms | 0.81 | 0.170 |
+| error | two soft notes stepping down | 240 ms | 0.42 | 0.110 |
 
-Nothing clips, every sound stays under 400 ms, and each one is silent past its end in the sprite,
-so none runs into the next. Sound still waits for the first press and does nothing when off
-(`src/feedback/sound.test.ts`, unchanged).
+![Spectrograms of the old and new sounds](FR-SYS-10-sounds-old-and-new.png)
+
+Nothing clips, every sound stays under 400 ms, and each is silent past its end, so none runs into
+the next. `src/feedback/sound.test.ts` now also reads the real file and checks that every sound is
+where `sound.ts` says, whole and unclipped. Sound still waits for the first press and does nothing
+when off.
 
 ## Not checked here
 
 - Firefox: the `motion` mode needs the reduced-motion emulation that only Chrome and Edge offer.
   The other modes cover Firefox as before.
-- How the sounds sound. That needs ears; the numbers above only show they are clean and fit.
+- How the sounds sound. That needs ears: the team compared old and new on a listening page
+  before merging. The numbers above only show they are clean and fit.
 - At 1280×720 the front page was a little taller than the window, so it scrolled slightly when
   settled. That was already so before this change. Fixed afterwards: see "The front page fits the
   window" in `NFR-SYS-10-sizes.md`.
