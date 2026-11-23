@@ -113,6 +113,6 @@ so none runs into the next. Sound still waits for the first press and does nothi
 - Firefox: the `motion` mode needs the reduced-motion emulation that only Chrome and Edge offer.
   The other modes cover Firefox as before.
 - How the sounds sound. That needs ears; the numbers above only show they are clean and fit.
-- At 1280×720 the front page is a little taller than the window, so it scrolls slightly when
-  settled. That was already so before this change (the sizes check covers 768 px and up), and is
-  left for a follow-up.
+- At 1280×720 the front page was a little taller than the window, so it scrolled slightly when
+  settled. That was already so before this change. Fixed afterwards: see "The front page fits the
+  window" in `NFR-SYS-10-sizes.md`.
