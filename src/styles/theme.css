@@ -300,12 +300,53 @@ html[data-theme="minimal"] {
     pointer-events: none;
   }
 
-  /* The front page's die: bigger, turns slowly by itself, and can be dragged or spun. */
+  /* The front page's die: bigger, turns slowly by itself, and can be dragged or spun. Its size
+     follows the window's height (see "The front page fits the window" below). */
   .hero-die {
-    --die: 7rem;
-    margin-block: 1.5rem 1.25rem;
+    --die: clamp(4.25rem, 12.5dvh, 9rem);
+    margin-block: clamp(0.5rem, 2dvh, 1.75rem);
     touch-action: none;
     cursor: grab;
+  }
+
+  /* The front page fits the window, so it never scrolls: the die, the title, the pawns and the
+     gaps all follow the window's height, from a short laptop window (about 600 px tall once the
+     browser's bars are counted) up to a big screen, where everything grows to fill it. dvh, so a
+     phone's address bar coming and going doesn't push anything off. Each maximum is at most 2.5
+     times its minimum, and the title mixes in rem, so browser zoom can still enlarge it (WCAG
+     1.4.4); a zoomed page may scroll, which is allowed. */
+  .front-page {
+    min-height: 100dvh;
+    padding-top: clamp(3rem, 7dvh, 4.5rem);
+    padding-bottom: clamp(0.5rem, 1.25dvh, 1.25rem);
+  }
+
+  .front-title {
+    font-size: clamp(3rem, 1rem + 7dvh, 7rem);
+  }
+
+  .front-tagline {
+    margin-top: clamp(0.25rem, 1dvh, 0.75rem);
+    font-size: clamp(1.0625rem, 0.625rem + 1.3dvh, 1.5rem);
+  }
+
+  .front-pawns {
+    margin-top: clamp(0.375rem, 1.5dvh, 1.25rem);
+  }
+
+  .front-pawn {
+    width: clamp(2.25rem, 6dvh, 4rem);
+    height: clamp(2.25rem, 6dvh, 4rem);
+  }
+
+  .front-actions {
+    margin-top: clamp(0.625rem, 2.5dvh, 2.25rem);
+    gap: clamp(0.5rem, 1.2dvh, 0.75rem);
+  }
+
+  /* MainScreen hides the strip in a short window (it says so there). */
+  .front-strip {
+    margin-top: clamp(0.625rem, 2.5dvh, 2.25rem);
   }
 
   .hero-die.is-held {

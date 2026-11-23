@@ -895,6 +895,15 @@ async function sizes(browser) {
   };
   await mainScreen(page);
   await record("main");
+  // The front page never scrolls: checked at the sizes above and at the window a browser really
+  // has on common laptops once its own bars are counted, a short window, and two phones.
+  for (const [w, h] of [...SIZES, [1536, 730], [1366, 657], [1280, 600], [1280, 480], [390, 844], [360, 640]]) {
+    await page.size(w, h);
+    await sleep(350);
+    const { taller, sideways, outOfView } = await page.evaluate(PAGE_LAYOUT);
+    check(`main at ${w}x${h} fits the window with no scrolling`, !taller && !sideways && outOfView.length === 0, outOfView.join(", "));
+  }
+  await page.size(1280, 720);
   await page.clickButton("New Game");
   await page.waitUntil(`document.querySelector('input') !== null`, "the setup screen");
   await record("setup");

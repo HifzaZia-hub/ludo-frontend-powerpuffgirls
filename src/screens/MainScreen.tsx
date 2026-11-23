@@ -72,7 +72,8 @@ export function MainScreen({ store }: MainScreenProps) {
   const letters = MAIN_TEXT.wordmark.split("");
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 pb-6 pt-16">
+    // Fits the window at every common size, so the front page never scrolls (theme.css .front-page).
+    <main className="front-page relative flex flex-col items-center justify-center overflow-hidden px-4">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
         {SPARKLES.map((sparkle) => (
           <span
@@ -116,7 +117,7 @@ export function MainScreen({ store }: MainScreenProps) {
         <h1
           tabIndex={-1}
           aria-label={MAIN_TEXT.wordmark}
-          className={`wordmark text-7xl font-black italic leading-none [@media(min-height:900px)]:text-8xl ${FOCUS_RING}`}
+          className={`wordmark front-title font-black italic leading-none ${FOCUS_RING}`}
         >
           {letters.map((letter, index) => (
             <span
@@ -129,22 +130,22 @@ export function MainScreen({ store }: MainScreenProps) {
             </span>
           ))}
         </h1>
-        <p style={order(6)} className="enter-up mt-3 text-lg font-bold italic text-high">
+        <p style={order(6)} className="enter-up front-tagline font-bold italic text-high">
           {MAIN_TEXT.tagline}
         </p>
         {/* One pawn per player, as on the board. Each one hops when pointed at. Decoration only. */}
-        <div aria-hidden="true" className="mt-4 flex items-end gap-3">
+        <div aria-hidden="true" className="front-pawns flex items-end gap-3">
           {COLOURS.map((colour, index) => (
             <span key={colour} style={order(7 + index)} className="enter-up">
               <span className="pawn-hover">
-                <Pawn colour={colour} badge={false} className="h-12 w-12" />
+                <Pawn colour={colour} badge={false} className="front-pawn" />
               </span>
             </span>
           ))}
         </div>
       </header>
 
-      <div className="mt-6 flex w-full max-w-sm flex-col gap-3">
+      <div className="front-actions flex w-full max-w-sm flex-col">
         <span style={order(11)} className="enter-up flex flex-col">
           <Button size="lg" onClick={() => goTo("setup")} className="justify-between !px-5 text-lg">
             <Icon name="play" className="h-5 w-5" />
@@ -177,9 +178,12 @@ export function MainScreen({ store }: MainScreenProps) {
         </span>
       </div>
 
+      {/* In a short window the feature strip goes, so the buttons still fit without scrolling:
+          under 600 px tall, or under 760 px on a phone, where it stacks into three rows. It only
+          sums up the game, so nothing is lost. A class here, as it must beat `grid`. */}
       <ul
         style={order(14)}
-        className="enter-up glow-panel mt-6 grid w-full max-w-2xl grid-cols-1 gap-3 rounded-2xl bg-panel px-5 py-3 sm:grid-cols-3"
+        className="enter-up glow-panel front-strip grid w-full max-w-2xl grid-cols-1 gap-3 rounded-2xl bg-panel px-5 py-3 sm:grid-cols-3 [@media(max-height:599px)]:hidden [@media(max-width:639px)_and_(max-height:759px)]:hidden"
       >
         {MAIN_TEXT.features.map((feature) => (
           <li key={feature.title} className="group flex items-center gap-3">
