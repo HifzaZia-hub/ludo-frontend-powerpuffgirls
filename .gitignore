@@ -17,8 +17,8 @@ coverage/
 .env.*
 !.env.example
 
-# Claude Code: settings.json is shared, settings.local.json is personal (permissions, paths).
-.claude/settings.local.json
+# Claude Code: each person keeps their own settings, commands and skills locally.
+.claude/
 
 # Editors and operating systems
 .vscode/
