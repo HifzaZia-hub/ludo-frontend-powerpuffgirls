@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 const { play, created } = vi.hoisted(() => ({ play: vi.fn(), created: vi.fn() }));
 
 vi.mock("howler", () => ({
@@ -109,5 +112,29 @@ describe("sound", () => {
       const following = entries[index + 1];
       if (following) expect(start + length).toBeLessThanOrEqual(following[0]);
     });
+  });
+
+  // The real file must match the list: each sound is where sound.ts says, ends inside its slot
+  // (so playing one never clips the start of the next), and never hits full scale.
+  it("finds every sound in the file where the list says, whole and unclipped", async () => {
+    const { SOUND_SPRITE } = await freshSound();
+    // Found from the project folder: in this browser-like test, import.meta.url is not a file.
+    const file = readFileSync(join(process.cwd(), "public", "sounds", "sprite.wav"));
+    const rate = file.readUInt32LE(24);
+    const bits = file.readUInt16LE(34);
+    const level = (ms: number) =>
+      Math.abs(file.readInt16LE(44 + 2 * Math.round((ms * rate) / 1000))) / 32768;
+    const loudest = (from: number, to: number) => {
+      let peak = 0;
+      for (let ms = from; ms < to; ms += 1000 / rate) peak = Math.max(peak, level(ms));
+      return peak;
+    };
+
+    expect(bits).toBe(16);
+    for (const [start, length] of Object.values(SOUND_SPRITE)) {
+      expect(loudest(start, start + length)).toBeGreaterThan(0.2);
+      expect(loudest(start, start + length)).toBeLessThan(0.97);
+      expect(loudest(start + length, start + length + 50)).toBeLessThan(0.002);
+    }
   });
 });

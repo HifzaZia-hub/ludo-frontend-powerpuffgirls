@@ -7,21 +7,34 @@ const BODY = "M9.1 9.7C8.8 13.2 6.9 16.2 5.6 18.4H18.4C17.1 16.2 15.2 13.2 14.9 
 const BODY_SHADE = "M13.4 9.9C13.8 13.2 15.4 16.1 16.7 18.4H18.4C17.1 16.2 15.2 13.2 14.9 9.7Z";
 const BODY_SHINE = "M9.9 10.5C9.7 13 8.7 15.3 7.6 17.2";
 
+// The emblem: the player's shape printed on the pawn's body, 7.4 units across on the pawn's
+// 24-unit grid, centred on the widest part of the body.
+const EMBLEM_SIZE = 7.4;
+const EMBLEM_X = 12;
+const EMBLEM_Y = 14.4;
+const EMBLEM_SCALE = EMBLEM_SIZE / 24;
+const EMBLEM_AT = `translate(${EMBLEM_X - EMBLEM_SIZE / 2} ${EMBLEM_Y - EMBLEM_SIZE / 2}) scale(${EMBLEM_SCALE})`;
+// The outline is 0.7 units wide on the pawn, drawn under the fill so only its outer half shows.
+const EMBLEM_OUTLINE = 1.4 / EMBLEM_SCALE;
+
 export interface PawnProps {
   colour: Colour;
   className?: string;
-  /** The white badge with the player's shape. On by default: a pawn on the board needs it
+  /** The player's shape on the body. On by default: a pawn on the board needs it
    *  (NFR-SYS-07). Leave it off only where a PlayerMark beside the pawn says whose it is. */
   badge?: boolean;
 }
 
 // A glossy pawn in the player's colour. Decoration only, so it is hidden from screen readers;
-// whatever shows it gives the name or label. NFR-SYS-07: the white badge carries the player's
-// shape, so pawns are told apart without colour. The shine and shade are translucent shapes in
-// the theme's own colours, so the pawn suits every theme and needs no gradient ids.
+// whatever shows it gives the name or label. NFR-SYS-07: the player's shape is printed on the
+// body in white, outlined in a deeper shade of the pawn's own colour, so pawns are told apart
+// without colour: the white reads on the darker bodies, and the outline carries it on yellow and
+// in grayscale. The shine and shade are translucent shapes in the theme's own colours, so the
+// pawn suits every theme and needs no gradient ids.
 export function Pawn({ colour, className = "", badge = true }: PawnProps) {
   const { shape, token } = PLAYER_IDENTITY[colour];
   const fill = { fill: token };
+  const deep = `color-mix(in oklab, ${token} 45%, var(--piece-edge))`;
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" data-pawn={colour} className={`pawn ${className}`}>
       <g stroke="var(--piece-edge)" strokeWidth="0.6" strokeLinejoin="round">
@@ -59,18 +72,19 @@ export function Pawn({ colour, className = "", badge = true }: PawnProps) {
         style={{ fill: "var(--board-cell)" }}
       />
       {badge && (
-        <>
-          <circle
-            cx="12"
-            cy="15.2"
-            r="4"
-            strokeWidth="0.45"
-            style={{ fill: "var(--board-cell)", stroke: "var(--piece-edge)" }}
-          />
-          <g transform="translate(9.15 12.35) scale(0.2375)" style={{ fill: "var(--piece-edge)" }}>
+        <g transform={EMBLEM_AT} data-emblem={shape}>
+          {/* A soft shadow just below it, so it sits on the body like a printed mark. */}
+          <g transform="translate(0 1.6)" opacity="0.35" style={{ fill: deep }}>
             {shapeElement(shape)}
           </g>
-        </>
+          <g
+            strokeWidth={EMBLEM_OUTLINE}
+            strokeLinejoin="round"
+            style={{ fill: "var(--board-cell)", stroke: deep, paintOrder: "stroke" }}
+          >
+            {shapeElement(shape)}
+          </g>
+        </g>
       )}
     </svg>
   );

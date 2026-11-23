@@ -1,15 +1,16 @@
 import { Howl } from "howler";
 
-// Six sounds in one file, made by scripts/make-sounds.py: a dice rattle, a wooden tap, a swoosh and
-// thud, a bell chime, a short fanfare and a soft "no". Each entry is [start, length] in
-// milliseconds, every length stays under the 400 ms budget, and the script must agree with it.
+// Six sounds in one file, made by scripts/make-sounds.py from models of real things: a die thrown
+// onto a wooden board, a wooden pawn set down, a clack and whoosh home, climbing bells, a brass
+// ta-da and a soft two-note "no". Each entry is [start, length] in milliseconds, every length
+// stays under the 400 ms budget, and the script's SLOTS must agree with it.
 export const SOUND_SPRITE = {
   roll: [0, 380],
-  move: [500, 140],
-  capture: [1000, 360],
+  move: [500, 200],
+  capture: [1000, 380],
   finish: [1500, 390],
   win: [2000, 395],
-  error: [2500, 220],
+  error: [2500, 240],
 } satisfies Record<string, [number, number]>;
 
 export type SoundName = keyof typeof SOUND_SPRITE;
