@@ -1,8 +1,32 @@
-node_modules
-dist
-coverage
+# Dependencies
+node_modules/
+
+# Build output and caches
+dist/
+.vite/
+coverage/
+*.tsbuildinfo
+.eslintcache
+
+# Logs
 *.log
+
+# Environment: the real .env holds the server address for this machine. .env.example is the
+# template everyone copies, so it stays in git.
 .env
-.env.local
+.env.*
+!.env.example
+
+# Claude Code: settings.json is shared, settings.local.json is personal (permissions, paths).
+.claude/settings.local.json
+
+# Editors and operating systems
+.vscode/
+.idea/
+*.swp
 .DS_Store
-.vite
+Thumbs.db
+desktop.ini
+
+# Python, from scripts/make-sounds.py
+__pycache__/
